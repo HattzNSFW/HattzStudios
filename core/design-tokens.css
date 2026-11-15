@@ -1,3 +1,5 @@
+/* Hättz Design System — tokens compartilhados entre Share e Control.
+   Componentes podem criar aliases locais, mas os valores-base vivem aqui. */
 :root {
   color-scheme: dark;
   --hattz-color-bg: #0b0a10;

@@ -1,3 +1,4 @@
+/* Hättz Core — contrato compartilhado de API, perfil local e validação. */
 (() => {
   "use strict";
   const apiBase = () => String(window.HATTZ_SHARE_CONFIG?.apiBase || "").trim().replace(/\/+$/, "");

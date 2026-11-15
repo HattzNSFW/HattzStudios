@@ -1,3 +1,4 @@
+/* Hättz Profile Contract — normalização compartilhada e previsível do Studio. */
 (() => {
   "use strict";
 
