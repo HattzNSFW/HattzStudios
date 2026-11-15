@@ -7,6 +7,8 @@
   let page = 1;
   let totalPages = 1;
   let currentProfiles = [];
+  let maintenanceAllowedCodes = new Set();
+  let maintenanceTextareaCodes = new Set();
   let toastTimer;
 
   function escapeHtml(value) {
@@ -108,7 +110,7 @@
       $("profilesTable").innerHTML = currentProfiles.length ? currentProfiles.map((profile) => {
         const official = ["MT7QTEVMZY", "YGZNK6TMG8"].includes(profile.code);
         const status = profile.status || "active";
-        return `<tr><td><input type="checkbox" class="profile-check" data-code="${escapeHtml(profile.code)}" ${official ? "disabled" : ""}></td><td><span class="code-cell">${escapeHtml(profile.code)}</span>${official ? '<span class="sub-cell">Perfil oficial · protegido</span>' : ""}</td><td>${formatBytes(profile.storage_bytes)}</td><td>${Number(profile.media_count || 0)}</td><td><span class="state ${escapeHtml(status)}">${status === "active" ? "Ativo" : status === "suspended" ? "Suspenso" : "Excluindo"}</span></td><td>${formatDate(profile.updated_at)}</td><td><button type="button" class="quiet-button profile-reset" data-code="${escapeHtml(profile.code)}">Restaurar padrão</button></td></tr>`;
+        return `<tr><td><input type="checkbox" class="profile-check" data-code="${escapeHtml(profile.code)}" ${official ? "disabled" : ""}></td><td><span class="code-cell">${escapeHtml(profile.code)}</span>${official ? '<span class="sub-cell">Perfil oficial · protegido</span>' : ""}</td><td>${formatBytes(profile.storage_bytes)}</td><td>${Number(profile.media_count || 0)}</td><td><span class="state ${escapeHtml(status)}">${status === "active" ? "Ativo" : status === "suspended" ? "Suspenso" : "Excluindo"}</span></td><td>${formatDate(profile.updated_at)}</td><td>${official ? '<span class="sub-cell">Proteção permanente</span>' : `<button type="button" class="quiet-button profile-reset" data-code="${escapeHtml(profile.code)}">Restaurar padrão</button>`}</td></tr>`;
       }).join("") : '<tr><td colspan="7" class="empty">Nenhum perfil encontrado.</td></tr>';
       $("profilesPageLabel").textContent = `Página ${page} de ${totalPages} · ${result.total} perfis`;
       $("previousPage").disabled = page <= 1;
@@ -188,7 +190,10 @@
       $("maintenanceEnabled").checked = data.enabled === true;
       $("maintenanceTitle").value = data.title || "Em manutenção";
       $("maintenanceMessage").value = data.message || "Voltamos em breve.";
+      maintenanceAllowedCodes = new Set(data.allowlist || []);
+      maintenanceTextareaCodes = new Set(data.allowlist || []);
       $("maintenanceAllowlist").value = (data.allowlist || []).join("\n");
+      await loadMaintenanceProfiles();
       $("maintenanceBackgroundType").value = data.backgroundType || "color";
       $("maintenanceBackgroundUrl").value = data.backgroundUrl && !data.backgroundUrl.startsWith("/api/") ? data.backgroundUrl : "";
       $("maintenanceAccent").value = data.accentColor || "#9b7add";
@@ -199,8 +204,27 @@
       updateMaintenancePreviewText();
     } catch (error) { notify(error.message); }
   }
+  async function loadMaintenanceProfiles() {
+    const root = $("maintenanceProfileChoices"); if (!root) return;
+    const search = encodeURIComponent($("maintenanceProfileSearch").value.trim());
+    root.innerHTML = '<p class="empty">Carregando perfis...</p>';
+    try {
+      const data = await api(`/api/admin/profiles?page=1&limit=100&search=${search}`);
+      const profiles = data.profiles || [];
+      root.innerHTML = profiles.length ? profiles.map(profile => {
+        const code = String(profile.code || "").toUpperCase();
+        const official = ["MT7QTEVMZY", "YGZNK6TMG8"].includes(code.replace(/[^A-Z0-9]/g, ""));
+        const checked = maintenanceAllowedCodes.has(code) || maintenanceAllowedCodes.has(code.replace(/[^A-Z0-9]/g, ""));
+        return `<label class="maintenance-profile-choice"><input type="checkbox" data-maintenance-code="${escapeHtml(code)}" ${checked ? "checked" : ""} ${official ? "disabled" : ""}><span><strong>${escapeHtml(code)}</strong><small>${official ? "Perfil oficial · sempre protegido" : (profile.status === "suspended" ? "Suspenso" : "Perfil existente")}</small></span></label>`;
+      }).join("") : '<p class="empty">Nenhum perfil encontrado.</p>';
+    } catch (error) { root.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`; }
+  }
   async function saveMaintenance() {
-    const allowlist = $("maintenanceAllowlist").value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+    const allowlist = [...new Set([
+      ...maintenanceAllowedCodes,
+      ...$("maintenanceAllowlist").value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean),
+      ...[...$("maintenanceProfileChoices").querySelectorAll("input[data-maintenance-code]:checked")].map(input => input.dataset.maintenanceCode)
+    ])];
     try {
       const data = await api("/api/admin/maintenance", { method: "PATCH", body: JSON.stringify({
         enabled: $("maintenanceEnabled").checked,
@@ -213,6 +237,9 @@
         blur: Number($("maintenanceBlur").value),
         accentColor: $("maintenanceAccent").value
       }) });
+      maintenanceAllowedCodes = new Set(data.allowlist || allowlist);
+      maintenanceTextareaCodes = new Set(data.allowlist || allowlist);
+      $("maintenanceAllowlist").value = (data.allowlist || allowlist).join("\n");
       notify(data.enabled ? "Modo de manutenção ativado." : "Modo de manutenção desativado.");
       await loadOverview();
     } catch (error) { notify(error.message); }
@@ -268,7 +295,7 @@
       $('roleDefinitionList').querySelectorAll('[data-delete-role]').forEach(button => button.addEventListener('click', () => removeRoleDefinition(button.dataset.deleteRole)));
       $('grantBadgeId').innerHTML = badges.filter(x => x.award_mode !== 'automatic').map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)} · Manual</option>`).join('') || '<option value="">Nenhuma tag manual disponível</option>';
       $('grantFrameId').innerHTML = frames.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
-      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({...x,kind:'Tag',catalogKind:'badges'})),...frames.map(x=>({...x,kind:'Moldura',catalogKind:'frames'}))].map(x=>`<div class="audit-item"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action">${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Tag' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')}` : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}</span><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Remover</button></div>`).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
+      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({...x,kind:'Insígnia',catalogKind:'badges'})),...frames.map(x=>({...x,kind:'Moldura',catalogKind:'frames'}))].map(x=>`<div class="audit-item"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action">${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')}` : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Remover</button></div>`).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
       $('ecosystemCatalog').querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', () => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog)));
       await loadRoleAssignments();
       await loadStudioAccess();
@@ -504,6 +531,15 @@
   $("reloadEcosystem").addEventListener("click", loadEcosystem);
   $("catalogKind").addEventListener("change", () => { const badges=$("catalogKind").value === "badges"; $("catalogBadgeFields").hidden = !badges; $("catalogFrameFields").hidden = badges; });
   $("saveCatalogItem").addEventListener("click", saveCatalogItem);
+  $("ecosystemCatalog").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-edit-catalog]"); if (!button) return;
+    const kind = button.dataset.catalogKind; $("catalogKind").value = kind; $("catalogKind").dispatchEvent(new Event("change"));
+    $("catalogId").value = button.dataset.editCatalog; $("catalogName").value = button.dataset.catalogName || "";
+    $("catalogDescription").value = button.dataset.catalogDescription || ""; $("catalogRarity").value = button.dataset.catalogRarity || "1";
+    if (kind === "badges") { $("catalogCategory").value = button.dataset.catalogCategory || ""; $("catalogIcon").value = "✦"; $("catalogIconFile").value = ""; }
+    else { $("catalogFrameFile").value = ""; }
+    $("catalogId").focus(); notify("Item carregado para edição. Envie um novo PNG se quiser substituir a imagem atual.");
+  });
   $("saveStudioAccess").addEventListener("click", saveStudioAccess);
   $("saveRoleDefinition").addEventListener("click", saveRoleDefinition);
   $("newRoleDefinition").addEventListener("click", resetRoleDefinition);
@@ -518,6 +554,22 @@
   $("grantFrame").addEventListener("click", () => mutateProfileCollectible("frames", "grant"));
   $("revokeFrame").addEventListener("click", () => mutateProfileCollectible("frames", "revoke"));
   $("saveMaintenance").addEventListener("click", saveMaintenance);
+  $("searchMaintenanceProfiles").addEventListener("click", loadMaintenanceProfiles);
+  $("maintenanceProfileSearch").addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); loadMaintenanceProfiles(); } });
+  $("maintenanceProfileChoices").addEventListener("change", event => {
+    const input = event.target.closest("input[data-maintenance-code]"); if (!input) return;
+    const code = input.dataset.maintenanceCode;
+    if (input.checked) maintenanceAllowedCodes.add(code); else maintenanceAllowedCodes.delete(code);
+    const lines = $("maintenanceAllowlist").value.split(/\r?\n/);
+    $("maintenanceAllowlist").value = lines.filter(line => line.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^HTZ/, "") !== code.replace(/^HTZ/, "")).join("\n");
+    maintenanceTextareaCodes = new Set($("maintenanceAllowlist").value.split(/\r?\n/).map(line => line.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^HTZ/, "")).filter(Boolean));
+  });
+  $("maintenanceAllowlist").addEventListener("input", () => {
+    const next = new Set($("maintenanceAllowlist").value.split(/\r?\n/).map(line => line.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^HTZ/, "")).filter(Boolean));
+    for (const previous of maintenanceTextareaCodes) if (!next.has(previous)) maintenanceAllowedCodes.delete(previous);
+    for (const code of next) maintenanceAllowedCodes.add(code);
+    maintenanceTextareaCodes = next;
+  });
   $("uploadMaintenanceBackground").addEventListener("click", uploadMaintenanceBackground);
   ["maintenanceTitle", "maintenanceMessage"].forEach((id) => $(id).addEventListener("input", updateMaintenancePreviewText));
   ["maintenanceBackgroundUrl", "maintenanceBackgroundType", "maintenanceAccent", "maintenanceOverlay", "maintenanceBlur"].forEach((id) => $(id).addEventListener("input", () => { updateMaintenanceRangeLabels(); updateMaintenancePreview(); }));

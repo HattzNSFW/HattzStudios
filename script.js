@@ -1131,12 +1131,30 @@ async function loadProfileEntitlements() {
       if (role.color && /^#[0-9a-f]{6}$/i.test(role.color)) chip.style.setProperty("--role-accent", role.color);
       badges.append(chip);
     }
+    const rarityNames = { basic: "Básica", premium: "Premium", elite: "Elite", common: "Comum", uncommon: "Incomum", rare: "Rara", epic: "Épica", legendary: "Lendária", mythic: "Mítica", celestial: "Celestial", transcendent: "Transcendente" };
+    const rarityLevels = { 1: "Comum", 2: "Incomum", 3: "Rara", 4: "Épica", 5: "Lendária", 6: "Mítica", 7: "Celestial", 8: "Transcendente" };
     for (const item of (data.badges || [])) {
-      const chip = document.createElement("span");
-      chip.className = `badge hattz-collectible rarity-${["basic","premium","elite"].includes(item.rarity) ? item.rarity : "basic"}`;
-      if (String(item.icon||"").startsWith("data:image/png;base64,")) { const img=document.createElement("img"); img.src=item.icon; img.alt=""; img.width=18; img.height=18; img.style.objectFit="contain"; chip.append(img,document.createTextNode(` ${item.name}`)); }
-      else chip.textContent = `${item.icon || "✦"} ${item.name}`;
-      chip.title = item.description || item.name;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = `hattz-collectible rarity-${["basic","premium","elite"].includes(item.rarity) ? item.rarity : "basic"}`;
+      const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";
+      chip.setAttribute("aria-label", `${item.name}. Raridade ${rarityLabel}. ${item.description || ""}`);
+      const img = document.createElement("img");
+      img.src = String(item.icon || "").startsWith("data:image/png;base64,") || /^(https:\/\/|assets\/)/i.test(String(item.icon || "")) ? item.icon : "assets/badges/default.png";
+      img.alt = ""; img.width = 30; img.height = 30; img.loading = "lazy"; img.decoding = "async";
+      const detail = document.createElement("span");
+      detail.className = "hattz-badge-detail";
+      const name = document.createElement("strong"); name.textContent = item.name || "Insígnia";
+      const rarity = document.createElement("small"); rarity.textContent = rarityLabel;
+      const description = document.createElement("span"); description.textContent = item.description || "Insígnia colecionável Hättz.";
+      detail.append(name, rarity, description); chip.append(img, detail);
+      chip.addEventListener("click", () => {
+        const open = chip.classList.toggle("is-open");
+        chip.setAttribute("aria-expanded", String(open));
+        badges.querySelectorAll(".hattz-collectible.is-open").forEach(other => { if (other !== chip) { other.classList.remove("is-open"); other.setAttribute("aria-expanded", "false"); } });
+      });
+      chip.addEventListener("keydown", event => { if (event.key === "Escape") { chip.classList.remove("is-open"); chip.setAttribute("aria-expanded", "false"); } });
+      chip.setAttribute("aria-expanded", "false");
       badges.append(chip);
     }
   } catch (error) { console.warn("Não foi possível carregar os benefícios públicos do perfil."); }

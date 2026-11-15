@@ -88,3 +88,5 @@ tbody tr:hover td{background:rgba(185,154,240,.045)}
 .field small,.muted{line-height:1.65}
 button:disabled{cursor:not-allowed;opacity:.48;transform:none!important}
 @media(max-width:760px){#profilesTable{min-width:760px}.profile-reset{font-size:.68rem}.selection-toolbar>div>*{flex:1 1 auto}}
+
+.maintenance-profile-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;max-height:260px;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(4,4,8,.24)}.maintenance-profile-choice{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.025);cursor:pointer}.maintenance-profile-choice input{accent-color:#a78bfa}.maintenance-profile-choice span{display:grid;gap:3px;min-width:0}.maintenance-profile-choice strong{font-size:11px;overflow-wrap:anywhere}.maintenance-profile-choice small{font-size:9px;color:var(--muted)}.maintenance-profile-picker .inline-actions{display:flex;gap:8px}.maintenance-profile-picker .search-input{flex:1;max-width:none}
