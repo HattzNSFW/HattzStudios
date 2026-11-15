@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0a10">
+  <title>Hättz — Personal Space</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="core/design-tokens.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="site-background" aria-hidden="true">
+    <img id="backgroundImage" alt="" hidden>
+    <video id="backgroundVideo" muted loop playsinline hidden preload="none"></video>
+    <div class="site-background-overlay"></div>
+  </div>
+  <main class="page">
+    <section class="profile-card">
+      <div class="card-background" aria-hidden="true">
+        <img id="cardBackgroundImage" alt="" hidden>
+        <video id="cardBackgroundVideo" muted loop playsinline hidden preload="none"></video>
+        <div class="card-background-overlay"></div>
+      </div>
+
+      <header class="banner">
+        <img id="bannerImage" class="banner-media" alt="" hidden>
+        <video id="bannerVideo" class="banner-media" muted loop playsinline hidden preload="none"></video>
+        <div class="banner-overlay"></div>
+
+        <div class="banner-actions">
+          <div class="banner-heading" id="bannerHeading">
+            <span class="banner-title" id="bannerTitle"></span>
+            <span class="banner-subtitle" id="bannerSubtitle" hidden></span>
+          </div>
+          <div class="banner-tool-actions">
+            <button class="profile-switch-button" id="openOtherProfile" type="button" title="Abrir o outro perfil em uma nova aba">
+              <span class="profile-switch-icon" aria-hidden="true">↗</span>
+              <span id="openOtherProfileLabel">Criar perfil 2</span>
+            </button>
+            <button class="share-profile-button" id="openShareManager" type="button" title="Compartilhar ou abrir perfil por código">
+              <span aria-hidden="true">↗</span><span>Compartilhar</span>
+            </button>
+            <button class="icon-button capture-mode-button" id="toggleCaptureMode" type="button" aria-label="Ativar modo captura" aria-pressed="false" title="Modo captura">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+              </svg>
+            </button>
+            <button class="icon-button" id="openStudio" type="button" aria-label="Abrir Hättz Studio" title="Hättz Studio"><span aria-hidden="true">✧</span></button>
+            <button class="icon-button" id="openEditor" aria-label="Editar perfil" title="Personalizar perfil">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 4 1-4Z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="profile-content">
+
+        <section class="identity-section">
+          <div class="avatar-area">
+            <div class="avatar-frame" id="avatarFrame" aria-hidden="true"></div>
+
+            <div class="avatar-photo">
+              <img id="avatarImage" alt="Avatar" decoding="async" hidden>
+              <video id="avatarVideo" muted loop playsinline hidden preload="none"></video>
+              <div class="avatar-placeholder" id="avatarPlaceholder">
+                <span>✦</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="identity-info">
+            <div class="name-line">
+              <h1 id="profileName">Seu Nome</h1>
+
+              <span class="verified-badge" id="verifiedBadge" title="Perfil verificado" aria-label="Perfil verificado" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path class="verified-seal" d="M12 1.6 14.25 3l2.62-.48 1.35 2.3 2.55.8.1 2.66 1.73 2.02-1.17 2.4.62 2.6-2.25 1.42-.98 2.47-2.65-.05L12 20.7l-2.17-1.56-2.65.05-.98-2.47-2.25-1.42.62-2.6-1.17-2.4 1.73-2.02.1-2.66 2.55-.8 1.35-2.3L11.75 3 12 1.6Z" />
+                  <path class="verified-check" d="m8.1 11.9 2.55 2.55 5.35-5.4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="profile-meta"><p class="username" id="profileUsername">@seuusuario</p><span class="role-chip" id="profileRole" hidden></span></div>
+            <p class="bio" id="profileBio">Sua identidade, do seu jeito.</p>
+            <div class="badges" id="badges"></div>
+          </div>
+        </section>
+
+        <section class="content-section" id="statsSection">
+          <div class="section-heading">
+            <div>
+              <h2 id="statsSectionTitle">Em evidência</h2>
+              <p class="section-description" id="statsSectionDescription"></p>
+            </div>
+          </div>
+
+          <div class="stats-grid" id="statsGrid"></div>
+        </section>
+
+        <div class="profile-divider divider-ornamental" id="profileDivider" aria-hidden="true"><span>✦</span></div>
+
+        <section class="content-section" id="detailsSection">
+          <div class="section-heading">
+            <div>
+              <h2 id="detailsSectionTitle">Um pouco sobre mim</h2>
+              <p class="section-description" id="detailsSectionDescription"></p>
+            </div>
+          </div>
+
+          <div class="details-grid" id="detailsGrid"></div>
+        </section>
+
+        <section class="music-player is-floating" id="profileMusic" hidden aria-label="Player compacto de música e vídeo" title="Arraste a faixa para mover e o canto inferior direito para redimensionar">
+          <div class="music-bar-visual" aria-hidden="true">
+            <img id="musicBarBackgroundImage" alt="" hidden>
+            <video id="musicBarBackgroundVideo" muted loop playsinline preload="none" hidden></video>
+            <div class="music-bar-visual-overlay"></div>
+          </div>
+          <div class="music-player-top">
+            <span class="music-note-icon" aria-hidden="true">♫</span>
+            <div class="music-info">
+              <strong id="musicTrackName">Minha música</strong>
+              <span class="music-time" id="musicTime">0:00 / 0:00</span>
+            </div>
+            <button class="music-play" id="musicToggle" type="button" aria-label="Reproduzir ou pausar" title="Reproduzir">▶</button>
+            <button class="music-dock" id="dockMusic" type="button" aria-label="Mover player para o fim do perfil" title="Mover para o fim do perfil">⌄</button>
+          </div>
+          <div class="music-progress" aria-hidden="true"><span id="musicProgressFill"></span></div>
+          <audio id="profileAudio" loop preload="metadata" hidden></audio>
+          <video id="profileVideo" class="music-source-video" playsinline loop preload="metadata" hidden></video>
+          <div class="music-legacy-cover" hidden>
+            <img id="musicCoverImage" alt="Capa da mídia" hidden>
+            <span id="musicCoverFallback" aria-hidden="true">♫</span>
+            <span id="musicCoverName"></span>
+          </div>
+        </section>
+
+        <footer class="profile-footer">
+          <span id="footerText"></span>
+          <span class="footer-signature">DESIGNED BY HÄTTZ <i>✦</i></span>
+        </footer>
+      </div>
+    </section>
+
+    <p class="page-caption">Um espaço pessoal. Uma identidade única.</p>
+  </main>
+
+  <button class="capture-exit-button" id="exitCaptureMode" type="button" aria-label="Sair do modo captura" title="Sair do modo captura · Esc">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+    </svg>
+  </button>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-backdrop" id="editorModal" aria-hidden="true">
+    <section class="editor-modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+
+      <header class="modal-header">
+        <div>
+          <h2 id="editorTitle">Editar espaço</h2>
+          <span class="owner-mark" title="Proprietário do perfil">OWNER · HÄTTZ</span>
+        </div>
+        <button class="close-button" id="closeEditor" aria-label="Fechar">×</button>
+      </header>
+
+      <nav class="editor-tabs">
+        <button class="tab-button active" data-tab="identity">Perfil</button>
+        <button class="tab-button" data-tab="media">Mídia</button>
+        <button class="tab-button" data-tab="design">Design</button>
+        <button class="tab-button" data-tab="content">Conteúdo</button>
+      </nav>
+
+      <div class="modal-body">
+
+        <section class="tab-panel active" id="tab-identity">
+          <div class="field-group">
+            <label for="editName">Nome</label>
+            <input class="text-input" id="editName" maxlength="45" placeholder="Seu nome">
+          </div>
+          <div class="field-group banner-heading-editor">
+            <label>Texto do banner</label>
+            <label class="switch-row">
+              <span>
+                <strong>Mostrar texto no banner</strong>
+              </span>
+              <input type="checkbox" id="bannerHeadingVisible">
+              <span class="switch"></span>
+            </label>
+            <label for="editBannerTitle">Título</label>
+            <input class="text-input" id="editBannerTitle" maxlength="42" placeholder="Título do banner">
+            <label for="editBannerSubtitle">Subtítulo</label>
+            <input class="text-input" id="editBannerSubtitle" maxlength="90" placeholder="Ex.: Uma identidade única">
+          </div>
+
+          <div class="field-group">
+            <label for="editUsername">Usuário</label>
+            <input class="text-input" id="editUsername" maxlength="30" placeholder="seuusuario">
+          </div>
+
+          <div class="field-group">
+            <label for="editRole">Cargo do perfil</label>
+            <select class="text-input" id="editRole" disabled aria-describedby="editRoleHint">
+              <option value="">Sem identificação</option>
+            </select>
+            <small class="field-hint" id="editRoleHint">Cargos são concedidos pelo Hättz Control por perfil. VIP é um benefício separado.</small>
+          </div>
+
+          <div class="field-group">
+            <label for="editBio">Descrição</label>
+            <textarea class="text-input" id="editBio" rows="3" maxlength="180" placeholder="Escreva uma descrição..."></textarea>
+          </div>
+
+          <p class="field-hint vip-verification-note">O selo de verificação é concedido automaticamente enquanto o benefício VIP estiver ativo. Ele não pode ser ativado manualmente pelo editor.</p>
+
+          <div class="field-group">
+            <label for="editBadges">Tags atribuídas</label>
+            <input class="text-input" id="editBadges" placeholder="Gerenciado pelo Hättz Control" readonly aria-describedby="badgeManagementHint">
+            <small class="field-hint" id="badgeManagementHint">As tags são criadas no Control e atribuídas individualmente aos perfis. Não há tags predefinidas.</small>
+            <div class="badge-library" id="badgeLibrary" aria-label="Tags administradas pelo Hättz Control"></div>
+          </div>
+
+          <div class="field-group">
+            <label for="editFooter">Texto do rodapé</label>
+            <input class="text-input" id="editFooter" maxlength="90" placeholder="Opcional">
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-media">
+          <div class="field-group">
+            <label>Avatar</label>
+            <label class="upload-box" for="avatarUpload">
+              <span class="upload-symbol">＋</span>
+              <span><strong>Escolher imagem ou vídeo</strong></span>
+            </label>
+            <input type="file" id="avatarUpload" accept="image/png,image/jpeg,image/gif,image/webp,image/apng,image/avif,image/svg+xml,image/bmp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v" hidden>
+            <div class="crop-editor" data-crop="avatar">
+              <div class="crop-editor-heading">
+                <strong>Enquadramento</strong>
+                <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
+              </div>
+              <div class="crop-preview crop-preview-avatar">
+                <img id="avatarCropPreview" alt="Prévia do enquadramento de avatar" hidden>
+                <video id="avatarCropPreviewVideo" muted playsinline loop hidden></video>
+                <div class="crop-preview-empty" id="avatarCropEmpty">Adicione uma mídia para ajustar</div>
+                <div class="crop-safe-window"></div>
+              </div>
+              <div class="crop-controls">
+                <label class="range-field">
+                  <span class="range-heading"><span>Horizontal</span><output id="avatarCropXValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="avatarCropX" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Vertical</span><output id="avatarCropYValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="avatarCropY" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Zoom</span><output id="avatarCropZoomValue">100%</output></span>
+                  <input class="range-input crop-range" type="range" id="avatarCropZoom" min="100" max="250" step="1" value="100">
+                </label>
+              </div>
+              <button class="text-button crop-reset" type="button" data-crop-reset="avatar">Centralizar enquadramento</button>
+            </div>
+            <button class="text-button danger" id="removeAvatar">Remover avatar</button>
+            <label class="switch-row">
+              <span><strong>Pausar vídeo do avatar</strong></span>
+              <input type="checkbox" id="pauseAvatar">
+              <span class="switch"></span>
+            </label>
+          </div>
+
+          <div class="field-group">
+            <label>Banner</label>
+            <label class="upload-box" for="bannerUpload">
+              <span class="upload-symbol">＋</span>
+              <span><strong>Escolher imagem ou vídeo</strong></span>
+            </label>
+            <input type="file" id="bannerUpload" accept="image/png,image/jpeg,image/gif,image/webp,image/apng,image/avif,image/svg+xml,image/bmp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v" hidden>
+            <div class="crop-editor" data-crop="banner">
+              <div class="crop-editor-heading">
+                <strong>Enquadramento</strong>
+                <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
+              </div>
+              <div class="crop-preview crop-preview-banner">
+                <img id="bannerCropPreview" alt="Prévia do enquadramento de banner" hidden>
+                <video id="bannerCropPreviewVideo" muted playsinline loop hidden></video>
+                <div class="crop-preview-empty" id="bannerCropEmpty">Adicione uma mídia para ajustar</div>
+                <div class="crop-safe-window"></div>
+              </div>
+              <div class="crop-controls">
+                <label class="range-field">
+                  <span class="range-heading"><span>Horizontal</span><output id="bannerCropXValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="bannerCropX" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Vertical</span><output id="bannerCropYValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="bannerCropY" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Zoom</span><output id="bannerCropZoomValue">100%</output></span>
+                  <input class="range-input crop-range" type="range" id="bannerCropZoom" min="100" max="250" step="1" value="100">
+                </label>
+              </div>
+              <button class="text-button crop-reset" type="button" data-crop-reset="banner">Centralizar enquadramento</button>
+            </div>
+            <button class="text-button danger" id="removeBanner">Remover banner</button>
+            <label class="switch-row">
+              <span><strong>Pausar banner</strong></span>
+              <input type="checkbox" id="pauseBanner">
+              <span class="switch"></span>
+            </label>
+            <div class="banner-adjustments">
+              <div class="range-field">
+                <div class="range-heading"><label for="bannerHeight">Altura da área visível</label><output id="bannerHeightValue">355 px</output></div>
+                <input class="range-input" type="range" id="bannerHeight" min="240" max="620" step="5" value="355">
+                <button class="text-button field-reset-button" type="button" data-reset-setting="bannerHeight">Restaurar altura original</button>
+              </div>
+            </div>
+            <div class="range-field media-opacity-field">
+              <div class="range-heading"><label for="bannerOpacity">Opacidade da mídia</label><output id="bannerOpacityValue">100%</output></div>
+              <input class="range-input" type="range" id="bannerOpacity" min="0" max="100" value="100">
+              <button class="text-button field-reset-button" type="button" data-reset-setting="bannerOpacity">Restaurar opacidade original</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Fundo do cartão de perfil</label>
+            <label class="upload-box" for="cardBackgroundUpload">
+              <span class="upload-symbol">＋</span>
+              <span><strong>Escolher imagem ou vídeo</strong></span>
+            </label>
+            <input type="file" id="cardBackgroundUpload" accept="image/png,image/jpeg,image/gif,image/webp,image/apng,image/avif,image/svg+xml,image/bmp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v" hidden>
+            <div class="crop-editor" data-crop="cardBackground">
+              <div class="crop-editor-heading">
+                <strong>Enquadramento</strong>
+                <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
+              </div>
+              <div class="crop-preview crop-preview-cardBackground">
+                <img id="cardBackgroundCropPreview" alt="Prévia do enquadramento de fundo do cartão" hidden>
+                <video id="cardBackgroundCropPreviewVideo" muted playsinline loop hidden></video>
+                <div class="crop-preview-empty" id="cardBackgroundCropEmpty">Adicione uma mídia para ajustar</div>
+                <div class="crop-safe-window"></div>
+              </div>
+              <div class="crop-controls">
+                <label class="range-field">
+                  <span class="range-heading"><span>Horizontal</span><output id="cardBackgroundCropXValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="cardBackgroundCropX" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Vertical</span><output id="cardBackgroundCropYValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="cardBackgroundCropY" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Zoom</span><output id="cardBackgroundCropZoomValue">100%</output></span>
+                  <input class="range-input crop-range" type="range" id="cardBackgroundCropZoom" min="100" max="250" step="1" value="100">
+                </label>
+              </div>
+              <button class="text-button crop-reset" type="button" data-crop-reset="cardBackground">Centralizar enquadramento</button>
+            </div>
+            <button class="text-button danger" id="removeCardBackground">Remover fundo do cartão</button>
+            <label class="switch-row">
+              <span><strong>Pausar fundo do cartão</strong></span>
+              <input type="checkbox" id="pauseCardBackground">
+              <span class="switch"></span>
+            </label>
+            <div class="range-field media-opacity-field">
+              <div class="range-heading"><label for="cardBackgroundOpacity">Opacidade da mídia</label><output id="cardBackgroundOpacityValue">100%</output></div>
+              <input class="range-input" type="range" id="cardBackgroundOpacity" min="0" max="100" value="100">
+              <button class="text-button field-reset-button" type="button" data-reset-setting="cardBackgroundOpacity">Restaurar opacidade original</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Fundo da página</label>
+            <label class="upload-box" for="backgroundUpload">
+              <span class="upload-symbol">＋</span>
+              <span><strong>Escolher imagem, GIF ou vídeo para a página</strong></span>
+            </label>
+            <input type="file" id="backgroundUpload" accept="image/png,image/jpeg,image/gif,image/webp,image/apng,image/avif,image/svg+xml,image/bmp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v" hidden>
+            <div class="crop-editor" data-crop="background">
+              <div class="crop-editor-heading">
+                <strong>Enquadramento</strong>
+                <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
+              </div>
+              <div class="crop-preview crop-preview-background">
+                <img id="backgroundCropPreview" alt="Prévia do enquadramento de fundo da página" hidden>
+                <video id="backgroundCropPreviewVideo" muted playsinline loop hidden></video>
+                <div class="crop-preview-empty" id="backgroundCropEmpty">Adicione uma mídia para ajustar</div>
+                <div class="crop-safe-window"></div>
+              </div>
+              <div class="crop-controls">
+                <label class="range-field">
+                  <span class="range-heading"><span>Horizontal</span><output id="backgroundCropXValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="backgroundCropX" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Vertical</span><output id="backgroundCropYValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="backgroundCropY" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Zoom</span><output id="backgroundCropZoomValue">100%</output></span>
+                  <input class="range-input crop-range" type="range" id="backgroundCropZoom" min="100" max="250" step="1" value="100">
+                </label>
+              </div>
+              <button class="text-button crop-reset" type="button" data-crop-reset="background">Centralizar enquadramento</button>
+            </div>
+            <button class="text-button danger" id="removeBackground">Remover fundo animado</button>
+            <label class="switch-row">
+              <span><strong>Pausar fundo da página</strong></span>
+              <input type="checkbox" id="pauseBackground">
+              <span class="switch"></span>
+            </label>
+            <div class="range-field media-opacity-field">
+              <div class="range-heading"><label for="backgroundOpacity">Opacidade da mídia</label><output id="backgroundOpacityValue">34%</output></div>
+              <input class="range-input" type="range" id="backgroundOpacity" min="0" max="100" value="34">
+              <button class="text-button field-reset-button" type="button" data-reset-setting="backgroundOpacity">Restaurar opacidade original</button>
+            </div>
+          </div>
+
+          <label class="switch-row">
+            <span>
+              <strong>Reproduzir vídeos automaticamente</strong>
+            </span>
+            <input type="checkbox" id="animateMedia" checked>
+            <span class="switch"></span>
+          </label>
+
+          <div class="field-group">
+            <label for="avatarFrameSelect">Estilo da moldura</label>
+            <select class="text-input" id="avatarFrameSelect">
+              <option value="none">Sem moldura</option>
+              <option value="amethyst">Amethyst · Elite</option>
+              <optgroup label="Clássicas e ornamentais">
+                <option value="celestial">Celestial</option>
+                <option value="gothic">Gótica</option>
+                <option value="royal">Real</option>
+                <option value="floral">Floral</option>
+                <option value="ornate">Ornamental</option>
+                <option value="dark">Dark</option>
+                <option value="halo">Halo</option>
+                <option value="vintage">Vintage</option>
+              </optgroup>
+            </select>
+            <label for="frameRarity" class="sub-field-label">Raridade visual</label>
+            <select class="text-input" id="frameRarity">
+              <option value="none">Sem raridade</option>
+              <option value="common">Common</option>
+              <option value="rare">Rare</option>
+              <option value="epic">Epic</option>
+              <option value="elite">Elite</option>
+              <option value="legendary">Legendary</option>
+            </select>
+            <label class="switch-row frame-color-toggle">
+              <span><strong>Cor personalizada</strong></span>
+              <input type="checkbox" id="customFrameColorEnabled">
+              <span class="switch"></span>
+            </label>
+            <label class="frame-color-picker" for="customFrameColor">
+              <span>Escolher cor da moldura</span>
+              <input type="color" id="customFrameColor" value="#a78bfa">
+            </label>
+            <button class="text-button field-reset-button" id="resetFrameAppearance" type="button">Restaurar moldura e cor originais</button>
+          </div>
+
+          <label class="switch-row">
+            <span><strong>Efeitos de perfil</strong></span>
+            <input type="checkbox" id="profileEffects" checked>
+            <span class="switch"></span>
+          </label>
+
+          <div class="field-group music-settings">
+            <label>Música e vídeo do perfil</label>
+            <label class="upload-box" for="musicUpload">
+              <span class="upload-symbol">♫</span>
+              <span><strong>Selecionar arquivo de áudio</strong><small>MP3, WAV, OGG, M4A, AAC e FLAC</small></span>
+            </label>
+            <input type="file" id="musicUpload" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus" hidden>
+            <label class="upload-box" for="musicVideoUpload">
+              <span class="upload-symbol">▣</span>
+              <span><strong>Selecionar vídeo</strong><small>MP4, WebM, MOV e OGG vídeo (conforme o navegador)</small></span>
+            </label>
+            <input type="file" id="musicVideoUpload" accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.webm,.mov,.ogv,.m4v" hidden>
+            <label class="upload-box music-bar-background-upload" for="musicBarBackgroundUpload">
+              <span class="upload-symbol">▧</span>
+              <span><strong>Personalizar o fundo da faixa</strong><small>Imagem, GIF, WebP ou vídeo em loop</small></span>
+            </label>
+            <input type="file" id="musicBarBackgroundUpload" accept="image/*,video/mp4,video/webm,video/quicktime,video/ogg,.gif,.webp,.mp4,.webm,.mov,.ogv" hidden>
+            <p class="field-hint">Esse fundo é uma camada decorativa independente: trocar imagem, GIF ou vídeo aqui não substitui nem pausa a música principal.</p>
+            <button class="text-button danger" id="removeMusicBarBackground" type="button">Remover fundo da faixa</button>
+            <div class="crop-editor" data-crop="musicBarBackground">
+              <div class="crop-editor-heading">
+                <strong>Enquadramento do fundo da faixa</strong>
+                <span>Ajuste qual parte da imagem, GIF ou vídeo aparece na janela flutuante</span>
+              </div>
+              <div class="crop-preview crop-preview-musicBarBackground">
+                <img id="musicBarBackgroundCropPreview" alt="Prévia do enquadramento do fundo da faixa" hidden>
+                <video id="musicBarBackgroundCropPreviewVideo" muted playsinline loop hidden></video>
+                <div class="crop-preview-empty" id="musicBarBackgroundCropEmpty">Adicione uma mídia para ajustar</div>
+                <div class="crop-safe-window"></div>
+              </div>
+              <div class="crop-controls">
+                <label class="range-field">
+                  <span class="range-heading"><span>Horizontal</span><output id="musicBarBackgroundCropXValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="musicBarBackgroundCropX" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Vertical</span><output id="musicBarBackgroundCropYValue">50%</output></span>
+                  <input class="range-input crop-range" type="range" id="musicBarBackgroundCropY" min="0" max="100" value="50">
+                </label>
+                <label class="range-field">
+                  <span class="range-heading"><span>Zoom</span><output id="musicBarBackgroundCropZoomValue">100%</output></span>
+                  <input class="range-input crop-range" type="range" id="musicBarBackgroundCropZoom" min="100" max="300" step="1" value="100">
+                </label>
+              </div>
+              <button class="text-button crop-reset" type="button" data-crop-reset="musicBarBackground">Restaurar enquadramento original</button>
+            </div>
+            <div class="range-field media-opacity-field">
+              <div class="range-heading"><label for="musicBarBackgroundOpacity">Opacidade do fundo da faixa</label><output id="musicBarBackgroundOpacityValue">24%</output></div>
+              <input class="range-input" type="range" id="musicBarBackgroundOpacity" min="0" max="100" value="24">
+              <button class="text-button field-reset-button" type="button" data-reset-setting="musicBarBackgroundOpacity">Restaurar opacidade original</button>
+            </div>
+            <div class="player-window-controls">
+              <div class="range-field">
+                <label class="range-heading" for="musicPlayerWidth"><span>Largura da janela</span><output id="musicPlayerWidthValue">360 px</output></label>
+                <input class="range-input" type="range" id="musicPlayerWidth" min="220" max="620" step="10" value="360">
+                <button class="text-button field-reset-button" type="button" data-reset-setting="musicPlayerWidth">Restaurar largura</button>
+              </div>
+              <div class="range-field">
+                <label class="range-heading" for="musicPlayerHeight"><span>Altura da janela</span><output id="musicPlayerHeightValue">64 px</output></label>
+                <input class="range-input" type="range" id="musicPlayerHeight" min="56" max="220" step="2" value="64">
+                <button class="text-button field-reset-button" type="button" data-reset-setting="musicPlayerHeight">Restaurar altura</button>
+              </div>
+              <p class="field-hint">Também pode arrastar a faixa para reposicionar e usar o canto inferior direito para redimensionar no computador.</p>
+              <div class="player-placement-actions">
+                <button class="text-button" id="resetMusicPlayerPlacement" type="button">Restaurar posição e tamanho da janela</button>
+              </div>
+            </div>
+            <p class="field-hint" id="musicBarBackgroundName">Nenhum fundo personalizado selecionado.</p>
+            <p class="field-hint" id="musicLocalStatus">Os arquivos ficam salvos somente neste navegador. A reprodução é em loop; use a faixa flutuante para controlar a mídia.</p>
+            <a class="text-button music-external-link" href="https://savetheclip.app/pt/download-video-from-link" target="_blank" rel="noopener noreferrer">↗ Abrir conversor externo de links (MP4 / MP3)</a>
+            <p class="field-hint">O conversor abre em outra aba. Use apenas conteúdo que você tenha direito ou autorização para salvar.</p>
+            <div class="music-actions">
+              <button class="text-button" id="previewMusic" type="button">Reproduzir / pausar</button>
+              <button class="text-button" id="downloadMusic" type="button" disabled>Baixar arquivo original</button>
+              <button class="text-button danger" id="removeMusic" type="button">Remover mídia</button>
+            </div>
+            <label class="range-label" for="musicVolume">Volume <span id="musicVolumeValue">12%</span></label>
+            <input type="range" id="musicVolume" min="0" max="100" value="12">
+            <button class="text-button field-reset-button" type="button" data-reset-setting="volume">Restaurar volume original</button>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-design">
+          <div class="field-group appearance-reset-group">
+            <strong>Restaurar personalizações</strong>
+            <p class="field-hint">Volta cores, transparências, enquadramentos, molduras, divisórias, tipografia e posição/tamanho do player ao padrão, sem apagar seus arquivos, nome ou conteúdo.</p>
+            <button class="text-button danger" id="resetAppearance" type="button">Restaurar todo o visual original</button>
+          </div>
+          <div class="field-group">
+            <label>Temas prontos</label>
+            <div class="theme-grid">
+              <button class="theme-option" data-theme="dark" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#0b0a10;--swatch-grad:#292333;--swatch-accent:#a78bfa"></span>
+                <span>Obsidian</span>
+              </button>
+              <button class="theme-option" data-theme="midnight" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#080e19;--swatch-grad:#1b3150;--swatch-accent:#75b8f5"></span>
+                <span>Midnight</span>
+              </button>
+              <button class="theme-option" data-theme="purple" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#100b18;--swatch-grad:#49345e;--swatch-accent:#c19bfa"></span>
+                <span>Lavender</span>
+              </button>
+              <button class="theme-option" data-theme="gold" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#100d09;--swatch-grad:#59432b;--swatch-accent:#d6ae68"></span>
+                <span>Royal</span>
+              </button>
+              <button class="theme-option" data-theme="crimson" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#16090e;--swatch-grad:#542033;--swatch-accent:#ef7899"></span>
+                <span>Crimson</span>
+              </button>
+              <button class="theme-option" data-theme="ocean" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#061217;--swatch-grad:#164653;--swatch-accent:#54d6d0"></span>
+                <span>Abyss</span>
+              </button>
+              <button class="theme-option" data-theme="forest" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#09130f;--swatch-grad:#244c39;--swatch-accent:#8bd6a4"></span>
+                <span>Evergreen</span>
+              </button>
+              <button class="theme-option" data-theme="ice" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#0b121b;--swatch-grad:#2b4964;--swatch-accent:#9bd8ff"></span>
+                <span>Glacier</span>
+              </button>
+              <button class="theme-option" data-theme="rose" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#170d14;--swatch-grad:#593044;--swatch-accent:#f0a3c7"></span>
+                <span>Rosewood</span>
+              </button>
+              <button class="theme-option" data-theme="ember" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#17100b;--swatch-grad:#654027;--swatch-accent:#f3a45f"></span>
+                <span>Ember</span>
+              </button>
+              <button class="theme-option" data-theme="mono" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#101010;--swatch-grad:#353535;--swatch-accent:#e5e5e5"></span>
+                <span>Monochrome</span>
+              </button>
+              <button class="theme-option" data-theme="cyber" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#080b14;--swatch-grad:#202c4d;--swatch-accent:#68f0d2"></span>
+                <span>Neon Circuit</span>
+              </button>
+              <button class="theme-option" data-theme="wine" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#160a12;--swatch-grad:#4d1d34;--swatch-accent:#d88ab2"></span>
+                <span>Bordeaux</span>
+              </button>
+              <button class="theme-option" data-theme="sand" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#17130e;--swatch-grad:#594a35;--swatch-accent:#d9bd86"></span>
+                <span>Desert</span>
+              </button>
+              <button class="theme-option" data-theme="amethyst" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#100b19;--swatch-grad:#382451;--swatch-accent:#ad8cff"></span>
+                <span>Amethyst</span>
+              </button>
+              <button class="theme-option" data-theme="steel" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#0b1017;--swatch-grad:#303e50;--swatch-accent:#9eb8d6"></span>
+                <span>Graphite Blue</span>
+              </button>
+              <button class="theme-option" data-theme="obsidianRose" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#120b10;--swatch-grad:#432331;--swatch-accent:#e6a0bd"></span>
+                <span>Obsidian Rose</span>
+              </button>
+              <button class="theme-option" data-theme="silver" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#101216;--swatch-grad:#39404a;--swatch-accent:#c7d0dc"></span>
+                <span>Silver</span>
+              </button>
+              <button class="theme-option" data-theme="violetNight" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#0d0917;--swatch-grad:#30204d;--swatch-accent:#b79cff"></span>
+                <span>Violet Night</span>
+              </button>
+              <button class="theme-option" data-theme="arctic" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#07131a;--swatch-grad:#1b3b4c;--swatch-accent:#8de0ef"></span>
+                <span>Arctic</span>
+              </button>
+              <button class="theme-option" data-theme="bloodMoon" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#15090b;--swatch-grad:#4c1b22;--swatch-accent:#e36d79"></span>
+                <span>Blood Moon</span>
+              </button>
+              <button class="theme-option" data-theme="sage" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#0c120f;--swatch-grad:#2d4437;--swatch-accent:#a7c7a8"></span>
+                <span>Sage</span>
+              </button>
+              <button class="theme-option" data-theme="bronze" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#15100b;--swatch-grad:#57402b;--swatch-accent:#d5a76b"></span>
+                <span>Bronze</span>
+              </button>
+              <button class="theme-option" data-theme="ultramarine" type="button">
+                <span class="theme-swatch" style="--swatch-bg:#080d1b;--swatch-grad:#202e5a;--swatch-accent:#8daaff"></span>
+                <span>Ultramarine</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field-group theme-library-group">
+            <label for="savedThemeSelect">Minha biblioteca de temas</label>
+            <div class="theme-save-row">
+              <input class="text-input" id="savedThemeName" maxlength="24" placeholder="Nome do tema">
+              <button class="text-button" id="saveTheme">Salvar tema</button>
+            </div>
+            <div class="theme-save-row">
+              <select class="text-input" id="savedThemeSelect"><option value="">Selecionar tema salvo</option></select>
+              <button class="text-button" id="applySavedTheme">Aplicar</button>
+              <button class="text-button danger" id="deleteSavedTheme">Excluir</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Personalizar cores</label>
+            <div class="color-grid">
+              <div class="color-setting"><label>Fundo <input type="color" id="colorBackground"></label><button class="mini-reset" type="button" data-reset-color="background" aria-label="Restaurar cor de fundo" title="Restaurar cor original">↺</button></div>
+              <div class="color-setting"><label>Gradiente <input type="color" id="colorGradient"></label><button class="mini-reset" type="button" data-reset-color="gradient" aria-label="Restaurar cor do gradiente" title="Restaurar cor original">↺</button></div>
+              <div class="color-setting"><label>Cards <input type="color" id="colorCard"></label><button class="mini-reset" type="button" data-reset-color="card" aria-label="Restaurar cor dos cards" title="Restaurar cor original">↺</button></div>
+              <div class="color-setting"><label>Destaque <input type="color" id="colorAccent"></label><button class="mini-reset" type="button" data-reset-color="accent" aria-label="Restaurar cor de destaque" title="Restaurar cor original">↺</button></div>
+              <div class="color-setting"><label>Texto <input type="color" id="colorText"></label><button class="mini-reset" type="button" data-reset-color="text" aria-label="Restaurar cor do texto" title="Restaurar cor original">↺</button></div>
+              <div class="color-setting"><label>Bordas <input type="color" id="colorBorder"></label><button class="mini-reset" type="button" data-reset-color="border" aria-label="Restaurar cor das bordas" title="Restaurar cor original">↺</button></div>
+            </div>
+            <div class="design-extra-grid">
+              <div class="range-field"><label for="gradientIntensity">Intensidade do gradiente</label><input type="range" id="gradientIntensity" min="0" max="100" value="55"><button class="text-button field-reset-button" type="button" data-reset-setting="gradientIntensity">Restaurar</button></div>
+              <div class="range-field"><label for="cardRadius">Arredondamento dos cards</label><input type="range" id="cardRadius" min="8" max="32" value="18"><button class="text-button field-reset-button" type="button" data-reset-setting="cardRadius">Restaurar</button></div>
+            </div>
+            <button class="primary-button full-button" id="applyCustomTheme">Aplicar cores</button>
+            <button class="text-button field-reset-button" id="resetThemeColors" type="button">Restaurar as seis cores originais</button>
+          </div>
+
+          <div class="field-group divider-settings">
+            <label>Divisória entre seções</label>
+            <select class="text-input" id="dividerStyle">
+              <option value="none">Sem divisória</option>
+              <option value="minimal">Minimalista</option>
+              <option value="double">Linha dupla</option>
+              <option value="dotted">Pontilhada</option>
+              <option value="ornamental">Ornamental</option>
+              <option value="celestial">Celestial</option>
+              <option value="gothic">Gótica</option>
+              <option value="royal">Real</option>
+            </select>
+            <label class="switch-row">
+              <span><strong>Personalizar cor da divisória</strong></span>
+              <input type="checkbox" id="dividerCustomColorEnabled">
+              <span class="switch"></span>
+            </label>
+            <label class="frame-color-picker" for="dividerColor">
+              <span>Cor da linha</span>
+              <input type="color" id="dividerColor" value="#a78bfa">
+            </label>
+            <button class="text-button field-reset-button" id="resetDividerAppearance" type="button">Restaurar divisória e cor originais</button>
+          </div>
+
+          <div class="field-group">
+            <label for="fontFamily">Tipografia</label>
+            <select class="text-input" id="fontFamily">
+              <option value="DM Sans">DM Sans</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Playfair Display">Playfair Display</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Manrope">Manrope</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Space Grotesk">Space Grotesk</option>
+              <option value="Lora">Lora</option>
+              <option value="Cormorant Garamond">Cormorant Garamond</option>
+              <option value="Cinzel">Cinzel</option>
+            </select>
+            <button class="text-button field-reset-button" id="resetFont" type="button">Restaurar tipografia original</button>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-content">
+          <div class="field-group section-config">
+            <label>Apresentação das seções</label>
+            <div class="section-config-grid">
+              <div class="field-group">
+                <label for="editStatsTitle">Título da primeira seção</label>
+                <input class="text-input" id="editStatsTitle" maxlength="28" placeholder="Em evidência">
+                <label for="editStatsSubtitle">Subtítulo</label>
+                <input class="text-input" id="editStatsSubtitle" maxlength="70" placeholder="Subtítulo (opcional)">
+              </div>
+              <div class="field-group">
+                <label for="editDetailsTitle">Título da segunda seção</label>
+                <input class="text-input" id="editDetailsTitle" maxlength="28" placeholder="Um pouco sobre mim">
+                <label for="editDetailsSubtitle">Subtítulo</label>
+                <input class="text-input" id="editDetailsSubtitle" maxlength="70" placeholder="Subtítulo (opcional)">
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section-title">
+            <div>
+              <h3>Itens em evidência</h3>
+            </div>
+            <button class="add-button" id="addStat">＋ Adicionar item</button>
+          </div>
+
+          <datalist id="statPresets">
+            <option value="Em foco"></option><option value="Atividade"></option>
+            <option value="Interesse"></option><option value="Personalizado"></option>
+          </datalist>
+          <div class="dynamic-editor" id="statsEditor"></div>
+
+          <div class="editor-separator"></div>
+
+          <div class="editor-section-title">
+            <div>
+              <h3>Informações do perfil</h3>
+            </div>
+            <button class="add-button" id="addDetail">＋ Adicionar detalhe</button>
+          </div>
+
+          <datalist id="detailPresets">
+            <option value="Informação"></option><option value="Preferência"></option>
+            <option value="Referência"></option><option value="Link"></option>
+            <option value="Personalizado"></option>
+          </datalist>
+          <div class="dynamic-editor" id="detailsEditor"></div>
+
+          <p class="editor-footnote">
+            Você pode deixar os valores vazios. Os títulos continuam aparecendo no perfil.
+          </p>
+        </section>
+      </div>
+
+      <footer class="modal-footer">
+        <div class="backup-actions">
+          <button class="text-button" id="exportProfile">Exportar backup</button>
+          <button class="text-button" id="importProfile">Importar backup</button>
+          <input type="file" id="importProfileFile" accept="application/json,.json" hidden>
+        </div>
+        <div class="modal-main-actions">
+          <button class="text-button danger" id="resetProfile">Restaurar padrão</button>
+          <button class="primary-button save-button" id="saveProfile">Salvar alterações</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+
+  <div class="modal-backdrop share-modal-backdrop" id="shareModal" aria-hidden="true">
+    <section class="share-modal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+      <header class="share-modal-header">
+        <div>
+          <span class="share-eyebrow">HÄTTZ SHARE</span>
+          <h2 id="shareModalTitle">Compartilhar perfil</h2>
+        </div>
+        <button class="close-button" id="closeShareModal" type="button" aria-label="Fechar">×</button>
+      </header>
+      <div class="share-modal-body">
+        <p class="share-intro">Publique uma cópia do perfil para que qualquer pessoa consiga visualizá-lo em outro navegador. O código público nunca permite editar.</p>
+        <div class="share-api-status" id="shareApiStatus">Verificando configuração da API...</div>
+        <button class="primary-button share-publish-button" id="publishProfileButton" type="button">Publicar / atualizar perfil</button>
+        <p class="share-publish-status" id="sharePublishStatus" role="status" aria-live="polite">Seu perfil continua salvo localmente até ser publicado.</p>
+
+        <div class="share-result-panel" id="shareResultPanel" hidden>
+          <div class="share-field">
+            <label for="shareCodeOutput">Código público</label>
+            <div class="share-input-action">
+              <input class="text-input" id="shareCodeOutput" type="text" readonly>
+              <button class="secondary-button" id="copyShareCode" type="button">Copiar</button>
+            </div>
+          </div>
+          <div class="share-field">
+            <label for="shareLinkOutput">Link para abrir o perfil</label>
+            <div class="share-input-action">
+              <input class="text-input" id="shareLinkOutput" type="text" readonly>
+              <button class="secondary-button" id="copyShareLink" type="button">Copiar</button>
+            </div>
+          </div>
+          <div class="share-owner-panel" id="shareOwnerPanel" hidden>
+            <label for="shareOwnerTokenOutput">Chave privada de edição</label>
+            <div class="share-input-action">
+              <input class="text-input" id="shareOwnerTokenOutput" type="password" readonly autocomplete="off">
+              <button class="secondary-button" id="copyShareOwnerToken" type="button">Copiar chave</button>
+            </div>
+            <small>Guarde esta chave num local seguro. Ela é diferente do código público e é necessária para atualizar ou despublicar o perfil neste navegador.</small>
+          </div>
+          <button class="text-button danger share-unpublish" id="unpublishProfileButton" type="button">Despublicar perfil</button>
+        </div>
+
+        <div class="share-divider"><span>OU</span></div>
+        <div class="share-field">
+          <label for="shareLookupCode">Já tem um código de perfil?</label>
+          <div class="share-input-action">
+            <input class="text-input" id="shareLookupCode" type="text" maxlength="16" placeholder="HTZ-ABCDE-FGHIJ" autocomplete="off">
+            <button class="secondary-button" id="openSharedProfile" type="button">Abrir</button>
+          </div>
+          <small>O perfil abre em uma nova aba, somente para visualização.</small>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="share-config.js"></script>
+  <script src="core/hattz-core.js"></script>
+  <script src="core/profile-contract.js"></script>
+  <script src="maintenance.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

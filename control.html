@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09090d">
+  <title>Hättz Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="core/design-tokens.css">
+  <link rel="stylesheet" href="control.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <main class="shell">
+    <section id="loginView" class="login-wrap">
+      <div class="login-card glass">
+        <div class="brand-mark">H<span>✦</span></div>
+        <p class="eyebrow">CENTRAL ADMINISTRATIVA</p>
+        <h1>Hättz <span>Control</span></h1>
+        <p class="muted">Acesso restrito ao administrador principal.</p>
+        <form id="loginForm">
+          <label for="adminPassword">Chave administrativa</label>
+          <input id="adminPassword" type="password" autocomplete="current-password" minlength="24" required placeholder="Digite sua chave administrativa">
+          <button class="primary full" type="submit">Entrar no Control <span>↗</span></button>
+        </form>
+        <p class="login-note">A sessão é temporária e encerrada ao fechar esta aba.</p>
+      </div>
+    </section>
+
+    <section id="appView" hidden>
+      <header class="topbar glass">
+        <a class="brand" href="./control.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Control</b><small>ADMIN CONSOLE</small></span></a>
+        <div class="top-actions"><span class="secure-label"><i></i> Sessão protegida</span><button id="logoutButton" class="quiet-button">Sair <span>↗</span></button></div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar glass">
+          <p class="eyebrow">WORKSPACE</p>
+          <button class="nav-item active" data-view="overview"><span>◫</span> Visão geral</button>
+          <button class="nav-item" data-view="profiles"><span>▤</span> Perfis na nuvem</button>
+          <button class="nav-item" data-view="ecosystem"><span>✧</span> Ecossistema</button>
+          <button class="nav-item" data-view="storage"><span>◩</span> Armazenamento</button>
+          <button class="nav-item" data-view="maintenance"><span>◷</span> Manutenção</button>
+          <button class="nav-item" data-view="ip"><span>⌁</span> IP Intelligence</button>
+          <button class="nav-item" data-view="audit"><span>≋</span> Auditoria</button>
+          <div class="sidebar-foot"><span class="live-dot"></span> Hättz Share API</div>
+        </aside>
+
+        <section class="content-area">
+          <section class="view active" id="view-overview">
+            <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>Visão geral</h1><p class="muted">Estado atual da infraestrutura Hättz Share.</p></div><button id="refreshOverview" class="quiet-button">↻ Atualizar</button></div>
+            <div class="metric-grid" id="overviewMetrics"><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article></div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">SISTEMA</p><h2>Estado operacional</h2></div><span class="status-pill" id="apiStatus">Verificando</span></div><p class="muted" id="systemSummary">Consultando armazenamento e perfis...</p><div class="mini-progress"><span id="overviewStorageBar"></span></div><div class="panel-foot"><span>Uso total</span><strong id="overviewStorageText">—</strong></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CONTROLE</p><h2>Manutenção</h2></div><span class="status-pill" id="maintenanceStatus">Desativada</span></div><p class="muted" id="maintenanceSummary">O acesso público está liberado.</p><button class="secondary" data-open-view="maintenance">Configurar manutenção <span>↗</span></button></article>
+            </div>
+          </section>
+
+          <section class="view" id="view-profiles">
+            <div class="page-heading"><div><p class="eyebrow">CLOUD DATABASE</p><h1>Perfis na nuvem</h1><p class="muted">Pesquise, restaure, suspenda, reative ou exclua perfis e suas mídias.</p></div><button id="reloadProfiles" class="quiet-button">↻ Atualizar</button></div>
+            <div class="panel glass">
+              <div class="toolbar"><input id="profileSearch" class="search-input" type="search" placeholder="Buscar por código ou conteúdo do perfil"><button id="searchProfiles" class="secondary">Buscar</button></div>
+              <div class="selection-toolbar"><span id="selectionCount">Nenhum perfil selecionado</span><div><button id="suspendSelected" class="secondary" disabled>Suspender</button><button id="activateSelected" class="secondary" disabled>Reativar</button><button id="deleteSelected" class="danger" disabled>Excluir selecionados</button></div></div>
+              <div class="table-wrap"><table><thead><tr><th><input id="selectAllProfiles" type="checkbox" aria-label="Selecionar todos desta página"></th><th>Perfil</th><th>Armazenamento</th><th>Mídias</th><th>Estado</th><th>Atualizado</th><th>Ações</th></tr></thead><tbody id="profilesTable"><tr><td colspan="7" class="empty">Carregando perfis...</td></tr></tbody></table></div>
+              <div class="pagination"><span id="profilesPageLabel">Página 1</span><div><button id="previousPage" class="quiet-button" disabled>← Anterior</button><button id="nextPage" class="quiet-button" disabled>Próxima →</button></div></div>
+            </div>
+            <p class="warning-note">Os perfis oficiais são protegidos pelo servidor e não podem ser excluídos nem suspensos.</p>
+          </section>
+
+          <section class="view" id="view-ecosystem">
+            <div class="page-heading"><div><p class="eyebrow">HÄTTZ ECOSYSTEM</p><h1>Ecossistema</h1><p class="muted">Crie cargos, tags e molduras do zero e escolha exatamente quais perfis recebem cada item.</p></div><button id="reloadEcosystem" class="quiet-button">↻ Atualizar</button></div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">STUDIO PERMISSIONS</p><h2>Cargos autorizados ao editor de tema</h2></div></div><p class="muted">Selecione um ou mais cargos. Apenas os perfis que possuírem pelo menos um deles poderão editar o próprio tema no Studio.</p><div id="studioAccessRoles" class="role-list"><p class="empty">Carregando cargos...</p></div><button id="saveStudioAccess" class="secondary" type="button">Salvar permissões do Studio</button></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar ou atualizar item</h2></div></div>
+                <div class="field"><label for="catalogKind">Tipo</label><select id="catalogKind"><option value="badges">Tag</option><option value="frames">Moldura</option></select></div>
+                <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: early-supporter"></div>
+                <div class="field"><label for="catalogName">Nome</label><input id="catalogName" maxlength="64" placeholder="Nome exibido"></div>
+                <div class="field"><label for="catalogDescription">Descrição</label><textarea id="catalogDescription" maxlength="240" rows="2"></textarea></div>
+                <div class="field"><label for="catalogRarity">Raridade</label><select id="catalogRarity"><option value="1">Comum</option><option value="2">Incomum</option><option value="3">Raro</option><option value="4">Épico</option><option value="5">Lendário</option><option value="6">Mítico</option><option value="7">Celestial</option><option value="8">Transcendente</option></select></div>
+                <div class="field" id="catalogBadgeFields"><label for="catalogCategory">Categoria</label><input id="catalogCategory" maxlength="32" value="" placeholder="Categoria personalizada"><label for="catalogIcon">Ícone (emoji ou PNG)</label><input id="catalogIcon" maxlength="4" value="" placeholder="✦"><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o emoji.</small></div>
+                <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
+              </article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PROFILE BENEFITS</p><h2>Gerenciar benefícios</h2></div></div>
+                <div class="field"><label for="entitlementCode">Código do perfil</label><input id="entitlementCode" placeholder="HTZ-ABCDE-FGHIJ"></div>
+                <div class="field"><label for="vipEnabled">Acesso VIP</label><select id="vipEnabled"><option value="true">Conceder / manter ativo</option><option value="false">Revogar</option></select></div>
+                <div class="field"><label for="vipExpiry">Validade (opcional)</label><input id="vipExpiry" type="datetime-local"></div>
+                <button id="saveVip" class="secondary">Atualizar VIP</button><p class="muted">Benefício aplicado no backend: limite individual de mídia de 500 MiB enquanto o VIP estiver ativo (250 MiB no plano padrão). O teto global do Hättz não muda.</p>
+                <div class="field"><label for="grantBadgeId">Tag</label><select id="grantBadgeId"></select><button id="grantBadge" class="secondary">Conceder tag</button><button id="revokeBadge" class="quiet-button">Revogar tag</button></div>
+                <div class="field"><label for="grantFrameId">Moldura</label><select id="grantFrameId"></select><button id="grantFrame" class="secondary">Conceder moldura</button><button id="revokeFrame" class="quiet-button">Revogar moldura</button></div>
+                <div class="field role-manager">
+                  <label for="grantRoleId">Cargo do perfil</label>
+                  <select id="grantRoleId"><option value="">Carregando cargos...</option></select>
+                  <label for="roleExpiry">Validade do cargo (opcional)</label>
+                  <input id="roleExpiry" type="datetime-local">
+                  <div class="inline-actions"><button id="grantRole" class="secondary" type="button">Conceder cargo</button><button id="revokeRole" class="quiet-button" type="button">Revogar cargo</button><button id="loadProfileRoles" class="quiet-button" type="button">Ver cargos</button></div>
+                  <div id="profileRoleList" class="role-list"><p class="empty">Informe um perfil para consultar os cargos.</p></div>
+                  <div class="inline-actions"><button id="loadProfileBadges" class="quiet-button" type="button">Ver tags e molduras atribuídas</button></div>
+                  <div id="profileBadgeList" class="role-list"><p class="empty">As tags e molduras atribuídas aparecerão aqui.</p></div>
+                </div>
+                <p class="muted">VIP é um benefício separado dos cargos. Cargos administrativos e reservados não aparecem nesta lista.</p>
+                <p class="muted">Todas as operações são validadas no Worker e registradas na auditoria.</p>
+              </article>
+            </div>
+            <article class="panel glass role-design-panel">
+              <div class="panel-heading"><div><p class="eyebrow">SPECIAL IDENTITIES</p><h2>Cargos especiais e temas exclusivos</h2><p class="muted">Crie cargos personalizados com identidade visual própria. Depois, conceda-os individualmente pelo código do perfil.</p></div></div>
+              <div class="role-design-grid">
+                <div class="field"><label for="roleDefinitionId">ID único</label><input id="roleDefinitionId" maxlength="48" placeholder="ex.: celestial-artist"></div>
+                <div class="field"><label for="roleDefinitionLabel">Nome do cargo</label><input id="roleDefinitionLabel" maxlength="40" placeholder="Celestial Artist"></div>
+                <div class="field"><label for="roleDefinitionColor">Cor do cargo</label><input id="roleDefinitionColor" type="color" value="#b99af0"></div>
+                <div class="field"><label for="roleDefinitionDescription">Descrição</label><input id="roleDefinitionDescription" maxlength="180" placeholder="Identidade especial da comunidade"></div>
+              </div>
+              <p class="eyebrow role-theme-eyebrow">TEMA EXCLUSIVO DO CARGO</p>
+              <div class="role-theme-colors">
+                <label>Fundo <input id="roleThemeBackground" type="color" value="#0b0a10"></label>
+                <label>Gradiente <input id="roleThemeGradient" type="color" value="#292333"></label>
+                <label>Cartões <input id="roleThemeCard" type="color" value="#14121b"></label>
+                <label>Destaque <input id="roleThemeAccent" type="color" value="#a78bfa"></label>
+                <label>Texto <input id="roleThemeText" type="color" value="#f4f0fa"></label>
+                <label>Bordas <input id="roleThemeBorder" type="color" value="#302a3a"></label>
+              </div>
+              <div class="inline-actions"><button id="saveRoleDefinition" class="primary" type="button">Salvar cargo especial</button><button id="newRoleDefinition" class="quiet-button" type="button">Novo cargo</button></div>
+              <div id="roleDefinitionList" class="role-definition-list"><p class="empty">Carregando cargos...</p></div>
+              <p class="muted">Os temas são aplicados somente ao perfil que recebeu o cargo ativo. Cargos administrativos e VIP não podem ser criados por este editor.</p>
+            </article>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">ROLE ASSIGNMENTS</p><h2>Quem recebeu cada cargo ou tag</h2><p class="muted">Lista de atribuições ativas, com perfil, cargo e validade.</p></div><button id="reloadRoleAssignments" class="quiet-button" type="button">↻ Atualizar</button></div><div id="roleAssignmentsList" class="audit-list"><p class="empty">Carregando atribuições...</p></div></article>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Tags e molduras disponíveis</h2></div></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div></article>
+          </section>
+
+          <section class="view" id="view-storage">
+            <div class="page-heading"><div><p class="eyebrow">CAPACITY</p><h1>Armazenamento</h1><p class="muted">Consumo das mídias registradas no D1, com verificação dos contadores.</p></div><button id="reloadStorage" class="quiet-button">↻ Atualizar</button></div>
+            <article class="panel glass storage-panel"><div class="storage-head"><div><p class="eyebrow">USO GLOBAL</p><h2 id="storageUsed">—</h2><p class="muted" id="storageCapacity">—</p></div><strong id="storagePercent">—</strong></div><div class="large-progress"><span id="storageBar"></span></div><div class="storage-stats"><div><span>Espaço restante</span><strong id="storageRemaining">—</strong></div><div><span>Perfis existentes</span><strong id="storageProfiles">—</strong></div><div><span>Estimativa de perfis adicionais</span><strong id="storageEstimate">—</strong></div></div><p id="storageIntegrity" class="muted" role="status">O consumo considera mídias registradas no banco.</p></article>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">TOP CONSUMERS</p><h2>Maiores consumidores</h2></div></div><div id="largestProfiles" class="largest-list"></div></article>
+          </section>
+
+          <section class="view" id="view-maintenance">
+            <div class="page-heading"><div><p class="eyebrow">REMOTE CONTROL</p><h1>Modo de manutenção</h1><p class="muted">O bloqueio é aplicado pela API, não apenas pelo site.</p></div></div>
+            <article class="panel glass maintenance-panel"><div class="maintenance-toggle-row"><div><h2>Ativar manutenção global</h2><p class="muted">Perfis oficiais e códigos liberados continuam acessíveis.</p></div><label class="switch"><input id="maintenanceEnabled" type="checkbox"><span></span></label></div><div class="field"><label for="maintenanceTitle">Título</label><input id="maintenanceTitle" maxlength="80" value="Em manutenção"></div><div class="field"><label for="maintenanceMessage">Mensagem</label><textarea id="maintenanceMessage" rows="3" maxlength="500">Voltamos em breve.</textarea></div><div class="field"><label for="maintenanceAllowlist">Códigos liberados (um por linha)</label><textarea id="maintenanceAllowlist" rows="3" placeholder="HTZ-ABCDE-FGHIJ"></textarea><small>Máximo de 100 códigos. Os dois perfis oficiais já são liberados automaticamente.</small></div>
+              <div class="maintenance-editor-head"><div><p class="eyebrow">APARÊNCIA</p><h2>Fundo da manutenção</h2><p class="muted">Personalize a tela pública sem alterar o layout do site.</p></div><span class="editor-chip">LIVE PREVIEW</span></div>
+              <div class="maintenance-editor-grid">
+                <div class="maintenance-controls">
+                  <div class="field"><label for="maintenanceBackgroundFile">Enviar imagem ou vídeo</label><input id="maintenanceBackgroundFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"><small>JPG, PNG, WEBP, GIF, MP4, WEBM ou MOV · até 75 MB. O arquivo fica no Supabase Storage.</small><button type="button" id="uploadMaintenanceBackground" class="secondary">Enviar fundo</button></div>
+                  <div class="field"><label for="maintenanceBackgroundUrl">Ou usar URL HTTPS</label><input id="maintenanceBackgroundUrl" type="url" placeholder="https://..."><small>Use um link direto para uma imagem ou vídeo.</small></div>
+                  <div class="field"><label for="maintenanceBackgroundType">Tipo de fundo</label><select id="maintenanceBackgroundType"><option value="color">Gradiente escuro</option><option value="image">Imagem</option><option value="video">Vídeo</option></select></div>
+                  <div class="field"><label for="maintenanceAccent">Cor de destaque</label><input id="maintenanceAccent" type="color" value="#9b7add"></div>
+                  <div class="field range-field"><label for="maintenanceOverlay">Escurecimento <output id="maintenanceOverlayValue">62%</output></label><input id="maintenanceOverlay" type="range" min="0" max="95" value="62"></div>
+                  <div class="field range-field"><label for="maintenanceBlur">Desfoque <output id="maintenanceBlurValue">0 px</output></label><input id="maintenanceBlur" type="range" min="0" max="30" value="0"></div>
+                  <div class="field"><button type="button" id="clearMaintenanceBackground" class="quiet-button">Remover mídia de fundo</button></div>
+                </div>
+                <div class="maintenance-preview-wrap"><div id="maintenancePreview" class="maintenance-preview"><div class="maintenance-preview-shade"></div><div class="maintenance-preview-card"><span class="preview-mark">H✦</span><small>HÄTTZ SHARE</small><h3 id="maintenancePreviewTitle">Em manutenção</h3><p id="maintenancePreviewMessage">Voltamos em breve.</p><span class="preview-foot">VOLTAREMOS EM BREVE</span></div></div><small>Prévia aproximada da tela exibida aos visitantes.</small></div>
+              </div>
+              <button id="saveMaintenance" class="primary">Salvar configuração <span>↗</span></button></article>
+          </section>
+
+          <section class="view" id="view-ip">
+            <div class="page-heading"><div><p class="eyebrow">RESTRICTED INTELLIGENCE</p><h1>IP Intelligence</h1><p class="muted">Dados sensíveis visíveis somente nesta sessão de administrador principal.</p></div><button id="reloadIp" class="quiet-button">↻ Atualizar</button></div>
+            <div class="privacy-banner"><span>⌁</span><div><strong>Acesso exclusivo</strong><p>IPs são dados pessoais: ficam criptografados e acessíveis somente ao proprietário. O painel mostra sinais técnicos e localização aproximada; não tenta descobrir identidade, endereço residencial ou outros dados privados.</p></div></div>
+            <article class="panel glass"><div class="toolbar"><input id="ipProfileFilter" class="search-input" placeholder="Filtrar por código de perfil"><button id="searchIp" class="secondary">Consultar</button><button id="clearIpEvents" class="quiet-button danger-action" type="button">⌫ Limpar histórico</button></div><p class="muted" id="vpnProviderStatus">Sistema, navegador e dispositivo são estimados pelo user-agent. VPN/proxy/Tor dependem do provedor de reputação configurado.</p><div class="table-wrap"><table><thead><tr><th>IP</th><th>Perfil</th><th>Localização</th><th>ISP / ASN</th><th>Dispositivo / modelo</th><th>Navegador</th><th>Sistema operacional</th><th>VPN / Proxy / Tor</th><th>Atividade</th><th>Evento</th></tr></thead><tbody id="ipTable"><tr><td colspan="10" class="empty">Carregando eventos...</td></tr></tbody></table></div></article>
+          </section>
+
+          <section class="view" id="view-audit">
+            <div class="page-heading"><div><p class="eyebrow">SECURITY LOG</p><h1>Auditoria</h1><p class="muted">Histórico de ações administrativas e tentativas de acesso.</p></div><button id="reloadAudit" class="quiet-button">↻ Atualizar</button></div>
+            <article class="panel glass">
+              <div class="audit-toolbar"><p class="muted">Retenção automática de 90 dias. A limpeza manual remove os registros atuais, preservando o evento que documenta a própria limpeza.</p><button id="clearAudit" class="danger" type="button">Limpar auditoria</button></div>
+              <div id="auditList" class="audit-list"><p class="empty">Carregando eventos...</p></div>
+            </article>
+          </section>
+        </section>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <footer class="footer">HÄTTZ CONTROL <span>✦</span> PRIVATE ADMINISTRATION</footer>
+    </section>
+  </main>
+  <script src="share-config.js"></script>
+  <script src="core/hattz-core.js"></script>
+  <script src="control.js"></script>
+</body>
+</html>

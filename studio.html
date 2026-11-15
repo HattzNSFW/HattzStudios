@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09090d"><title>Hättz Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="core/design-tokens.css"><link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <main class="studio-shell">
+    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><div class="top-right"><span id="activeProfileLabel">Perfil 1</span><button id="saveStudio" class="primary">Salvar alterações</button><a class="quiet" id="backToProfile" href="./index.html">Voltar ao perfil ↗</a></div></header>
+    <div class="studio-layout">
+      <aside class="studio-sidebar glass">
+        <p class="eyebrow">WORKSPACE</p>
+        <button class="studio-nav active" data-panel="cards">▦ <span>Card Lab</span></button>
+        <button class="studio-nav" data-panel="avatar">◇ <span>Avatar Lab</span></button>
+        <button class="studio-nav" data-panel="frames">✧ <span>Hättz Frames</span></button>
+        <button class="studio-nav" data-panel="badges">✦ <span>Insígnias</span></button>
+        <button class="studio-nav" data-panel="theme" id="themeNav" hidden>◈ <span>Tema exclusivo</span></button>
+        <div class="side-note">As alterações são salvas no perfil local selecionado. Seus outros perfis permanecem independentes.</div>
+      </aside>
+      <section class="studio-workspace">
+        <section class="studio-panel active" id="panel-cards">
+          <div class="heading"><div><p class="eyebrow">LIQUID GLASS CUSTOM</p><h1>Card Lab</h1><p>Configure o acabamento global e personalize cartões individualmente.</p></div><span class="live-chip">LIVE DESIGN</span></div>
+          <article class="glass editor-card"><h2>Estilo global</h2><div class="control-grid">
+            <label>Transparência <output id="opacityOut">72%</output><input data-glass="opacity" type="range" min="0" max="100" value="72"></label>
+            <label>Desfoque <output id="blurOut">18 px</output><input data-glass="blur" type="range" min="0" max="40" value="18"></label>
+            <label>Reflexo <output id="reflectionOut">42%</output><input data-glass="reflection" type="range" min="0" max="100" value="42"></label>
+            <label>Iluminação <output id="glowOut">28%</output><input data-glass="glow" type="range" min="0" max="100" value="28"></label>
+            <label>Borda <output id="borderOut">45%</output><input data-glass="border" type="range" min="0" max="100" value="45"></label>
+            <label>Profundidade <output id="depthOut">42%</output><input data-glass="depth" type="range" min="0" max="100" value="42"></label>
+          </div></article>
+          <article class="glass editor-card"><h2>Personalização individual</h2><p class="muted">Escolha um cartão e ajuste transparência, desfoque e brilho sem alterar os demais.</p>
+            <div class="field"><label for="cardTarget">Cartão</label><select id="cardTarget"><option value="stat_focus">Estatística · Em foco</option><option value="stat_activity">Estatística · Atividade</option><option value="stat_interest">Estatística · Interesse</option><option value="detail_information">Detalhe · Informação</option><option value="detail_preference">Detalhe · Preferência</option></select></div>
+            <div class="control-grid"><label>Transparência individual <output id="cardOpacityOut">Global</output><input id="cardOpacity" type="range" min="0" max="100" value="72"></label><label>Desfoque individual <output id="cardBlurOut">Global</output><input id="cardBlur" type="range" min="0" max="40" value="18"></label><label>Brilho individual <output id="cardGlowOut">Global</output><input id="cardGlow" type="range" min="0" max="100" value="28"></label></div>
+            <button id="resetCard" class="secondary">Usar configuração global neste cartão</button>
+          </article>
+        </section>
+        <section class="studio-panel" id="panel-avatar">
+          <div class="heading"><div><p class="eyebrow">AVATAR CUSTOMIZATION</p><h1>Avatar Lab</h1><p>Ajuste a moldura, posição e iluminação ao redor do avatar.</p></div></div>
+          <article class="glass editor-card"><div class="avatar-demo"><div class="demo-avatar">H</div><div class="demo-frame">✧</div></div><div class="control-grid">
+            <label>Tamanho <output id="avatarSizeOut">150 px</output><input data-avatar="size" type="range" min="110" max="220" value="150"></label>
+            <label>Espessura <output id="avatarThicknessOut">2 px</output><input data-avatar="thickness" type="range" min="1" max="8" value="2"></label>
+            <label>Posição horizontal <output id="avatarOffsetXOut">0 px</output><input data-avatar="offsetX" type="range" min="-30" max="30" value="0"></label>
+            <label>Posição vertical <output id="avatarOffsetYOut">0 px</output><input data-avatar="offsetY" type="range" min="-30" max="30" value="0"></label>
+            <label>Iluminação <output id="avatarLightingOut">65%</output><input data-avatar="lighting" type="range" min="0" max="100" value="65"></label>
+            <label>Escala da moldura PNG <output id="avatarFrameScaleOut">100%</output><input data-avatar="frameScale" type="range" min="25" max="200" value="100"></label>
+            <label>Ajuste horizontal da moldura <output id="avatarFrameXOut">0 px</output><input data-avatar="frameX" type="range" min="-100" max="100" value="0"></label>
+            <label>Ajuste vertical da moldura <output id="avatarFrameYOut">0 px</output><input data-avatar="frameY" type="range" min="-100" max="100" value="0"></label>
+          </div></article>
+        </section>
+        <section class="studio-panel" id="panel-frames">
+          <div class="heading"><div><p class="eyebrow">FRAME COLLECTION</p><h1>Hättz Frames</h1><p>Catálogo de molduras. A Amethyst é a primeira moldura integrada ao editor.</p></div></div>
+          <article class="glass editor-card"><div class="frame-grid">
+            <button class="frame-option" data-frame="none"><span class="frame-preview plain">○</span><b>Sem moldura</b><small>Basic</small></button>
+            <button class="frame-option selected" data-frame="amethyst"><span class="frame-preview amethyst">✧</span><b>Amethyst</b><small>Elite · Hättz original</small></button>
+            <button class="frame-option" data-frame="celestial"><span class="frame-preview celestial">✦</span><b>Celestial</b><small>Basic</small></button>
+            <button class="frame-option" data-frame="gothic"><span class="frame-preview">♜</span><b>Gothic</b><small>Premium</small></button>
+            <button class="frame-option" data-frame="royal"><span class="frame-preview royal">♛</span><b>Royal</b><small>Premium</small></button>
+            <button class="frame-option" data-frame="floral"><span class="frame-preview">❀</span><b>Floral</b><small>Basic</small></button>
+            <button class="frame-option" data-frame="ornate"><span class="frame-preview">✥</span><b>Ornate</b><small>Premium</small></button>
+            <button class="frame-option" data-frame="dark"><span class="frame-preview">◈</span><b>Dark</b><small>Basic</small></button>
+            <button class="frame-option" data-frame="halo"><span class="frame-preview">☼</span><b>Halo</b><small>Premium</small></button>
+            <button class="frame-option" data-frame="vintage"><span class="frame-preview">❖</span><b>Vintage</b><small>Basic</small></button>
+            <button class="frame-option" data-frame="wings"><span class="frame-preview">♧</span><b>Wings</b><small>Elite</small></button>
+            <button class="frame-option" data-frame="skulls"><span class="frame-preview">☠</span><b>Skulls</b><small>Elite</small></button>
+            <button class="frame-option" data-frame="thorn"><span class="frame-preview">❧</span><b>Thorn</b><small>Premium</small></button>
+          </div><p class="muted">A coleção local inclui os estilos vetoriais existentes e a nova moldura Amethyst. O catálogo remoto pode ser administrado pelo Control após aplicar a migração.</p></article>
+        </section>
+        <section class="studio-panel" id="panel-theme" hidden>
+          <div class="heading"><div><p class="eyebrow">EXCLUSIVE ROLE BENEFIT</p><h1>Tema exclusivo</h1><p>Personalize as cores do seu próprio perfil. O acesso depende dos cargos configurados no Control.</p></div></div>
+          <article class="glass editor-card"><div class="control-grid">
+            <label>Fundo <input type="color" data-theme="background" value="#0b0a10"></label>
+            <label>Gradiente <input type="color" data-theme="gradient" value="#292333"></label>
+            <label>Cartões <input type="color" data-theme="card" value="#14121b"></label>
+            <label>Destaque <input type="color" data-theme="accent" value="#a78bfa"></label>
+            <label>Texto <input type="color" data-theme="text" value="#f4f0fa"></label>
+            <label>Bordas <input type="color" data-theme="border" value="#302a3a"></label>
+          </div><button id="saveProfileTheme" class="primary" type="button">Salvar tema no perfil</button><p class="muted" id="themeAccessNote">Verificando acesso...</p></article>
+        </section>
+        <section class="studio-panel" id="panel-badges">
+          <div class="heading"><div><p class="eyebrow">COLLECTIBLES</p><h1>Insígnias</h1><p>Consulte a coleção disponível no catálogo do Hättz.</p></div><button id="reloadCatalog" class="secondary">Atualizar catálogo</button></div>
+          <article class="glass editor-card"><div id="badgeCatalog" class="catalog-grid"><p class="muted">Carregando catálogo...</p></div><p class="muted">A concessão e revogação de insígnias são operações administrativas no Hättz Control.</p></article>
+        </section>
+        <div id="studioToast" class="toast" role="status" aria-live="polite"></div>
+      </section>
+      <aside class="preview-column"><div class="preview-heading"><span>LIVE PREVIEW</span><span id="previewState">Atualizado</span></div><iframe id="profilePreview" title="Pré-visualização do perfil" loading="lazy"></iframe></aside>
+    </div>
+    <footer>HÄTTZ STUDIO <span>✦</span> LIQUID GLASS CUSTOM</footer>
+  </main>
+  <script src="share-config.js"></script><script src="core/hattz-core.js"></script><script src="core/profile-contract.js"></script><script src="studio.js"></script>
+</body></html>
