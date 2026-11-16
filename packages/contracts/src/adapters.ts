@@ -1,12 +1,18 @@
 import type {
   PublicationRecordContract,
+  PublishedProfilePublicMediaContract,
   PublishedProfileSnapshotContract,
   SyncOperationContract,
 } from './domains';
 
 export interface PublicProfileReadAdapter {
-  // Share: leitura somente de conteúdo publicado/público
+  // Share: leitura somente de conteúdo efetivamente publicado/público via interface explícita (ex.: view segura).
   getPublishedProfileBySlug(slug: string): Promise<PublishedProfileSnapshotContract | null>;
+}
+
+export interface PublicMediaReadAdapter {
+  // Share: metadados públicos mínimos de mídia (sem paths/buckets/checksums/metadata interna).
+  listPublicMedia(): Promise<PublishedProfilePublicMediaContract[]>;
 }
 
 export interface PublicationAdapter {

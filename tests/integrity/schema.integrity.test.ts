@@ -91,4 +91,15 @@ describe('database schema integrity (migrations)', () => {
     expect(m1).toContain("'comum'");
     expect(m1).toContain("'especial'");
   });
+
+  it('hardens foundation function and defines public read/security validation objects (0001,0009)', () => {
+    const m1 = readMigration('0001_foundation_extensions.sql');
+    const m9 = readMigration('0009_hardening_public_views_and_snapshot_validation.sql');
+    expect(m1).toContain('set search_path = pg_catalog, public');
+    expect(m1).toMatch(/revoke all on function public\.set_updated_at\(\) from public/);
+    expect(m9).toContain('create or replace view public.v_share_published_profiles');
+    expect(m9).toContain('create or replace view public.v_share_public_media');
+    expect(m9).toContain('create or replace function public.validate_publishable_snapshot_content');
+    expect(m9).toContain('trg_validate_publishable_snapshot');
+  });
 });

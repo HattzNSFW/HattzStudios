@@ -20,3 +20,9 @@ O Studio deve funcionar localmente sem conta ou conexão, com rascunhos, version
 - Edição local resiliente e independente de rede/conta.
 - Evolução do schema local exigirá novas versões Dexie com funções de upgrade testadas.
 - Integração real de sync/publicação remota permanece para fases autorizadas posteriores.
+
+## Hardening (pré-2B)
+
+- Revisados cenários de falha local: operações inválidas/duplicadas devem falhar explicitamente (sem sucesso silencioso), estado de migração/meta ausente ou desalinhado deve ser detectado (`isReady=false`), e operações em banco fechado devem falhar de forma clara.
+- Testes automatizados adicionais cobrem duplicidade de `operationId`, meta de schema ausente/stale e falha com DB fechado (`tests/persistence/studio-idb-failure.test.ts`).
+- Validação de publicação futura deve ocorrer antes de qualquer transição para conteúdo publicável (schema/contrato de snapshot), mantendo isolamento entre rascunhos locais e dados efetivamente publicados.

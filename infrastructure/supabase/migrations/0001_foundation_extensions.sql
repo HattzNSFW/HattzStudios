@@ -42,14 +42,19 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 -- Função utilitária de atualização de timestamp
+-- search_path fixo para mitigar hijacking; sem SECURITY DEFINER.
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = pg_catalog, public
 as $$
 begin
-  new.updated_at = now();
+  new.updated_at = pg_catalog.now();
   return new;
 end;
 $$;
+
+revoke all on function public.set_updated_at() from public;
+grant execute on function public.set_updated_at() to postgres, service_role;
 
 commit;

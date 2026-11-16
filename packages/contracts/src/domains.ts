@@ -32,11 +32,25 @@ export interface PublicProfileQuery {
 }
 
 export interface PublishedProfileSnapshotContract {
-  profileTechnicalId: string;
+  // Campos explicitamente permitidos na interface pública Share (view segura), sem IDs internos sensíveis.
   slug: string;
-  version: number;
-  visibility: 'public' | 'unpublished';
+  profileVersion: number;
+  publishedAt?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
   content: Record<string, unknown>;
+}
+
+export interface PublishedProfilePublicMediaContract {
+  assetId: string;
+  kind: string;
+  mimeType: string;
+  width?: number | null;
+  height?: number | null;
+  variant: string;
+  format?: string | null;
+  variantWidth?: number | null;
+  variantHeight?: number | null;
 }
 
 export interface AuditLogContract {
