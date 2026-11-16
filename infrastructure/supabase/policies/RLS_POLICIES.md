@@ -1,56 +1,60 @@
-# RLS, grants e interfaces públicas — Hättz 2.0 (Fase 2A hardening)
+# RLS, grants e interfaces públicas — Hättz 2.0 (Fase 2A hardening, auditado)
 
 > Projeto alvo: **Supabase (PostgreSQL) inteiramente novo**. Definições para aplicação futura em ambiente autorizado; **não executadas remotamente nesta etapa**. **RLS não validada em runtime** (ver `docs/database/RLS_RUNTIME_TEST_STRATEGY.md`).
 
 ## Princípios
 
-- **Menor privilégio**: RLS **habilitado e forçado** nas tabelas modeladas; **sem policies públicas diretas** em tabelas base; privilégios diretos de `anon`/`authenticated` revogados em tabelas/schemas sensíveis.
+- **Menor privilégio**: RLS **habilitado e forçado** nas tabelas modeladas; privilégios amplos revogados (incl. `PUBLIC`); acesso público somente por combinação de **grants mínimos de coluna + policies restritivas por linha + views security_invoker com projeção explícita**.
 - **Isolamento de dados**: locais (Studio/IndexedDB) ≠ publicados (Share) ≠ administrativos/auditoria (Control).
-- **Share nunca consulta rascunhos ou dados privados**: leitura pública **somente** via **views seguras com campos explicitamente permitidos**, filtradas para conteúdo efetivamente publicado e visibilidade pública.
-- **Owner público ≠ acesso ao Control**: tabelas de `hattz_admin` e `hattz_audit` sem acesso público; sem grants de schema; acesso administrativo futuro dependerá de contexto/claims/papéis dedicados e funções controladas com revisão de segurança (não implementado).
-- **Defesa em profundidade**: validação de snapshot publicável em aplicação (`@hattz/validation`) e no banco (função/trigger em `profile_public_snapshots`).
+- **Share nunca consulta rascunhos ou dados privados**: leitura pública limitada a conteúdo **efetivamente publicado/público/ativo** e a colunas explicitamente permitidas.
+- **Owner público ≠ acesso ao Control**: `hattz_admin`/`hattz_audit` sem grants de schema/tabela e sem policies públicas; acesso administrativo futuro depende de contexto/claims/papéis dedicados e funções controladas com revisão de segurança (não implementado).
+- **Defesa em profundidade**: validação de snapshot publicável em aplicação (`@hattz/validation`) e no banco (função/trigger).
 
-## 0008 — RLS e revogações (hardened)
+## 0008 — RLS, revogações, grants mínimos e policies restritivas
 
-- `ENABLE` + `FORCE ROW LEVEL SECURITY` em tabelas de `public` (domínios modelados) e em `hattz_admin.*`, `hattz_audit.*`.
-- `REVOKE ALL` em tabelas base de `anon, authenticated`; `REVOKE USAGE` nos schemas `hattz_admin`, `hattz_audit`.
-- **Nenhuma policy SELECT/INSERT/UPDATE/DELETE para anon/authenticated** em tabelas base. Acesso público não ocorre por tabela.
+- `ENABLE` + `FORCE ROW LEVEL SECURITY` em tabelas de `public` e em `hattz_admin.*`, `hattz_audit.*`.
+- `REVOKE ALL` em tabelas base de `public, anon, authenticated`; `REVOKE ALL` em schemas `hattz_admin`, `hattz_audit`.
+- **Grants mínimos de coluna** (somente o necessário para as views públicas em 0009):
+  - `profiles(id, profile_id)`; `profile_slugs(profile_id, slug, is_current)`; `profile_publications(id, profile_id, state, published_at)`;
+  - `profile_public_snapshots(publication_id, profile_id, version, visibility, seo_title, seo_description, content)`;
+  - `media_assets(id, kind, mime_type, width, height, status, is_public)`; `media_variants(asset_id, variant, format, width, height)`.
+  - **Não concedido** (exemplos): `technical_id`, `display_name`, `failure_reason`, `manifest_*`, `storage_bucket/path`, `checksum`, `metadata` de mídia, agregados de uso, domínios restritos/admin/audit.
+- **Policies SELECT restritivas** (anon/authenticated) apenas para linhas publicáveis/publicadas/ativas:
+  - snapshots: `visibility='public'` e publicação vinculada `state='published'`;
+  - publicações/slugs/perfis: somente quando vinculados a snapshot/público publicado conforme condições;
+  - mídia/variantes: `is_public=true` e `status='active'`.
+- **Sem policies** para domínios restritos e para `hattz_admin`/`hattz_audit`; sem grants de escrita pública.
 
-## 0009 — Interfaces públicas seguras e validação de snapshot
+## 0009 — Views públicas (interface explícita) e validação de snapshot
 
-### Views públicas (campos explicitamente permitidos, grants mínimos)
+### Views públicas
 
-- `public.v_share_published_profiles` (SELECT para `anon, authenticated`, `security_barrier=true`)
-  - **Fonte/condição:** `profile_public_snapshots` + `profile_publications` + `profile_slugs` atuais, apenas `s.visibility='public'` e `pub.state='published'`.
-  - **Colunas expostas:** `slug`, `profile_version`, `published_at`, `seo_title`, `seo_description`, `content`.
-  - **Não exposto:** IDs internos (`profile_id`, `publication_id`), `technical_id`, `failure_reason`, `manifest_*`, `storage_*`, metadados administrativos/internos.
-- `public.v_share_public_media` (SELECT para `anon, authenticated`, `security_barrier=true`)
-  - **Fonte/condição:** `media_assets` + `media_variants`, apenas `is_public=true` e `status='active'`.
-  - **Colunas expostas:** `asset_id`, `kind`, `mime_type`, `width`, `height`, `variant`, `format`, `variant_width`, `variant_height`.
-  - **Não exposto:** `profile_id`, `storage_bucket`, `storage_path`, `checksum_sha256`, `metadata`, status interno, agregados de uso.
-
-> Observação: com revogação de privilégios diretos nas tabelas base (0008), as views são definidas como interface pública mínima; execução/ownership deve ser validada em runtime no ambiente alvo autorizado. Acesso direto às tabelas base permanece bloqueado para anon/authenticated.
+- `public.v_share_published_profiles` e `public.v_share_public_media` com `security_invoker = true, security_barrier = true` e `GRANT SELECT` a `anon, authenticated`.
+- **Projeção explícita (Share):**
+  - perfis publicados: `slug`, `profile_version`, `published_at`, `seo_title`, `seo_description`, `content`;
+  - mídia pública: `asset_id`, `kind`, `mime_type`, `width`, `height`, `variant`, `format`, `variant_width`, `variant_height`.
+- **Filtros de linha nas views:** publicados/visíveis e mídia ativa/pública (além das policies/grants de base).
+- **Investigação (auditoria):** `security_invoker=true` exige que o invocador tenha privilégios nas relações subjacentes; por isso 0008 provê grants mínimos de coluna + policies restritivas. Isso evita `security_definer`/bypass de RLS e mantém menor privilégio, mas significa que colunas/linhas permitidas pelas policies são tecnicamente acessíveis via consulta direta às tabelas base **dentro desses limites** (interface recomendada continua sendo a view). Colunas internas sem grant permanecem inacessíveis. **Validação runtime obrigatória em ambiente autorizado.**
 
 ### Validação de conteúdo publicável (DB)
 
-- `public.validate_publishable_snapshot_content(jsonb)`: rejeita estrutura/chaves fora do schema permitido e chaves proibidas recursivamente (privado, admin, credenciais, rascunhos, interno/auditoria/sync/config sensível, paths/checksums, etc.). `IMMUTABLE STRICT`, `search_path` fixo.
-- `public.enforce_publishable_snapshot()` trigger `BEFORE INSERT OR UPDATE OF content, visibility` em `public.profile_public_snapshots`: bloqueia conteúdo não publicável/visibilidade inválida.
-- `REVOKE EXECUTE` das funções de `public`; grants apenas para papéis de manutenção/serviço conforme modelo futuro.
+- `public.validate_publishable_snapshot_content(jsonb)`: recursiva, rejeita chaves proibidas (privado/admin/credenciais/rascunhos/interno/auditoria/sync/config sensível, paths/checksums/hashes etc., inclusive variantes com `_`), impõe chaves permitidas por nível, tipos/tamanhos básicos (alinhado ao validador TypeScript). `IMMUTABLE STRICT`, `search_path` fixo.
+- `public.enforce_publishable_snapshot()` trigger `BEFORE INSERT OR UPDATE OF content, visibility` em `public.profile_public_snapshots`: bloqueia conteúdo/visibilidade inválidos.
+- `REVOKE EXECUTE` de `public, anon, authenticated`; `GRANT EXECUTE` mínimo (`postgres, service_role`).
 
-## Domínios negados ao público (sem acesso direto)
+## Domínios negados ao público
 
 - Escrita pública em todas as tabelas/views.
-- Leitura/escrita pública em: perfis/slugs/publicações/snapshots/mídia/variantes/uso (tabelas base), cargos/permissões/atribuições/overrides, benefícios, catálogos e posses/progresso de colecionáveis, configurações/histórico, feature flags, notificações, operações de sync, snapshots de status de serviços.
+- Leitura/escrita pública em domínios restritos (RBAC/atribuições/overrides, benefícios, colecionáveis/posses/progresso, configurações/histórico, flags, notificações, sync, monitoramento, uso de armazenamento) e em tabelas base fora das colunas/linhas explicitamente permitidas.
 - Qualquer acesso a `hattz_admin.*` e `hattz_audit.*`.
 
-## Fronteira administrativa futura (Control) — documentada, não implementada
+## Fronteira administrativa futura (Control)
 
-- Autenticação/sessão administrativa **isolada** do fluxo público de Owner; credenciais/sessões/recovery apenas como estruturas planejadas (hashes/fingerprints), sem auth própria implementada.
-- Nenhuma concessão administrativa genérica para facilitar desenvolvimento.
-- Acesso admin/serviço futuro: papéis/claims dedicados, funções controladas, escopo mínimo, auditoria e revisão de segurança prévia.
+- Autenticação/sessão administrativa isolada do Owner público; sem auth própria implementada; sem acesso administrativo genérico.
+- Acesso futuro por papéis/claims/funções controladas com escopo mínimo, auditoria e revisão de segurança.
 
-## Próximas evoluções (fases autorizadas)
+## Limitações conhecidas (auditoria)
 
-- Roles/policies/funções de serviço para publicação/sync (identidade de serviço, mínimo privilégio).
-- Contexto de sessão administrativa isolada para Control.
-- Execução e evidência de **testes de RLS em PostgreSQL real** (estratégia preparada em `docs/database/RLS_RUNTIME_TEST_STRATEGY.md`).
+- **Sem validação runtime de RLS/privileges/views no PostgreSQL/Supabase real** nesta etapa (ver estratégia).
+- Policies RLS para Share dependem de subqueries entre tabelas publicáveis; correção/eficiência deve ser verificada em runtime.
+- Sem policies/roles de serviço ou contexto administrativo implementados.

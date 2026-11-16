@@ -46,13 +46,13 @@ const FORBIDDEN_KEY_PATTERNS = [
   /admin/i,
   /internal/i,
   /audit/i,
-  /roleassignment/i,
-  /permissionoverride/i,
-  /syncoperation/i,
-  /settinghistory/i,
-  /featureflag/i,
+  /role[_]?assignment/i,
+  /permission[_]?override/i,
+  /sync[_]?operation/i,
+  /setting[_]?history/i,
+  /feature[_]?flag/i,
   /notification/i,
-  /storageusage/i,
+  /storage[_]?usage/i,
   /assigned_by/i,
   /revoked_by/i,
   /failure_reason/i,
@@ -214,11 +214,23 @@ export function validatePublishableSnapshotContent(
           code: 'snapshot.required',
           message: 'section.id is required.',
         });
+      else if (section.id.length > 128)
+        issues.push({
+          path: `${sp}.id`,
+          code: 'snapshot.length',
+          message: 'section.id exceeds 128 characters.',
+        });
       if (typeof section.type !== 'string' || !section.type)
         issues.push({
           path: `${sp}.type`,
           code: 'snapshot.required',
           message: 'section.type is required.',
+        });
+      else if (section.type.length > 64)
+        issues.push({
+          path: `${sp}.type`,
+          code: 'snapshot.length',
+          message: 'section.type exceeds 64 characters.',
         });
       if (typeof section.visible !== 'boolean')
         issues.push({
@@ -252,11 +264,23 @@ export function validatePublishableSnapshotContent(
               code: 'snapshot.required',
               message: 'block.id is required.',
             });
+          else if (block.id.length > 128)
+            issues.push({
+              path: `${bp}.id`,
+              code: 'snapshot.length',
+              message: 'block.id exceeds 128 characters.',
+            });
           if (typeof block.type !== 'string' || !block.type)
             issues.push({
               path: `${bp}.type`,
               code: 'snapshot.required',
               message: 'block.type is required.',
+            });
+          else if (block.type.length > 64)
+            issues.push({
+              path: `${bp}.type`,
+              code: 'snapshot.length',
+              message: 'block.type exceeds 64 characters.',
             });
           if (typeof block.visible !== 'boolean')
             issues.push({

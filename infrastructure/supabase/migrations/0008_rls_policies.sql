@@ -1,7 +1,8 @@
--- 0008_rls_policies.sql (hardened)
--- RLS (princípio de menor privilégio) e revogações de privilégios diretos.
--- Objetivos: nenhum acesso direto de anon/authenticated a tabelas base sensíveis;
--- leitura pública somente via views seguras explícitas (0009). Share não consulta rascunhos/dados privados.
+-- 0008_rls_policies.sql (hardened, audit-adjusted)
+-- RLS (princípio de menor privilégio), revogações e grants mínimos para leitura pública via views seguras (0009).
+-- Objetivo: anon/authenticated não acessam tabelas/schemas sensíveis nem colunas internas; leitura pública apenas
+-- de conteúdo efetivamente publicado/público/ativo, por views security_invoker com colunas explícitas (0009).
+-- Nota: RLS FORCE + ausência de policies + ausência de privilégios de tabela impedem acesso direto indevido.
 
 begin;
 
@@ -78,8 +79,7 @@ alter table hattz_admin.admin_sessions force row level security;
 alter table hattz_admin.admin_access_logs force row level security;
 alter table hattz_audit.audit_logs force row level security;
 
--- Revogar privilégios diretos de anon/authenticated em tabelas base (defesa em profundidade).
--- Leitura pública ocorrerá apenas por views explícitas (0009) com colunas permitidas.
+-- Revogar privilégios diretos amplos (defesa em profundidade); grants mínimos recriados abaixo apenas onde necessário.
 revoke all on table
   public.profiles,
   public.profile_slugs,
@@ -109,7 +109,7 @@ revoke all on table
   public.notifications,
   public.sync_operations,
   public.service_status_snapshots
-from anon, authenticated;
+from public, anon, authenticated;
 
 revoke all on table
   hattz_admin.admin_accounts,
@@ -118,12 +118,111 @@ revoke all on table
   hattz_admin.admin_sessions,
   hattz_admin.admin_access_logs,
   hattz_audit.audit_logs
-from anon, authenticated;
+from public, anon, authenticated;
 
-revoke usage on schema hattz_admin from anon, authenticated;
-revoke usage on schema hattz_audit from anon, authenticated;
+revoke all on schema hattz_admin from public, anon, authenticated;
+revoke all on schema hattz_audit from public, anon, authenticated;
 
--- Nenhuma policy de SELECT/INSERT/UPDATE/DELETE para anon/authenticated em tabelas base.
+-- Grants mínimos de coluna (somente colunas necessárias para views públicas security_invoker em 0009).
+-- RLS limita as linhas a conteúdo efetivamente publicado/público/ativo. Sem grants em colunas internas/admin.
+grant select (id, profile_id) on table public.profiles to anon, authenticated;
+grant select (profile_id, slug, is_current) on table public.profile_slugs to anon, authenticated;
+grant select (id, profile_id, state, published_at) on table public.profile_publications to anon, authenticated;
+grant select (publication_id, profile_id, version, visibility, seo_title, seo_description, content)
+  on table public.profile_public_snapshots to anon, authenticated;
+
+grant select (id, kind, mime_type, width, height, status, is_public)
+  on table public.media_assets to anon, authenticated;
+grant select (asset_id, variant, format, width, height)
+  on table public.media_variants to anon, authenticated;
+
+-- Policies públicas restritas (apenas leitura, apenas linhas publicáveis/publicadas/ativas)
+drop policy if exists share_select_published_profiles on public.profiles;
+create policy share_select_published_profiles
+on public.profiles
+for select
+to anon, authenticated
+using (
+  exists (
+    select 1
+    from public.profile_public_snapshots s
+    join public.profile_publications pub on pub.id = s.publication_id
+    where s.profile_id = profiles.id
+      and s.visibility = 'public'
+      and pub.state = 'published'
+  )
+);
+
+drop policy if exists share_select_current_public_slugs on public.profile_slugs;
+create policy share_select_current_public_slugs
+on public.profile_slugs
+for select
+to anon, authenticated
+using (
+  is_current = true
+  and exists (
+    select 1
+    from public.profile_public_snapshots s
+    join public.profile_publications pub on pub.id = s.publication_id
+    where s.profile_id = profile_slugs.profile_id
+      and s.visibility = 'public'
+      and pub.state = 'published'
+  )
+);
+
+drop policy if exists share_select_published_publications on public.profile_publications;
+create policy share_select_published_publications
+on public.profile_publications
+for select
+to anon, authenticated
+using (
+  state = 'published'
+  and exists (
+    select 1
+    from public.profile_public_snapshots s
+    where s.publication_id = profile_publications.id
+      and s.visibility = 'public'
+  )
+);
+
+drop policy if exists share_select_public_snapshots on public.profile_public_snapshots;
+create policy share_select_public_snapshots
+on public.profile_public_snapshots
+for select
+to anon, authenticated
+using (
+  visibility = 'public'
+  and exists (
+    select 1
+    from public.profile_publications pub
+    where pub.id = profile_public_snapshots.publication_id
+      and pub.state = 'published'
+  )
+);
+
+drop policy if exists share_select_public_media_assets on public.media_assets;
+create policy share_select_public_media_assets
+on public.media_assets
+for select
+to anon, authenticated
+using (is_public = true and status = 'active');
+
+drop policy if exists share_select_public_media_variants on public.media_variants;
+create policy share_select_public_media_variants
+on public.media_variants
+for select
+to anon, authenticated
+using (
+  exists (
+    select 1
+    from public.media_assets a
+    where a.id = media_variants.asset_id
+      and a.is_public = true
+      and a.status = 'active'
+  )
+);
+
+-- Domínios restritos e admin/auditoria: sem grants e sem policies para anon/authenticated/public.
 -- Acesso administrativo/serviço futuro: papéis/claims dedicados e funções controladas, com revisão de segurança.
 
 commit;

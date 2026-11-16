@@ -1,11 +1,12 @@
--- 0009_hardening_public_views_and_snapshot_validation.sql
--- Hardening: views públicas com colunas explicitamente permitidas, grants mínimos e validação de snapshot publicável.
--- Share deve obter apenas informações efetivamente publicadas, sem colunas internas/administrativas.
+-- 0009_hardening_public_views_and_snapshot_validation.sql (audit-adjusted)
+-- Hardening: validação de snapshot publicável (DB) e views públicas com colunas explicitamente permitidas.
+-- Views em security_invoker=true para respeitar privilégios/RLS do chamador; combinadas com grants mínimos de coluna
+-- e policies restritas em 0008 (defesa em profundidade, menor privilégio).
 
 begin;
 
 -- Função de validação recursiva de conteúdo publicável (defesa em profundidade no banco).
--- Rejeita chaves proibidas (privado/admin/credenciais/rascunhos/interno) e estrutura fora do schema permitido.
+-- Alinhada ao contrato TypeScript: chaves proibidas recursivas, schema explícito, tipos/tamanhos básicos.
 create or replace function public.validate_publishable_snapshot_content(content jsonb)
 returns boolean
 language plpgsql
@@ -28,20 +29,20 @@ begin
     return false;
   end if;
 
-  -- chaves proibidas (recursivo)
+  -- chaves proibidas (recursivo, incluindo objetos dentro de arrays)
   if exists (
     with recursive kv as (
-      select key, value, value as root
+      select key, value
       from jsonb_each(content)
       union all
-      select e.key, e.value, e.value
+      select e.key, e.value
       from kv, lateral jsonb_each(case when jsonb_typeof(kv.value) = 'object' then kv.value else '{}'::jsonb end) e
       union all
-      select null::text, elem, elem
+      select null::text, elem
       from kv, lateral jsonb_array_elements(case when jsonb_typeof(kv.value) = 'array' then kv.value else '[]'::jsonb end) elem
     )
     select 1 from kv
-    where key is not null and key ~* '(password|credential|secret|token|session|cookie|recovery|private|draft|admin|internal|audit|role.?assignment|permission.?override|sync.?operation|setting.?history|feature.?flag|notification|storage.?usage|assigned_by|revoked_by|failure_reason|manifest_ref|storage_path|storage_bucket|checksum|ip_hash|user_agent_hash)'
+    where key is not null and key ~* '(password|credential|secret|token|session|cookie|recovery|private|draft|admin|internal|audit|role[_]?assignment|permission[_]?override|sync[_]?operation|setting[_]?history|feature[_]?flag|notification|storage[_]?usage|assigned_by|revoked_by|failure_reason|manifest_ref|storage_path|storage_bucket|checksum|ip_hash|user_agent_hash)'
     limit 1
   ) then
     return false;
@@ -63,6 +64,18 @@ begin
   if not (content->'profile' ? 'displayName' and jsonb_typeof(content->'profile'->'displayName') = 'string') then return false; end if;
   if length(btrim(content->'profile'->>'displayName')) = 0 then return false; end if;
   if length(content->'profile'->>'displayName') > 80 then return false; end if;
+  if content->'profile' ? 'bio' then
+    if jsonb_typeof(content->'profile'->'bio') <> 'string' then return false; end if;
+    if length(content->'profile'->>'bio') > 2000 then return false; end if;
+  end if;
+  if content->'profile' ? 'avatarAssetId' then
+    if jsonb_typeof(content->'profile'->'avatarAssetId') <> 'string' then return false; end if;
+    if length(content->'profile'->>'avatarAssetId') > 128 then return false; end if;
+  end if;
+  if content->'profile' ? 'bannerAssetId' then
+    if jsonb_typeof(content->'profile'->'bannerAssetId') <> 'string' then return false; end if;
+    if length(content->'profile'->>'bannerAssetId') > 128 then return false; end if;
+  end if;
 
   if not (content ? 'sections' and jsonb_typeof(content->'sections') = 'array') then return false; end if;
   for section in select value from jsonb_array_elements(content->'sections') loop
@@ -71,7 +84,9 @@ begin
       if not (k = any(allowed_section)) then return false; end if;
     end loop;
     if not (section ? 'id' and jsonb_typeof(section->'id') = 'string' and section->>'id' <> '') then return false; end if;
+    if length(section->>'id') > 128 then return false; end if;
     if not (section ? 'type' and jsonb_typeof(section->'type') = 'string' and section->>'type' <> '') then return false; end if;
+    if length(section->>'type') > 64 then return false; end if;
     if not (section ? 'visible' and jsonb_typeof(section->'visible') = 'boolean') then return false; end if;
     if not (section ? 'order' and jsonb_typeof(section->'order') = 'number') then return false; end if;
     if not (section ? 'blocks' and jsonb_typeof(section->'blocks') = 'array') then return false; end if;
@@ -81,7 +96,9 @@ begin
         if not (k = any(allowed_block)) then return false; end if;
       end loop;
       if not (blk ? 'id' and jsonb_typeof(blk->'id') = 'string' and blk->>'id' <> '') then return false; end if;
+      if length(blk->>'id') > 128 then return false; end if;
       if not (blk ? 'type' and jsonb_typeof(blk->'type') = 'string' and blk->>'type' <> '') then return false; end if;
+      if length(blk->>'type') > 64 then return false; end if;
       if not (blk ? 'visible' and jsonb_typeof(blk->'visible') = 'boolean') then return false; end if;
       if not (blk ? 'order' and jsonb_typeof(blk->'order') = 'number') then return false; end if;
       if not (blk ? 'props' and jsonb_typeof(blk->'props') = 'object') then return false; end if;
@@ -95,13 +112,21 @@ begin
     for k in select jsonb_object_keys(content->'seo') loop
       if not (k = any(allowed_seo)) then return false; end if;
     end loop;
+    if content->'seo' ? 'title' then
+      if jsonb_typeof(content->'seo'->'title') <> 'string' then return false; end if;
+      if length(content->'seo'->>'title') > 120 then return false; end if;
+    end if;
+    if content->'seo' ? 'description' then
+      if jsonb_typeof(content->'seo'->'description') <> 'string' then return false; end if;
+      if length(content->'seo'->>'description') > 300 then return false; end if;
+    end if;
   end if;
 
   return true;
 end;
 $$;
 
-revoke all on function public.validate_publishable_snapshot_content(jsonb) from public;
+revoke all on function public.validate_publishable_snapshot_content(jsonb) from public, anon, authenticated;
 grant execute on function public.validate_publishable_snapshot_content(jsonb) to postgres, service_role;
 
 create or replace function public.enforce_publishable_snapshot()
@@ -120,7 +145,7 @@ begin
 end;
 $$;
 
-revoke all on function public.enforce_publishable_snapshot() from public;
+revoke all on function public.enforce_publishable_snapshot() from public, anon, authenticated;
 grant execute on function public.enforce_publishable_snapshot() to postgres, service_role;
 
 drop trigger if exists trg_validate_publishable_snapshot on public.profile_public_snapshots;
@@ -129,13 +154,11 @@ before insert or update of content, visibility on public.profile_public_snapshot
 for each row execute function public.enforce_publishable_snapshot();
 
 -- Views seguras de leitura pública (campos explicitamente permitidos)
--- security_invoker=false (definer) intencional: tabelas base não têm grants para anon/authenticated (0008).
--- A view executa com privilégios do owner (postgres/superuser no contexto de migration) mas expõe APENAS
--- colunas/linhas explicitamente selecionadas e filtradas. search_path fixo e sem exposição de dados sensíveis.
--- Isso evita acesso direto às tabelas base e impede que chamadas públicas leiam colunas internas/admin.
+-- security_invoker=true: o chamador (anon/authenticated) é avaliado por privilégios e RLS (0008).
+-- security_barrier=true: evita vazamento por otimizações. Interface explícita; sem acesso direto a colunas/tabelas internas.
 
 create or replace view public.v_share_published_profiles
-with (security_barrier = true)
+with (security_invoker = true, security_barrier = true)
 as
 select
   ps.slug,
@@ -156,7 +179,7 @@ comment on view public.v_share_published_profiles is
 
 -- Metadados públicos mínimos de mídia (sem storage paths/buckets/checksum/metadata interna/profile_id)
 create or replace view public.v_share_public_media
-with (security_barrier = true)
+with (security_invoker = true, security_barrier = true)
 as
 select
   a.id as asset_id,
@@ -175,8 +198,8 @@ where a.is_public = true and a.status = 'active';
 comment on view public.v_share_public_media is
 'Leitura pública Share: metadados não sensíveis de mídia pública ativa. Paths/buckets/checksums/metadata interna não expostos.';
 
-revoke all on public.v_share_published_profiles from public;
-revoke all on public.v_share_public_media from public;
+revoke all on public.v_share_published_profiles from public, anon, authenticated;
+revoke all on public.v_share_public_media from public, anon, authenticated;
 grant select on public.v_share_published_profiles to anon, authenticated;
 grant select on public.v_share_public_media to anon, authenticated;
 

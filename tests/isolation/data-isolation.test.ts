@@ -18,24 +18,56 @@ const hardening = readFileSync(
   'utf8',
 );
 
-describe('data isolation (RLS hardening and boundaries)', () => {
-  it('enables and forces RLS and revokes direct anon/authenticated access to base tables/schemas', () => {
+describe('data isolation (RLS hardening and boundaries) — structural migration tests', () => {
+  it('enables and forces RLS broadly and revokes broad/direct privileges (incl. PUBLIC) on base tables/schemas', () => {
     expect(rls).toContain('alter table hattz_admin.admin_accounts enable row level security;');
     expect(rls).toContain('alter table hattz_admin.admin_accounts force row level security;');
     expect(rls).toContain('alter table hattz_audit.audit_logs enable row level security;');
     expect(rls).toContain('alter table public.profile_public_snapshots enable row level security;');
     expect(rls).toMatch(
-      /revoke all on table[\s\S]*public\.profile_public_snapshots[\s\S]*from anon, authenticated;/,
+      /revoke all on table[\s\S]*public\.profile_public_snapshots[\s\S]*from public, anon, authenticated;/,
     );
     expect(rls).toMatch(
-      /revoke all on table[\s\S]*hattz_admin\.admin_accounts[\s\S]*from anon, authenticated;/,
+      /revoke all on table[\s\S]*hattz_admin\.admin_accounts[\s\S]*from public, anon, authenticated;/,
     );
-    expect(rls).toContain('revoke usage on schema hattz_admin from anon, authenticated;');
-    expect(rls).toContain('revoke usage on schema hattz_audit from anon, authenticated;');
-    expect(rls).not.toMatch(/create policy\s+\w+\s+on\s+/);
+    expect(rls).toContain('revoke all on schema hattz_admin from public, anon, authenticated;');
+    expect(rls).toContain('revoke all on schema hattz_audit from public, anon, authenticated;');
   });
 
-  it('exposes public read only via secure explicit-field views filtered to effectively published content', () => {
+  it('grants only minimal columns needed for public views and only restrictive SELECT policies for published/public/active rows', () => {
+    // Minimal column grants (no internal/admin columns)
+    expect(rls).toContain(
+      'grant select (id, profile_id) on table public.profiles to anon, authenticated;',
+    );
+    expect(rls).toContain(
+      'grant select (profile_id, slug, is_current) on table public.profile_slugs to anon, authenticated;',
+    );
+    expect(rls).toContain(
+      'grant select (id, profile_id, state, published_at) on table public.profile_publications to anon, authenticated;',
+    );
+    expect(rls).toContain(
+      'grant select (publication_id, profile_id, version, visibility, seo_title, seo_description, content)',
+    );
+    expect(rls).toContain('grant select (id, kind, mime_type, width, height, status, is_public)');
+    expect(rls).toContain('grant select (asset_id, variant, format, width, height)');
+
+    // Policies limited to published/public/active content
+    expect(rls).toContain('create policy share_select_public_snapshots');
+    expect(rls).toContain("visibility = 'public'");
+    expect(rls).toContain("pub.state = 'published'");
+    expect(rls).toContain('create policy share_select_public_media_assets');
+    expect(rls).toContain("is_public = true and status = 'active'");
+
+    // No policies for restricted/admin/audit domains
+    expect(rls).not.toMatch(/create policy\s+\w+\s+on\s+hattz_admin\./);
+    expect(rls).not.toMatch(/create policy\s+\w+\s+on\s+hattz_audit\./);
+    expect(rls).not.toMatch(/create policy\s+\w+\s+on\s+public\.user_role_assignments/);
+    expect(rls).not.toMatch(/create policy\s+\w+\s+on\s+public\.sync_operations/);
+    expect(rls).not.toMatch(/create policy\s+\w+\s+on\s+public\.global_settings/);
+  });
+
+  it('exposes public read only via security_invoker secure views with explicit projected fields and published/active filters', () => {
+    expect(hardening).toContain('with (security_invoker = true, security_barrier = true)');
     expect(hardening).toContain('create or replace view public.v_share_published_profiles');
     expect(hardening).toContain('create or replace view public.v_share_public_media');
     expect(hardening).toContain("s.visibility = 'public'");
@@ -60,16 +92,16 @@ describe('data isolation (RLS hardening and boundaries)', () => {
     const profileSelect = profileView?.match(/select([\s\S]*?)\bfrom\b/i)?.[1] ?? '';
     const mediaSelect = mediaView?.match(/select([\s\S]*?)\bfrom\b/i)?.[1] ?? '';
     expect(profileSelect).not.toMatch(
-      /\b(technical_id|profile_id|publication_id|manifest|failure_reason|storage_path|storage_bucket|checksum|metadata)\b/i,
+      /\b(technical_id|profile_id|publication_id|manifest|failure_reason|storage_path|storage_bucket|checksum|metadata|is_public|status)\b/i,
     );
     expect(mediaSelect).not.toMatch(
-      /\b(profile_id|storage_path|storage_bucket|checksum_sha256|metadata)\b/i,
+      /\b(profile_id|storage_path|storage_bucket|checksum_sha256|checksum|metadata|is_public|status)\b/i,
     );
     expect(profileView).toMatch(/\bps\.slug\b[\s\S]*\bs\.content\b/);
     expect(mediaView).toMatch(/\ba\.id as asset_id\b[\s\S]*\bv\.height as variant_height\b/);
   });
 
-  it('enforces publishable snapshot validation at DB boundary', () => {
+  it('enforces publishable snapshot validation at DB boundary with hardened function privileges', () => {
     expect(hardening).toContain(
       'create or replace function public.validate_publishable_snapshot_content',
     );
@@ -78,6 +110,13 @@ describe('data isolation (RLS hardening and boundaries)', () => {
       'before insert or update of content, visibility on public.profile_public_snapshots',
     );
     expect(hardening).toContain('raise exception');
+    expect(hardening).toContain('set search_path = pg_catalog, public');
+    expect(hardening).toContain(
+      'revoke all on function public.validate_publishable_snapshot_content(jsonb) from public, anon, authenticated;',
+    );
+    expect(hardening).toContain(
+      'revoke all on function public.enforce_publishable_snapshot() from public, anon, authenticated;',
+    );
   });
 
   it('does not allow Share/public adapter boundaries to connect/fetch without authorized configuration', async () => {

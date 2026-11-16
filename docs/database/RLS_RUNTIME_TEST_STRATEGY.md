@@ -1,49 +1,38 @@
 # Estratégia de testes de RLS em PostgreSQL real (sem conexão externa nesta etapa)
 
-> **Status:** preparada (Fase 2A hardening). **RLS não validada em runtime** nesta etapa, pois não há conexão/execução contra banco real autorizado.
+> **Status:** preparada (Fase 2A hardening/auditoria). **RLS não validada em runtime** nesta etapa.
 
-## Objetivo
+## Categorias de teste (distinguir explicitamente)
 
-Validar em PostgreSQL real (Supabase/Postgres de desenvolvimento ou staging **autorizado**) que:
+1. **Testes automatizados TypeScript (executados localmente):** validação de conteúdo publicável (`@hattz/validation`), contratos/boundaries, persistência IndexedDB e cenários de falha. **Não** comprovam RLS/privileges/views em PostgreSQL.
+2. **Testes estruturais das migrations (executados localmente):** inspeção estática de SQL (RLS/force, grants/revokes, policies, views, funções/triggers, projeções, `search_path`). **Não** comprovam comportamento em runtime.
+3. **Testes de comportamento SQL (preparados, não executados):** execução de SQL/consultas contra PostgreSQL real autorizado para observar permissões, linhas retornadas e erros.
+4. **Testes reais de RLS em PostgreSQL (preparados, não executados):** asserções como papéis `anon`/`authenticated` (e cenários de serviço quando aplicável) em banco real/efêmero autorizado. **Somente estes** validam RLS/privileges em runtime.
 
-- `anon` e `authenticated` **não** leem/escrevem tabelas base sensíveis (`public.*` restritas, `hattz_admin.*`, `hattz_audit.*`).
-- Leitura pública ocorre **somente** por views seguras explícitas (`v_share_published_profiles`, `v_share_public_media`).
-- `v_share_published_profiles` retorna apenas linhas efetivamente publicadas (`visibility='public'` e `publication.state='published'`) e apenas colunas permitidas.
-- `v_share_public_media` retorna apenas mídia pública ativa sem paths/buckets/checksums/metadata interna.
-- Trigger/função de validação rejeita snapshots com campos proibidos/estrutura inválida no insert/update.
+## Objetivo (runtime, quando autorizado)
 
-## Pré-requisitos (somente quando autorizado)
+Validar em PostgreSQL (Supabase/Postgres novo de dev/staging autorizado) que:
 
-- Projeto/instância PostgreSQL **nova** de desenvolvimento/staging (nunca bancos antigos/prod).
-- Credenciais geridas fora do repositório; execução controlada e auditável.
-- Aplicar migrations em ordem `0001`→`0009` em banco limpo.
+- `anon` e `authenticated` **não** leem/escrevem tabelas base sensíveis ou colunas internas sem grant (`public.*` restritas, `hattz_admin.*`, `hattz_audit.*`).
+- Views `v_share_published_profiles` e `v_share_public_media` (`security_invoker=true`) funcionam para `anon/authenticated` com base nos **grants mínimos de coluna + policies restritivas** e retornam apenas linhas publicadas/públicas/ativas e colunas projetadas.
+- Acesso direto às tabelas base por `anon/authenticated` (se tentado) não expõe colunas sem grant nem linhas não permitidas por RLS/policy.
+- Perfis/snapshots não publicados/privados e mídia privada/inativa não aparecem.
+- Trigger/função rejeita snapshots inválidos (campos proibidos/aninhados, chaves desconhecidas, estrutura/tipos/tamanhos inválidos).
 
-## Abordagem recomendada
+## Pré-requisitos
 
-1. **Banco efêmero local por container (preferencial para CI futuro autorizado):**
-   - Subir Postgres (imagem oficial compatível) em runner/ambiente autorizado.
-   - Aplicar migrations com ferramenta padrão (`psql`/migrator) e capturar logs.
-2. **Supabase local CLI/dev (quando autorizado):**
-   - Usar stack local de desenvolvimento (não cloud) para testes de integração de RLS/views.
-3. **Papéis e sessões:**
-   - Executar asserções como `anon` e `authenticated` (e, se aplicável no contexto Supabase, claims/JWT de teste) para confirmar negação em tabelas base e sucesso apenas nas views.
-   - Executar asserções como papel de serviço/admin controlado **apenas** nos cenários explicitamente previstos (não nesta etapa).
+- Instância PostgreSQL **nova** e autorizada (nunca bancos antigos/prod). Sem credenciais no repositório.
+- Aplicar migrations `0001`→`0009` em banco limpo e registrar evidências.
 
-## Casos de teste mínimos (runtime)
+## Casos mínimos (runtime)
 
-- `SELECT` em `public.profile_public_snapshots`, `public.profiles`, `public.sync_operations`, `hattz_admin.admin_accounts`, `hattz_audit.audit_logs` como anon/authenticated → negado (sem privilégios/policy).
-- `SELECT` em `v_share_published_profiles` → apenas perfis publicados públicos; colunas esperadas presentes; colunas internas ausentes por definição da view.
-- `SELECT` em `v_share_public_media` → apenas ativos públicos; sem `storage_path`, `storage_bucket`, `checksum_sha256`, `metadata`, `profile_id`.
-- `INSERT/UPDATE` em `profile_public_snapshots` com chave proibida (`password`, `token`, `admin`, `draft`, `storage_path`, etc.) → falha por trigger/função.
-- `INSERT/UPDATE` com estrutura inválida/chave desconhecida → falha.
-- Tentativa de acesso a snapshot `unpublished` ou publicação não `published` via view → sem linhas.
-
-## Integração futura (autorizada)
-
-- Adicionar suíte de integração (ex.: Vitest + conexão configurada por env, ou testes SQL) executada apenas em job autorizado com banco efêmero.
-- Nunca hardcode credenciais; não apontar para bancos existentes.
-- Registrar resultados e evidências no `DEVELOPMENT_STATUS.md` quando executado.
+- `SELECT` em tabelas restritas/admin/audit como anon/authenticated → negado.
+- `SELECT` em `v_share_published_profiles`/`v_share_public_media` como anon/authenticated → sucesso apenas para dados publicados/públicos/ativos e colunas esperadas.
+- Tentativas de `SELECT` de colunas internas (ex.: `storage_path`, `checksum_sha256`, `metadata`, `failure_reason`, `technical_id` onde sem grant) como anon/authenticated → negado/erro.
+- Perfil não publicado/privado e mídia privada/inativa → não retornados.
+- `INSERT/UPDATE` em `profile_public_snapshots` com conteúdo proibido/aninhado/inválido → falha por trigger.
+- Ausência de acesso administrativo indireto para papéis públicos.
 
 ## Limitação atual
 
-- Nesta etapa foram realizadas **revisões estáticas de SQL**, **testes automatizados de estrutura/contratos/validação local** e documentação. Isso **não** substitui validação de runtime de RLS no PostgreSQL real.
+- **Não executado:** comportamento SQL real, RLS runtime, semântica/execução de views `security_invoker` com policies+grants no ambiente alvo (incl. Supabase), e casos de borda de papéis (`service_role`, owner). Apenas categorias 1 e 2 foram executadas nesta etapa.

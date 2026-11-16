@@ -1,26 +1,24 @@
 # ADR-003 — Modelagem PostgreSQL/Supabase, RLS e isolamento de domínios
 
-- **Status:** Aceito (Fase 2A, modelagem local) — atualizado no hardening pré-2B
+- **Status:** Aceito (Fase 2A, modelagem local) — hardening e auditoria crítica pré-2B aplicados
 - **Data:** 2026-11-16
 
 ## Contexto
 
-A Fase 2A exige modelar banco PostgreSQL para um projeto Supabase **novo**, com RLS de menor privilégio e isolamento entre dados locais, publicados e administrativos. O hardening complementar exige impedir exposição de colunas internas/admin por tabelas públicas, validar snapshots publicáveis e restringir privilégios/grants.
+Modelar banco PostgreSQL para Supabase **novo** com RLS de menor privilégio, isolamento local/publicado/administrativo, snapshots publicáveis seguros e interfaces públicas sem exposição de colunas internas. Auditoria crítica pré-2B exigiu validar se as correções realmente funcionam em princípio e não introduzem inconsistências (especialmente views/privileges/RLS e equivalência de validadores).
 
 ## Decisão
 
-- Criar migrations SQL versionadas (`0001`–`0009`) cobrindo fundação, domínios funcionais, auditoria/admin isolados, configurações/sync/monitoramento, RLS/revogações e hardening de leitura pública.
-- Usar **identidade técnica permanente** (`profiles.technical_id`) independente de `display_name` e slugs públicos versionáveis (`profile_slugs`).
-- Separar conteúdo público em `profile_public_snapshots` vinculado a `profile_publications` (`state='published'`), com **validação recursiva** de conteúdo publicável (aplicação + função/trigger no banco) bloqueando campos privados/admin/credenciais/rascunhos/config interna.
-- **Não expor tabelas base publicamente:** `0008` habilita/força RLS e revoga privilégios diretos de `anon/authenticated` em tabelas/schemas sensíveis; nenhuma policy pública direta em tabelas base.
-- **Leitura pública apenas por views seguras com campos explicitamente permitidos** (`0009`): `v_share_published_profiles` e `v_share_public_media`, filtradas para conteúdo efetivamente publicado/visível e mídia pública ativa, com grants mínimos de SELECT.
-- Modelar estruturas administrativas em schemas isolados sem implementar autenticação própria; documentar fronteira futura do Control (Owner público ≠ acesso administrativo).
-- Harden de funções (`set_updated_at`, validação/enforcement) com `search_path` fixo e `REVOKE/GRANT EXECUTE` mínimos.
-- Não criar/executar conexões ou migrations remotas.
+- Migrations versionadas `0001`–`0009` (sem execução remota).
+- Identidade técnica permanente (`profiles.technical_id`) e slugs versionáveis; conteúdo público separado em `profile_public_snapshots` vinculado a publicações publicadas.
+- **Validação de snapshot publicável** (defesa em profundidade): validador TypeScript (`@hattz/validation`) e função/trigger no banco (`validate_publishable_snapshot_content` / `trg_validate_publishable_snapshot`) com varredura recursiva de chaves proibidas, schema explícito e checks de tipo/tamanho (alinhados por auditoria).
+- **Acesso público (auditado):** 0008 aplica `ENABLE/FORCE RLS`, revoga privilégios amplos (incl. `PUBLIC`), concede **grants mínimos de coluna** e define **policies SELECT restritivas** apenas para linhas publicadas/públicas/ativas nas tabelas necessárias. 0009 expõe **views `security_invoker=true, security_barrier=true` com projeção explícita** (`v_share_published_profiles`, `v_share_public_media`) como interface Share.
+  - **Justificativa:** evita `SECURITY DEFINER`/bypass de RLS; combina privilégios mínimos + RLS + projeção explícita. Reconhece-se que, por grants/policies, acesso direto limitado a colunas/linhas permitidas pode ser tecnicamente possível — colunas internas sem grant permanecem inacessíveis; a view é a interface canônica. **Comportamento real depende de validação runtime no ambiente alvo.**
+- Schemas `hattz_admin`/`hattz_audit` isolados, sem grants/policies públicas; sem auth própria; Owner público ≠ acesso ao Control.
+- Funções com `search_path` fixo e `REVOKE/GRANT EXECUTE` mínimos; sem `SECURITY DEFINER` introduzido.
 
 ## Consequências
 
-- Base preparada para revisão e aplicação futura em Supabase novo autorizado, com redução de superfície de exposição pública.
-- Policies/roles/funções de serviço e contexto administrativo isolado exigirão decisão arquitetural e revisão de segurança antes de implementação/concessão.
-- **Validação de RLS em runtime contra banco real não executada nesta etapa** (estratégia preparada em `docs/database/RLS_RUNTIME_TEST_STRATEGY.md`); mitigação atual por revisão estática de SQL, contratos/validação e testes automatizados locais.
-- Execução real das migrations em ambiente autorizado pode exigir ajustes finos (ex.: ownership/execução de views definer vs invoker no contexto Supabase), a validar em runtime autorizado.
+- Superfície pública reduzida e explicitamente modelada (colunas/linhas/validação).
+- **Não comprovado em runtime:** execução de views security_invoker sob `anon/authenticated`, efetividade das policies/grants no PostgreSQL/Supabase real, e casos de `service_role`/owner — requer testes em ambiente autorizado (estratégia documentada).
+- Sem policies/roles de serviço/contexto administrativo implementados; evolução exige revisão de segurança.
