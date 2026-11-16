@@ -22,6 +22,10 @@ export const CONTRACTS = {
     contract: 'hattz.permissions',
     version: '0.1.0',
   },
+  persistence: {
+    contract: 'hattz.persistence',
+    version: '0.1.0',
+  },
 } as const satisfies Record<string, VersionedContract>;
 
 export type PublicationState =
@@ -46,3 +50,6 @@ export interface ApiErrorShape {
   message: string;
   details?: Record<string, unknown>;
 }
+
+export * from './domains';
+export * from './adapters';

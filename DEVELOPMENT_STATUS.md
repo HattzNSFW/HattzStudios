@@ -1,162 +1,114 @@
 # Hättz 2.0 — Development Status
 
 ## Estado atual
-- **Fase concluída (nesta entrega):** 0 e 1 (fundação), conforme aprovação
+- **Fases concluídas (nesta entrega):** 0, 1 e **2A — preparação local da infraestrutura e dos dados** (conforme aprovação)
 - **Data:** 2026-11-16
 - **Branch:** `main`
-- **Próxima etapa:** aguardar avaliação/aprovação para iniciar Fase 2+
+- **Próxima etapa:** aguardar avaliação/aprovação para iniciar **Fase 2B** (não iniciada)
 
-## Decisões registradas (ajustes aprovados aplicados)
-- Gerenciador: **npm workspaces** (`apps/*`, `packages/*`).
-- Node.js de referência: **24 LTS** (`.nvmrc`, CI em Node 24, `engines` no root). Ambiente local detectado: **Node v26.13.0** (compatibilidade verificada na prática: typecheck/lint/test/build executados com sucesso no ambiente atual).
-- Stack base: **TypeScript strict, React, Vite**.
-- **Sem Fastify/infra backend adicional** nesta etapa (nenhuma necessidade justificada; sem custo/hospedagem/manutenção introduzidos).
-- Auth do Control: **isolamento administrativo planejado** (conta administrativa != cargo público Owner). **Nenhuma autenticação própria implementada**; soluções seguras a avaliar antes de implementação futura (ver ADR-002).
-- Supabase: **planejado** como banco, **sem criação/conexão de projeto externo** nesta etapa.
+## Decisões e restrições respeitadas (Fase 2A)
+- Banco modelado para **projeto Supabase (PostgreSQL) inteiramente novo**; migrations SQL versionadas em `infrastructure/supabase/migrations/`.
+- **Sem criação/conexão de projeto Supabase**, sem execução de migrations em bancos remotos, sem credenciais externas, sem deploy/publicação/serviços externos, sem acesso a bancos/projetos antigos.
+- **Cargo público Owner não concede acesso automático ao Hättz Control** (domínios/admin isolados; sem implementação de autenticação administrativa própria).
+- **Isolamento:** dados locais (Studio/IndexedDB) ≠ publicados (Share/snapshots) ≠ administrativos/auditoria (`hattz_admin`, `hattz_audit`).
+- **Share nunca poderá consultar rascunhos ou dados privados** (RLS/policies restringem leitura pública a snapshots/publicações publicados e mídia pública ativa).
+- **Studio funciona localmente sem conta ou conexão** (base Dexie/IndexedDB).
+- **IDs técnicos permanentes e independentes** de nomes/slugs públicos (`profiles.technical_id`, chaves técnicas locais).
+- Sem dados fictícios apresentados como dados reais; sem tabelas/permissões sem finalidade documentada; sem policies RLS permissivas para facilitar testes.
 
-## Escopo executado (Fases 0-1)
-- Organização do repositório e arquivos-base de configuração.
-- Commit local inicial contendo **somente `.gitignore`** (arquivo-base conferido).
-- Monorepo npm workspaces configurado.
-- Configuração de **TypeScript strict**, **ESLint (flat config)**, **Prettier** e **Vitest**.
-- Estrutura inicial das aplicações: **Share**, **Studio**, **Control** (React + Vite + TypeScript, shells de fundação sem funcionalidades completas dos 8 blocos).
-- Pacotes compartilhados criados: **@hattz/core**, **@hattz/contracts**, **@hattz/design-system**, **@hattz/permissions**, **@hattz/validation**, **@hattz/shared-utils**.
-- **Tokens iniciais do Design System** com identidade preta/grafite, prata, roxo suave e **Liquid Glass** (`tokens.ts`, `tokens.css`, utilitário `.hattz-liquid-glass`, suporte a `prefers-reduced-motion`).
-- CI configurado (GitHub Actions: typecheck, lint, format, test, build em Node 24).
-- Documentação técnica e ADRs criados/atualizados.
-- Instalação de dependências, correção de vulnerabilidades por atualização de versões, auditoria de segurança e execução de verificações.
+## Entregas da Fase 2A
 
-## Estrutura real de arquivos criada (exclui `node_modules/`, `.git/`, `dist/`)
-- `.editorconfig`
-- `.env.example`
-- `.github/workflows/ci.yml`
-- `.gitignore`
-- `.nvmrc`
-- `.prettierignore`
-- `DEVELOPMENT_STATUS.md`
-- `README.md`
-- `apps/control/index.html`
-- `apps/control/package.json`
-- `apps/control/src/App.tsx`
-- `apps/control/src/index.css`
-- `apps/control/src/main.tsx`
-- `apps/control/src/vite-env.d.ts`
-- `apps/control/tsconfig.json`
-- `apps/control/vite.config.ts`
-- `apps/share/index.html`
-- `apps/share/package.json`
-- `apps/share/src/App.tsx`
-- `apps/share/src/index.css`
-- `apps/share/src/main.tsx`
-- `apps/share/src/vite-env.d.ts`
-- `apps/share/tsconfig.json`
-- `apps/share/vite.config.ts`
-- `apps/studio/index.html`
-- `apps/studio/package.json`
-- `apps/studio/src/App.tsx`
-- `apps/studio/src/index.css`
-- `apps/studio/src/main.tsx`
-- `apps/studio/src/vite-env.d.ts`
-- `apps/studio/tsconfig.json`
-- `apps/studio/vite.config.ts`
-- `docs/adr/ADR-001-fundacao-monorepo.md`
-- `docs/adr/ADR-002-autenticacao-control-e-backend.md`
-- `docs/architecture/FOUNDATION.md`
-- `eslint.config.mjs`
-- `package.json`
-- `package-lock.json`
-- `packages/contracts/package.json`
-- `packages/contracts/src/index.ts`
-- `packages/contracts/tsconfig.json`
-- `packages/core/package.json`
-- `packages/core/src/index.ts`
-- `packages/core/tsconfig.json`
-- `packages/design-system/package.json`
-- `packages/design-system/src/index.ts`
-- `packages/design-system/src/tokens.css`
-- `packages/design-system/src/tokens.ts`
-- `packages/design-system/tsconfig.json`
-- `packages/permissions/package.json`
-- `packages/permissions/src/index.ts`
-- `packages/permissions/tsconfig.json`
-- `packages/shared-utils/package.json`
-- `packages/shared-utils/src/index.ts`
-- `packages/shared-utils/src/shared-utils.test.ts`
-- `packages/shared-utils/tsconfig.json`
-- `packages/validation/package.json`
-- `packages/validation/src/index.ts`
-- `packages/validation/tsconfig.json`
-- `prettier.config.mjs`
-- `tsconfig.base.json`
-- `vitest.config.ts`
-- `vitest.setup.ts`
+### 1) Esquema do banco (PostgreSQL/Supabase novo)
+Documentação: `docs/database/SCHEMA.md`, `infrastructure/supabase/policies/RLS_POLICIES.md`, ADRs `ADR-003`, `ADR-004`.
 
-## Dependências e versões (fixadas)
-### Raiz (`devDependencies`)
-- `@eslint/js`: **9.39.4**
-- `@testing-library/jest-dom`: **6.9.1**
-- `@testing-library/react`: **16.3.2**
-- `@types/node`: **24.12.2**
-- `@types/react`: **19.2.14**
-- `@types/react-dom`: **19.2.3**
-- `@vitejs/plugin-react`: **5.2.0**
-- `eslint`: **9.39.4** (deprecation warning informado pelo npm sobre suporte da linha 9.x; versão fixada por estabilidade/compatibilidade nesta fundação)
-- `eslint-config-prettier`: **10.1.8**
-- `eslint-plugin-react-hooks`: **7.0.1**
-- `eslint-plugin-react-refresh`: **0.4.26**
-- `globals`: **16.5.0**
-- `jsdom`: **27.4.0**
-- `prettier`: **3.8.3**
-- `typescript`: **5.9.3**
-- `typescript-eslint`: **8.73.0**
-- `vite`: **7.3.8**
-- `vitest`: **4.1.12**
+**Domínios modelados:**
+- **Fundação:** extensões (`pgcrypto`), schemas `hattz_admin`/`hattz_audit`, enums (`publication_state`, `sync_state`, `profile_visibility`, `collectible_rarity`, `benefit_validity_type`, `grant_source_type`), trigger `set_updated_at()`.
+- **Perfis e publicações:** `profiles` (identidade técnica permanente), `profile_slugs` (unicidade de slug atual), `profile_publications` (versionamento/estado), `profile_public_snapshots` (conteúdo público versionado/validado; separado de rascunhos locais).
+- **Mídia e armazenamento:** `media_assets`, `media_variants`, `profile_storage_usage` (metadados, visibilidade pública controlada, agregados).
+- **Cargos, permissões e benefícios:** `roles`, `permissions` (IDs permanentes), `role_permissions`, `user_role_assignments`, `user_permission_overrides`, `benefits_catalog`, `role_benefits`, `user_benefits`.
+- **Colecionáveis e coleções:** `badges_catalog`, `frames_catalog`, `collections`, `collection_items`, `user_badges` (unicidade de posse ativa), `user_frames`, `user_collection_progress`.
+- **Administração e auditoria (isolados):** `hattz_admin.admin_accounts`, `admin_credentials`, `admin_recovery_keys`, `admin_sessions`, `admin_access_logs`, `hattz_audit.audit_logs` (estruturas planejadas; sem auth própria implementada).
+- **Configurações, sync e monitoramento:** `global_settings`, `settings_history`, `feature_flags`, `notifications`, `sync_operations`, `service_status_snapshots`.
 
-### Apps (`dependencies`)
-- `@hattz/control`: `@hattz/contracts` 0.1.0, `@hattz/core` 0.1.0, `@hattz/design-system` 0.1.0, `@hattz/permissions` 0.1.0, `@hattz/shared-utils` 0.1.0, `react` **19.2.0**, `react-dom` **19.2.0**
-- `@hattz/share`: `@hattz/contracts` 0.1.0, `@hattz/core` 0.1.0, `@hattz/design-system` 0.1.0, `@hattz/shared-utils` 0.1.0, `react` **19.2.0**, `react-dom` **19.2.0**
-- `@hattz/studio`: `@hattz/contracts` 0.1.0, `@hattz/core` 0.1.0, `@hattz/design-system` 0.1.0, `@hattz/shared-utils` 0.1.0, `@hattz/validation` 0.1.0, `react` **19.2.0**, `react-dom` **19.2.0**
+### 2) Migrations SQL versionadas
+Local: `infrastructure/supabase/migrations/`
+- `0001_foundation_extensions.sql` — extensões, schemas isolados, enums, função de timestamp.
+- `0002_profiles_and_publications.sql` — perfis, slugs, publicações, snapshots públicos.
+- `0003_media_storage.sql` — assets, variantes e uso de armazenamento por perfil.
+- `0004_roles_permissions_benefits.sql` — RBAC, overrides, benefícios e atribuições.
+- `0005_collectibles_collections.sql` — catálogos, coleções, posse/progresso vinculados ao perfil.
+- `0006_admin_audit_isolation.sql` — domínio administrativo/auditoria isolado (estruturas, sem implementação de auth).
+- `0007_settings_sync_monitoring.sql` — configurações, flags, notificações, sync e status de serviços.
+- `0008_rls_policies.sql` — habilitação de RLS e policies de menor privilégio.
 
-> Justificativa resumida: React/Vite/TypeScript conforme aprovação; ESLint/Prettier/Vitest/Testing Library para qualidade e testes; jsdom para ambiente de testes UI; plugins React para lint/build; workspaces internos para contratos e design system compartilhados. Versões fixadas em `package.json` e travadas em `package-lock.json`.
+### 3) Políticas RLS (menor privilégio)
+- RLS habilitado em tabelas dos domínios modelados (incluindo `hattz_admin.*` e `hattz_audit.*`).
+- **Leitura pública (anon/authenticated) permitida apenas quando aplicável a conteúdo publicado:** snapshots públicos publicados, perfis/slugs/publicações vinculados a publicação pública, mídia pública ativa e variantes correspondentes.
+- **Sem policies públicas** para domínios restritos (cargos/permissões/atribuições/benefícios, colecionáveis/posses/progresso, configurações/histórico/flags/notificações/sync/monitoramento, uso de armazenamento) e **sem acesso público** a `hattz_admin`/`hattz_audit`.
+- **Sem policies de escrita pública**. Acesso administrativo/serviço futuro exigirá contexto dedicado e revisão de segurança.
 
-## Instalação e auditoria de segurança
-- **Instalação inicial:** `cmd /c "npm install"` — concluída (305 pacotes adicionados, 315 auditados). **Auditoria inicial:** 10 vulnerabilidades (8 moderate, 1 high, 1 critical) em cadeias de `typescript-eslint` (via `minimatch`), `vite` e `vitest/@vitest/mocker`.
-- **Correção aplicada:** atualização de versões fixadas para releases corrigidas no mesmo/compatível escopo (`typescript-eslint` 8.73.0, `vite` 7.3.8, `vitest` 4.1.12 e ajustes de tooling compatíveis), seguida de reinstalação.
-- **Reinstalação:** `cmd /c "npm install"` — concluída (300 pacotes auditados). `npm audit` reportou **found 0 vulnerabilities**.
-- **Auditoria final (executada):** `cmd /c "npm audit"` → **found 0 vulnerabilities**.
-- **Avisos npm (não vulnerabilidades):** deprecation de `eslint@9.39.4`; aviso de install scripts não cobertos por allowScripts para `esbuild` (postinstall). Nenhum `npm audit fix --force` foi aplicado.
+### 4) Estrutura do IndexedDB (Studio, Dexie)
+Implementação: `apps/studio/src/persistence/{db.ts,migrations.ts,repository.ts,index.ts}` (Dexie **4.3.0**, fixado).
+- **Banco:** `hattz_studio` (versão de schema **v1**), metadado `studioMeta.db_schema_version`.
+- **Stores v1:**
+  - `localProfiles` (`technicalId` PK, `publicSlugDraft`, `updatedAt`, `isDeleted`) — identidade técnica permanente, visibilidade local, `contentVersion`, `lastPublishedVersion`.
+  - `draftSnapshots` (`id` PK, `profileTechnicalId`, `version`, `createdAt`, `source`) — snapshots versionados (manual/autosave/migration), conteúdo local.
+  - `pendingSyncOps` (`operationId` PK, `profileTechnicalId`, `state`, `type`, `updatedAt`) — fila preparada para sync idempotente/conflitos futuros.
+  - `studioMeta` (`key` PK, `updatedAt`) — metadados locais e controle de versão/migração.
+- **Migrações locais:** versionamento Dexie com suporte a upgrades futuros (`.version(n+1).upgrade(...)`); `ensureStudioDbReady`/`getLocalMigrationStatus` para garantir/inspecionar versão.
+- **Repositório base:** criação de perfil local, salvamento de snapshot com incremento de versão, enfileiramento de operações pendentes, listagem (sem conexão/conta).
 
-## Resultado de typecheck, lint, testes e build (executados)
-- `cmd /c "npm run format:write"` — **executado com sucesso** (arquivos normalizados quando necessário).
-- `cmd /c "npm run lint:fix"` — **executado com sucesso**.
-- `cmd /c "npm run typecheck"` — **APROVADO** (workspaces: control, share, studio, contracts, core, design-system, permissions, shared-utils, validation).
-- `cmd /c "npm run lint"` — **APROVADO**.
-- `cmd /c "npm run format"` — **APROVADO** (`All matched files use Prettier code style!`).
-- `cmd /c "npm run test"` — **APROVADO** (Vitest v4.1.12: 1 arquivo de teste, 4 testes aprovados).
-- `cmd /c "npm run build"` — **APROVADO** após correção (Vite v7.3.8; builds de `@hattz/control`, `@hattz/share`, `@hattz/studio` concluídos com artefatos em `dist/`).
+### 5) Contratos e adapters de infraestrutura (preparação)
+- `packages/contracts`: extensão com `domains.ts`, `adapters.ts`, contrato `hattz.persistence` (interfaces para leitura pública publicada, publicação, sync, storage metadata, auditoria; tipos de isolamento/identidade/snapshot/operação).
+- `infrastructure/adapters`: `README.md`, `local-studio-adapter.ts`, `supabase-adapter-boundary.ts`, `tsconfig.json` (boundary Supabase planejado **lança erro** quando não configurado; sem conexão externa).
 
-## Commits locais realizados
-- `0fc9df2` — `chore: add base gitignore` (commit inicial com arquivo-base conferido)
-- `1316604` — `chore: bootstrap phases 0-1 foundation (workspaces, tooling, apps, packages, docs, ci)` (estrutura, tooling, apps, pacotes, CI, docs, lockfile e status da fundação)
+### 6) Documentação e ADRs (Fase 2A)
+- `docs/database/SCHEMA.md`
+- `infrastructure/supabase/policies/RLS_POLICIES.md`
+- `docs/adr/ADR-003-banco-supabase-rls-isolamento.md`
+- `docs/adr/ADR-004-persistencia-local-studio-indexeddb.md`
 
-## Problemas encontrados e respectivas correções
-1. **`npm` bloqueado no PowerShell por ExecutionPolicy (`npm.ps1`)**: contornado executando via `cmd /c "npm ..."`.
-2. **Commit inicial falhou por separador `&&` no PowerShell e ausência de identidade git local**: configurada identidade local do repositório (`Hattz Builder <builder@hattz.local>`) e commit realizado com comandos compatíveis.
-3. **Vulnerabilidades na instalação inicial (10)**: dependências de tooling atualizadas para versões corrigidas (vite/vitest/typescript-eslint e relacionadas), reinstalação e auditoria final com **0 vulnerabilidades**.
-4. **Falha de build (Vite) ao importar `@hattz/design-system/tokens.css`**: alias do pacote apontava para `index.ts`, gerando resolução inválida (`.../index.ts/tokens.css`). **Correção:** adicionado alias explícito `@hattz/design-system/tokens.css` para `packages/design-system/src/tokens.css` nos `vite.config.ts` das apps e no `vitest.config.ts`; build passou.
+## Dependências adicionadas (Fase 2A, fixadas) e auditoria
+- `apps/studio` dependency: `dexie@4.3.0` (persistência local IndexedDB)
+- root devDependency: `fake-indexeddb@6.2.5` (testes de persistência)
+- `package-lock.json` atualizado.
+- **Auditoria executada:** `cmd /c "npm audit"` → **`found 0 vulnerabilities`**.
+- Avisos npm (não vulnerabilidades): depreciação `eslint@9.39.4`, install scripts não cobertos por allowScripts (`esbuild`, `fake-indexeddb`).
 
-## Pendências e limitações (Fases 0-1)
-- **Fase 2+ não iniciada** (migrations/Supabase, persistência local completa, publicação/sync, funcionalidades dos 8 blocos, etc.) — aguarda aprovação.
-- **Sem backend/Fastify e sem autenticação própria do Control** nesta etapa (conforme decisão); auth administrativa isolada permanece em planejamento/avaliação.
-- **Supabase não conectado/criado**; `.env.example` contém apenas placeholders.
-- Ambiente local em **Node v26.13.0** (referência definida: 24 LTS/CI) — validado aqui, mas recomenda-se alinhar ao LTS em desenvolvimento contínuo.
-- `eslint@9.39.4` possui aviso de depreciação da linha 9.x (sem vulnerabilidade reportada pelo audit); migração para linha suportada pode ser avaliada futuramente com cuidado de compatibilidade.
-- Testes atuais cobrem fundação mínima (`shared-utils`); suíte abrangente (API, permissões/RLS, sync/publicação, UI/e2e, acessibilidade, segurança) será desenvolvida nas fases futuras.
+## Testes executados e resultados (Fase 2A)
 
-## Restrições respeitadas
-- Nenhum projeto externo/banco/conta/serviço criado ou conectado; nenhum deploy/publicação; sem credenciais/segredos no código.
-- Nenhum acesso/alteração/exclusão de projetos, bancos ou serviços antigos.
-- Sem repositório remoto e sem `git push`.
-- Sem dados fictícios apresentados como dados reais.
-- Nenhum teste declarado como aprovado sem execução.
-- Funcionalidades completas dos oito blocos não implementadas nesta etapa.
+| Verificação | Comando | Resultado |
+|---|---|---|
+| Formatação (write/fix) | `cmd /c "npm run format:write"` / `lint:fix` | **Executado** (arquivos normalizados; lint corrigido via regra `no-unused-vars` com ignore para `_`) |
+| Auditoria | `cmd /c "npm audit"` | **APROVADO** — 0 vulnerabilidades |
+| Typecheck (workspaces + adapters) | `cmd /c "npm run typecheck"` | **APROVADO** (`tsc` workspaces + `tsc -p infrastructure/adapters/tsconfig.json --noEmit`) |
+| Lint | `cmd /c "npm run lint"` | **APROVADO** |
+| Testes | `cmd /c "npm run test"` | **APROVADO** — Vitest v4.1.12: **5 arquivos**, **14 testes aprovados** |
+| Build | `cmd /c "npm run build"` | **APROVADO** — Vite v7.3.8: builds de `@hattz/control`, `@hattz/share`, `@hattz/studio` |
+
+**Suítes de teste (executadas):**
+- `packages/shared-utils/src/shared-utils.test.ts` (4) — fundação/utilitários.
+- `tests/integrity/schema.integrity.test.ts` (2) — integridade estrutural das migrations (domínios/tabelas/enums/IDs técnicos).
+- `tests/isolation/data-isolation.test.ts` (3) — isolamento RLS (políticas públicas mínimas de publicado/mídia pública; ausência de policies públicas em admin/audit/restritos) e boundary de adapter não conectado.
+- `tests/authorization/authorization.test.ts` (2) — fundamentos de autorização e separação Owner público ≠ acesso Control; modelagem admin isolada documentada.
+- `tests/persistence/studio-idb.persistence.test.ts` (3) — persistência local Dexie/IndexedDB (versionamento/migração de schema, rascunhos versionados com ID técnico permanente, fila de operações pendentes).
+
+## Problemas encontrados e correções (Fase 2A)
+1. **Lint `no-unused-vars` em adapter boundary planejado** (`_config`, `_slug`): ajustada regra ESLint para ignorar identificadores prefixados com `_` (mantendo placeholders explícitos de não-conexão).
+2. **Falhas iniciais nos novos testes:** import incorreto de `ensureStudioDbReady/getLocalMigrationStatus` (de `db` em vez de `migrations`) e resolução de caminhos via `import.meta.url` incompatível no contexto de execução; corrigidos para imports corretos e `process.cwd()` (raiz do repositório).
+3. **Asserção de autorização desalinhada com localização do schema:** `create schema hattz_admin/hattz_audit` está em `0001`; teste ajustado para validar `0001` + `0006` (tabela admin e comentário de isolamento Owner público ≠ Control).
+
+## Limitações e riscos encontrados
+- **RLS não validada em runtime contra banco Supabase/Postgres real:** sem projeto/conexão remota autorizada nesta fase; validação atual cobre SQL/policies por revisão estrutural automatizada e documentação (risco residual de ajuste fino ao aplicar em ambiente real).
+- **Migrations não executadas** em ambiente de banco (por restrição); possíveis ajustes de compatibilidade/performance podem surgir na aplicação futura em Supabase novo.
+- **Sem políticas/roles de serviço e sem contexto de sessão administrativa isolada implementados:** acesso não público (admin/serviço/publicação/sync) permanece a ser desenhado com decisão arquitetural e revisão de segurança em fases autorizadas.
+- **Persistência local é base (v1):** suporta rascunhos/snapshots/fila/meta; fluxos completos de conflito/sync/publicação, UI de editor, mídia binária local otimizada e recuperação avançada ficam para fases futuras.
+- **Adapters são boundaries/contratos preparados:** `PlannedSupabasePublicProfileReadAdapter` falha explicitamente sem configuração (comportamento intencional); nenhuma integração externa ativa.
+- **Ambiente local em Node v26.13.0** (referência 24 LTS); `eslint@9.39.4` com aviso de depreciação e avisos de install scripts (`esbuild`, `fake-indexeddb`) sem vulnerabilidade auditada.
+
+## Histórico (Fases 0-1)
+- Fundação concluída anteriormente: monorepo npm workspaces, apps Share/Studio/Control (shells), pacotes compartilhados, design system (preto/prata/roxo suave/Liquid Glass), tooling (TS strict/ESLint/Prettier/Vitest), CI, docs/ADRs, commits `0fc9df2`, `1316604`, `77936af`. (Detalhes preservados no histórico git e na entrega anterior.)
+
+## Restrições ativas para próxima etapa
+- **Não avançar para Fase 2B sem autorização.**
+- Manter proibições de criação/conexão externa, execução remota de migrations, deploy, acesso a recursos antigos e implementação de auth própria sem decisão/revisão.
