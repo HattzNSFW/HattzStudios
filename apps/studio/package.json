@@ -1,0 +1,21 @@
+{
+  "name": "@hattz/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hattz/contracts": "0.1.0",
+    "@hattz/core": "0.1.0",
+    "@hattz/design-system": "0.1.0",
+    "@hattz/shared-utils": "0.1.0",
+    "@hattz/validation": "0.1.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}
