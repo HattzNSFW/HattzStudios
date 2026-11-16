@@ -137,7 +137,7 @@
 
 ## Commits locais realizados
 - `0fc9df2` — `chore: add base gitignore` (commit inicial com arquivo-base conferido)
-- (a registrar no commit de fundação desta entrega, incluindo código/config/docs/lockfile e este status atualizado)
+- `1316604` — `chore: bootstrap phases 0-1 foundation (workspaces, tooling, apps, packages, docs, ci)` (estrutura, tooling, apps, pacotes, CI, docs, lockfile e status da fundação)
 
 ## Problemas encontrados e respectivas correções
 1. **`npm` bloqueado no PowerShell por ExecutionPolicy (`npm.ps1`)**: contornado executando via `cmd /c "npm ..."`.
