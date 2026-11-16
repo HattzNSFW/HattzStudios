@@ -286,16 +286,16 @@
   }
   async function loadEcosystem() {
     try {
-      const [data, roleData] = await Promise.all([api('/api/catalog', {}, false), api('/api/admin/roles')]);
+      const [data, roleData] = await Promise.all([api('/api/admin/catalog'), api('/api/admin/roles')]);
       const frames = data.frames || [], badges = data.badges || [];
       const roles = roleData.roles || [];
-      $('grantRoleId').innerHTML = roles.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.label)}</option>`).join('') || '<option value="">Nenhum cargo disponível</option>';
-      $('roleDefinitionList').innerHTML = roles.map(role => `<div class="role-definition-row"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color)}">${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Remover</button></div>`).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
+      $('grantRoleId').innerHTML = roles.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.label)}</option>`).join('') || '<option value="">Nenhum cargo disponível</option>';
+      $('roleDefinitionList').innerHTML = roles.map(role => `<div class="role-definition-row"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color)}">${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)}${Number(role.enabled) === 0 ? ' · Desativado' : ''}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">${Number(role.enabled) === 0 ? 'Editar / reativar' : 'Editar'}</button>${Number(role.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Desativar</button>` : ''}</div>`).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
       $('roleDefinitionList').querySelectorAll('[data-edit-role]').forEach(button => button.addEventListener('click', () => editRoleDefinition(roles.find(role => role.id === button.dataset.editRole))));
       $('roleDefinitionList').querySelectorAll('[data-delete-role]').forEach(button => button.addEventListener('click', () => removeRoleDefinition(button.dataset.deleteRole)));
-      $('grantBadgeId').innerHTML = badges.filter(x => x.award_mode !== 'automatic').map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)} · Manual</option>`).join('') || '<option value="">Nenhuma tag manual disponível</option>';
-      $('grantFrameId').innerHTML = frames.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
-      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({...x,kind:'Insígnia',catalogKind:'badges'})),...frames.map(x=>({...x,kind:'Moldura',catalogKind:'frames'}))].map(x=>`<div class="audit-item"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action">${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')}` : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Remover</button></div>`).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
+      $('grantBadgeId').innerHTML = badges.filter(x => Number(x.enabled) !== 0 && x.award_mode !== 'automatic').map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)} · Manual</option>`).join('') || '<option value="">Nenhuma tag manual disponível</option>';
+      $('grantFrameId').innerHTML = frames.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
+      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({...x,kind:'Insígnia',catalogKind:'badges'})),...frames.map(x=>({...x,kind:'Moldura',catalogKind:'frames'}))].map(x=>`<div class="audit-item"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action">${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Desativar</button></div>`).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
       $('ecosystemCatalog').querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', () => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog)));
       await loadRoleAssignments();
       await loadStudioAccess();
@@ -364,7 +364,7 @@
   async function saveCatalogItem() {
     const kind = $('catalogKind').value, id = $('catalogId').value.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(id)) { notify('Use um ID de 2 a 48 caracteres: letras, números, hífen ou sublinhado.'); return; }
-    const body = { name:$('catalogName').value, description:$('catalogDescription').value, rarityLevel:Number($('catalogRarity').value) };
+    const body = { name:$('catalogName').value, description:$('catalogDescription').value, rarityLevel:Number($('catalogRarity').value), isPublic:$('catalogIsPublic')?.checked !== false };
     const readPng = (file, limit) => new Promise((resolve,reject)=>{ if(!file){resolve("");return;} if(file.type!=="image/png"||file.size>limit){reject(new Error(`Envie um PNG de até ${Math.round(limit/1024)} KB.`));return;} const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result)); reader.onerror=()=>reject(new Error("Não foi possível ler o PNG.")); reader.readAsDataURL(file); });
     try {
       if (kind === 'badges') { body.category=$('catalogCategory').value; body.icon=await readPng($('catalogIconFile').files?.[0],128*1024)||$('catalogIcon').value||'✦'; }
@@ -374,19 +374,19 @@
     catch(error) { notify(error.message); }
   }
   async function removeRoleDefinition(id) {
-    if (!id || !window.confirm(`Remover o cargo "${id}"? As atribuições desse cargo deixarão de aparecer como ativas.`)) return;
+    if (!id || !window.confirm(`Desativar o cargo "${id}"? As atribuições serão preservadas e voltarão a valer se o cargo for reativado.`)) return;
     try {
       await api(`/api/admin/roles/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      notify('Cargo removido do catálogo.');
+      notify('Cargo desativado. As atribuições foram preservadas.');
       resetRoleDefinition();
       await Promise.all([loadEcosystem(), loadRoleAssignments()]);
     } catch (error) { notify(error.message); }
   }
   async function removeCatalogItem(kind, id) {
-    if (!id || !window.confirm(`Remover "${id}" do catálogo?`)) return;
+    if (!id || !window.confirm(`Desativar "${id}"? As concessões históricas serão preservadas e voltarão a aparecer se o item for reativado.`)) return;
     try {
       await api(`/api/admin/catalog/${kind}/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      notify('Item removido do catálogo.');
+      notify('Item desativado. As concessões foram preservadas.');
       await loadEcosystem();
     } catch (error) { notify(error.message); }
   }
@@ -536,7 +536,7 @@
     const kind = button.dataset.catalogKind; $("catalogKind").value = kind; $("catalogKind").dispatchEvent(new Event("change"));
     $("catalogId").value = button.dataset.editCatalog; $("catalogName").value = button.dataset.catalogName || "";
     $("catalogDescription").value = button.dataset.catalogDescription || ""; $("catalogRarity").value = button.dataset.catalogRarity || "1";
-    if (kind === "badges") { $("catalogCategory").value = button.dataset.catalogCategory || ""; $("catalogIcon").value = "✦"; $("catalogIconFile").value = ""; }
+    if (kind === "badges") { $("catalogCategory").value = button.dataset.catalogCategory || ""; $("catalogIsPublic").checked = button.dataset.catalogPublic !== "0"; $("catalogIcon").value = "✦"; $("catalogIconFile").value = ""; }
     else { $("catalogFrameFile").value = ""; }
     $("catalogId").focus(); notify("Item carregado para edição. Envie um novo PNG se quiser substituir a imagem atual.");
   });

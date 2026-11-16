@@ -103,7 +103,7 @@
       root.innerHTML=(data.badges||[]).map(b=>{
         const award=earned.get(b.id);
         const date=award?.awarded_at?new Date(award.awarded_at).toLocaleDateString("pt-BR"):"";
-        const icon=String(b.icon||"✦").startsWith("data:image/png;base64,")?`<img src="${b.icon}" alt="" style="width:24px;height:24px;object-fit:contain;vertical-align:middle">`:escapeText(b.icon);
+        const iconValue=String(b.icon||"✦");const icon=/^data:image\/png;base64,/i.test(iconValue)||/^https:\/\//i.test(iconValue)||/^assets\//i.test(iconValue)?`<img src="${escapeText(iconValue)}" alt="" style="width:28px;height:28px;object-fit:contain;vertical-align:middle">`:escapeText(iconValue);
         const state = award ? " · CONQUISTADA" : b.award_mode === "automatic" ? " · REQUISITOS PENDENTES" : " · CONCESSÃO MANUAL";
         return `<div class="catalog-item" style="--badge-color:${escapeText(b.color||"#B8BCC8")};border-color:${escapeText(b.color||"#B8BCC8")}55"><strong>${icon} ${escapeText(b.name)}</strong><small>${escapeText(b.rarityLabel||b.rarity)} · ${escapeText(b.category)}${state}</small><p class="muted">${escapeText(b.description)}</p>${award?`<small>Obtida em ${date||"data indisponível"}</small>`:""}</div>`;
       }).join("")||'<p class="muted">Nenhuma insígnia publicada.</p>';
