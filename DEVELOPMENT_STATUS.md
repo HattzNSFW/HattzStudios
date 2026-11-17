@@ -1,88 +1,90 @@
 # Hättz 2.0 — Development Status
 
-## Estado atual
+## Classificação formal
 
-- **Fases concluídas (base):** 0, 1 e **2A — preparação local da infraestrutura e dos dados** (hardening, auditoria crítica e **fechamento de pendências de segurança** concluídos localmente)
+- **Fase 2A:** **CONCLUÍDA — PREPARAÇÃO TÉCNICA LOCAL.**
 - **Data:** 2026-11-16
 - **Branch:** `main`
-- **Commits preservados:** `196c2a3`, `202b478` (base/hardening/auditoria anteriores). Esta etapa adiciona commit(s) local(is) de fechamento, preservando todo o histórico.
-- **Próxima etapa:** aguardar avaliação/aprovação para iniciar **Fase 2B** (não iniciada)
+- **Commits preservados:** `196c2a3`, `202b478`, `5aa24a0` (histórico integral preservado; sem rebase/reset/amend/squash).
+
+**Significado desta classificação:** modelagem, implementação local, hardening, contratos, persistência inicial, documentação e testes automatizados previstos para a Fase 2A foram concluídos conforme as evidências disponíveis no repositório.
+
+**Esta classificação NÃO significa:**
+- PostgreSQL validado em runtime.
+- RLS validada em execução real.
+- Segurança de produção certificada.
+- Banco Supabase criado ou conectado.
+- Sistema pronto para publicação.
+
+**Próxima etapa:** aguardar avaliação/aprovação do Owner para iniciar **Fase 2B** (não iniciada).
 
 ## Restrições respeitadas
 
-- Banco modelado para **Supabase (PostgreSQL) inteiramente novo**; migrations `0001`–`0009`. **Sem criação/conexão de projeto Supabase, sem credenciais, sem execução remota de migrations, sem acesso/modificação de bancos antigos, sem deploy/publicação/push, sem Fase 2B, sem auth própria, sem operações destrutivas.**
-- **RLS/SQL não validados em runtime** em PostgreSQL/Supabase real: nenhuma instância PostgreSQL local isolada disponível neste ambiente (`psql/postgres/docker/pg_config` ausentes). **Nenhum resultado simulado.**
+- Banco modelado para **Supabase (PostgreSQL) inteiramente novo**; migrations `0001`–`0009`. **Sem criação/conexão de projeto Supabase, sem credenciais, sem execução remota de migrations, sem acesso/modificação de bancos antigos, sem deploy/publicação/push, sem implementação de autenticação administrativa, sem Fase 2B, sem operações destrutivas.**
+- Sem instalação/download/criação de infraestrutura para contornar limitações de ambiente.
+- Share limitado a interfaces/conteúdo publicado-público-ativo conforme modelo; sem enfraquecimento de RLS, grants ou validações.
 
-## Fechamento das pendências de segurança (esta etapa)
+## Concluído (evidências locais)
 
-### 1) Exposição residual direta das tabelas-base (identificada e reduzida)
+- Modelagem inicial do banco e migrations `0001`–`0009` (versionadas, sem execução remota).
+- Separação entre dados locais (Studio/IndexedDB), públicos (Share), administrativos e de auditoria (domínios isolados).
+- Políticas RLS, grants mínimos e restrições de acesso implementados (`ENABLE/FORCE RLS`, revogações, policies restritivas por linha/coluna conforme modelo).
+- Views públicas com projeções explícitas (`v_share_published_profiles`, `v_share_public_media`, `security_invoker=true`, `security_barrier=true`) como interface canônica do Share.
+- Validação de snapshots publicáveis no TypeScript (`@hattz/validation`) e no PostgreSQL (função/trigger), com alinhamento estrutural TS↔SQL.
+- Limites explícitos e extensibilidade controlada/tipada para snapshots (`props/theme/effects` controlados, sem estruturas arbitrárias ilimitadas).
+- Integridade referencial de `profile_public_snapshots.og_image_asset_id` com FK para `media_assets(id)` e `ON DELETE SET NULL` (preservação de histórico, sem cascata destrutiva).
+- Persistência local inicial do Studio (IndexedDB/Dexie, migrações/versionamento, fila/metadados).
+- Contratos e adapters/boundaries.
+- Testes automatizados estruturais e de validação (TypeScript e inspeção estrutural de migrations/SQL).
+- Hardening e revisões locais documentadas (commits `196c2a3`, `202b478`, `5aa24a0`).
 
-- **Identificado:** grants mínimos anteriores incluíam `public.profiles(id,profile_id)` + policy pública e `profile_publications.profile_id`, não necessários às views públicas atuais (e `profiles.profile_id` inconsistente com o schema), ampliando desnecessariamente a superfície direta.
-- **Corrigido (0008):** removidos grant/policy pública em `public.profiles`; removido `profile_publications.profile_id` do grant. Grants finais restritos a colunas de junção/filtro/projeção indispensáveis às views `security_invoker`.
-- **Grants/privilégios finais (anon, authenticated):**
-  - `profile_slugs(profile_id, slug, is_current)`
-  - `profile_publications(id, state, published_at)`
-  - `profile_public_snapshots(publication_id, profile_id, version, visibility, seo_title, seo_description, content)`
-  - `media_assets(id, kind, mime_type, width, height, status, is_public)`
-  - `media_variants(asset_id, variant, format, width, height)`
-  - `SELECT` nas views `v_share_published_profiles`, `v_share_public_media`. **Sem** grants em schemas/tabelas `hattz_admin`/`hattz_audit`, domínios restritos, escrita, funções de snapshot, ou colunas sensíveis/internas (`technical_id`, `display_name`, `storage_bucket/path`, `checksum_sha256`, `metadata`, `manifest_*`, `failure_reason`, agregados de uso).
-- **Justificativa do residual:** colunas de junção/filtro/ids/flags são necessárias para execução de views `security_invoker` sem `SECURITY DEFINER`/bypass de RLS; acesso direto, se tentado, fica limitado a essas colunas e às linhas permitidas por RLS/policies (publicadas/públicas/ativas). Interface canônica: views com projeção explícita.
-- **Avaliação:** eliminação total do acesso direto às tabelas-base não é compatível com `security_invoker` sem introduzir definer/bypass (não adotado). Exposição residual minimizada e justificada.
+## Não validado em execução real
 
-### 2) Limites definitivos e validação dos snapshots (TS ↔ PostgreSQL)
+- Execução das migrations em PostgreSQL real.
+- RLS em runtime.
+- Grants e privilégios reais para `anon`, `authenticated` e `service_role`.
+- Isolamento real entre usuários.
+- Segurança/semântica das views com `security_invoker` em execução real (incl. interação com policies+subqueries/grants no ambiente alvo).
+- Policies, triggers, funções e FKs em execução real.
+- Testes negativos de autorização em PostgreSQL.
 
-- **Implementado e alinhado:** `packages/validation/src/publishableSnapshot.ts` e `0009` `validate_publishable_snapshot_content`/trigger.
-- **Limites explícitos:** tamanho total **262144 bytes**; profundidade **12**; seções **50**; blocos por seção **50**; elementos por array **100**; chaves por objeto **50**; string genérica **2000**; `displayName` **80**; `bio` **2000**; `seo.title` **120**; `seo.description` **300**; ids/tipos/refs de mídia com formato controlado `[a-zA-Z0-9_-]` e comprimentos limitados (id/asset **128**, type **64**).
-- **Estruturas controladas e extensíveis:** `props`, `theme`, `effects` aceitam chaves seguras e valores tipados (null/boolean/número finito/string limitada/array/objeto) com os mesmos limites de profundidade/contagem/tamanho — extensibilidade preservada para futuras ferramentas do Studio, sem estruturas arbitrárias ilimitadas.
-- **Mídia/refs:** `avatarAssetId`/`bannerAssetId` validados por formato/tamanho; `og_image_asset_id` tratado por integridade relacional (abaixo). Varredura recursiva de chaves proibidas mantida e endurecida.
-- **Testes:** positivos e negativos adicionados para limites, formatos, extensibilidade controlada, profundidade, arrays/objetos, tamanho total e refs de mídia; equivalência estrutural TS↔SQL atualizada.
+**Limitação de ambiente auditado:** não havia instância PostgreSQL local isolada nem ferramentas disponíveis (`psql`, `postgres`, `docker`, `pg_config` ausentes). Nenhuma instalação, download ou criação de infraestrutura foi realizada para contornar essa limitação. Migrations não executadas remotamente. **Nenhum resultado simulado.**
 
-### 3) Integridade referencial e comportamento de exclusão
+## Diferenciação dos testes
 
-- **`profile_public_snapshots.og_image_asset_id`:** FK para `public.media_assets(id)` com **`ON DELETE SET NULL`** (0002/0003). Preserva histórico do snapshot, impede referência quebrada a asset inexistente, evita cascata destrutiva (não adotado `CASCADE`). Substituição/remoção de mídia não apaga histórico publicado.
-- **Referências de mídia em conteúdo JSON:** validadas por formato/limites (sem FK relacional no conteúdo flexível controlado); integridade semântica completa de refs dentro de blocos/props depende de fluxo futuro autorizado.
-- **Histórico/órfãos:** políticas de exclusão restritivas predominantes mantidas; sem remoção de histórico.
+1. **Testes TypeScript (executados):** validação de conteúdo/limites/extensibilidade, contratos/boundaries, persistência e falhas IndexedDB, utilitários/autorização em nível de aplicação conforme suíte atual. **Não comprovam** comportamento SQL/RLS em PostgreSQL real.
+2. **Testes estruturais das migrations (executados):** inspeção estática de SQL/migrations (RLS/force, grants/revokes/policies, views, funções/triggers, projeções, limites, integridade/FK, `search_path`, alinhamento TS↔SQL). **Não comprovam** comportamento em runtime.
+3. **Testes de comportamento SQL (preparados, não executados):** execução de SQL/consultas em PostgreSQL real autorizado/descartável. **Pendentes.**
+4. **Testes reais de RLS em PostgreSQL (preparados, não executados):** asserções sob papéis `anon`/`authenticated`/`service_role`/owner em banco real/efêmero autorizado. **Pendentes; somente estes validam RLS/privileges em runtime.**
 
-### 4) Validação PostgreSQL local
+As categorias 1 e 2 **não** são apresentadas como comprovação das categorias 3 e 4.
 
-- **Disponibilidade:** não identificada instância PostgreSQL local isolada (`psql`, `postgres`, `docker`, `pg_config` ausentes). **Nenhuma instalação/download/infra externa realizada.**
-- **Execução:** não realizada; **nenhum resultado simulado**. Procedimentos e casos (migrations 0001–0009 em DB efêmero descartável, grants/revokes, `security_invoker`, `anon/authenticated/service_role`, publicados vs privados/não publicados/inativos, colunas internas, funções/triggers, policies+subqueries, RLS+`FORCE`, FK/`ON DELETE SET NULL`) documentados em `docs/database/RLS_RUNTIME_TEST_STRATEGY.md`.
+## Verificações executadas (encerramento documental)
 
-## Migrations/documentação alteradas nesta etapa
+Comandos executados via `cmd /c npm ...` no ambiente auditado:
 
-- **Alteradas:** `0002_profiles_and_publications.sql` (referência/nota de integridade OG), `0003_media_storage.sql` (FK `og_image_asset_id` `ON DELETE SET NULL`), `0008_rls_policies.sql` (grants/policies mínimos finais), `0009_hardening_public_views_and_snapshot_validation.sql` (limites e validação controlada/extensível TS↔SQL).
-- **Atualizadas:** `packages/validation/src/publishableSnapshot.ts`, `packages/validation/src/index.ts` (export), testes de isolamento/integridade/validação, `DEVELOPMENT_STATUS.md`, `infrastructure/supabase/policies/RLS_POLICIES.md`, `docs/database/SCHEMA.md`, `docs/database/RLS_RUNTIME_TEST_STRATEGY.md`, `docs/adr/ADR-003-banco-supabase-rls-isolamento.md`, `docs/adr/ADR-004-persistencia-local-studio-indexeddb.md`.
+- `npm run format:write` — **PASS** (arquivos verificados; sem alterações necessárias)
+- `npm run lint` — **PASS**
+- `npm run typecheck` — **PASS** (workspaces + `infrastructure/adapters`)
+- `npm run test` — **PASS** — Vitest v4.1.12, **7 arquivos de teste, 28 testes aprovados** (contagem efetivamente apresentada pelo Vitest nesta execução)
+- `npm run build` — **PASS** — Vite v7.3.8 (`@hattz/control`, `@hattz/share`, `@hattz/studio`)
+- `npm audit` — **PASS** — **found 0 vulnerabilities**
 
-## Testes e resultados reais
+## Riscos e pendências restantes
 
-**Categorias:**
+- **Pendência crítica:** validação runtime de RLS/privileges/views/policies/triggers/FKs em PostgreSQL/Supabase real (incl. `anon/authenticated/service_role/owner`, `security_invoker` com policies+subqueries, `FORCE RLS`, casos negativos de autorização e integridade em execução).
+- Exposição direta residual limitada a colunas/linhas permitidas quando necessária ao modelo `security_invoker` (sem `SECURITY DEFINER`/bypass); colunas internas/sensíveis e domínios admin/auditoria sem grant/policy pública.
+- Refs de mídia em `content` JSON sem FK relacional (validadas por formato/limites no contrato de snapshot).
+- Migrations não executadas remotamente; sem roles/policies de serviço/contexto administrativo do Control/autenticação administrativa implementados.
+- Observações de ambiente: Node local v26.13.0 (referência 24 LTS), avisos/depreciações de tooling conforme saída de instalação/execução quando aplicável.
 
-1. **Automatizados TypeScript (executados):** validação/limites/extensibilidade controlada, contratos/boundaries, persistência/falhas IndexedDB, utilitários.
-2. **Estruturais das migrations/SQL por inspeção (executados):** RLS/force, grants/revokes/policies finais, views (`security_invoker/barrier`, projeção/filtros), funções/triggers/EXECUTE/`search_path`, limites/validação, integridade FK/`ON DELETE SET NULL`, equivalência TS↔SQL.
-3. **Comportamento SQL (não executados):** sem PostgreSQL local isolado.
-4. **RLS real em PostgreSQL (não executados):** sem ambiente autorizado.
+## Referências
 
-**Resultados reais (fechamento):**
+- `docs/database/SCHEMA.md`
+- `infrastructure/supabase/policies/RLS_POLICIES.md`
+- `docs/database/RLS_RUNTIME_TEST_STRATEGY.md`
+- `docs/architecture/FOUNDATION.md`
+- `docs/adr/ADR-003-banco-supabase-rls-isolamento.md`
+- `docs/adr/ADR-004-persistencia-local-studio-indexeddb.md`
 
-- `cmd /c "npm run format:write"` — **PASS**
-- `cmd /c "npm run lint"` — **PASS**
-- `cmd /c "npm run typecheck"` — **PASS** (workspaces + `infrastructure/adapters`)
-- `cmd /c "npm run test"` — **PASS** — Vitest v4.1.12, **7 arquivos, 26 testes aprovados**
-- `cmd /c "npm run build"` — **PASS** — Vite v7.3.8 (`@hattz/control`, `@hattz/share`, `@hattz/studio`)
-- `cmd /c "npm audit"` — **PASS** — **found 0 vulnerabilities**
-
-## Riscos e limitações restantes
-
-- **Sem validação runtime** de RLS/privileges/views/policies/triggers/FKs no PostgreSQL/Supabase real (`anon/authenticated/service_role`, owner, `security_invoker` com policies+subqueries em Supabase).
-- Acesso direto residual limitado a colunas/linhas permitidas (necessário para `security_invoker`) — colunas internas e domínios sensíveis sem grant/policy.
-- Refs de mídia dentro do `content` JSON sem FK relacional (validadas por formato/limites).
-- Migrations não executadas remotamente; sem roles/policies de serviço/contexto administrativo Control/auth própria.
-- Ambiente/avisos: Node local v26.13.0 (ref. 24 LTS), `eslint@9.39.4` deprecado, install scripts `esbuild`/`fake-indexeddb`.
-
-## Histórico
-
-- `196c2a3` chore(phase-2a): hardening inicial
-- `202b478` chore(phase-2a): auditoria crítica/correções
-- Commit local desta etapa: fechamento de pendências (ver `git log`)
-
-**Aguardando avaliação antes de qualquer integração externa ou início da Fase 2B.**
+**Aguardando avaliação e autorização explícita do Owner. Nenhuma integração externa ou Fase 2B foi iniciada.**

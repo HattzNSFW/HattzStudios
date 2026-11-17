@@ -1,6 +1,6 @@
 # Hättz 2.0
 
-Monorepo em fundação (Fases 0-1 aprovadas) para as aplicações **Share**, **Studio** e **Control**.
+Monorepo do ecossistema **Share**, **Studio** e **Control**. Fase 2A classificada como **CONCLUÍDA — PREPARAÇÃO TÉCNICA LOCAL** (sem validação de RLS/PostgreSQL em runtime real).
 
 ## Requisitos
 
