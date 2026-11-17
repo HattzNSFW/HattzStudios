@@ -33,11 +33,29 @@ export interface PublishableBlock {
   props: Record<string, unknown>;
 }
 
+// Explicit limits (kept consistent with DB validation in 0009)
+export const SNAPSHOT_LIMITS = {
+  maxTotalBytes: 262_144, // UTF-8 JSON payload bound
+  maxDepth: 12,
+  maxSections: 50,
+  maxBlocksPerSection: 50,
+  maxArrayElements: 100,
+  maxObjectKeys: 50,
+  maxStringLength: 2_000,
+  maxDisplayNameLength: 80,
+  maxBioLength: 2_000,
+  maxAssetIdLength: 128,
+  maxSeoTitleLength: 120,
+  maxSeoDescriptionLength: 300,
+  maxIdLength: 128,
+  maxTypeLength: 64,
+} as const;
+
 const FORBIDDEN_KEY_PATTERNS = [
   /password/i,
   /credential/i,
   /secret/i,
-  /token/i,
+  /token(?!s\b)/i,
   /session/i,
   /cookie/i,
   /recovery/i,
@@ -77,12 +95,20 @@ const ALLOWED_SECTION_KEYS = new Set(['id', 'type', 'visible', 'order', 'blocks'
 const ALLOWED_BLOCK_KEYS = new Set(['id', 'type', 'visible', 'order', 'props']);
 const ALLOWED_SEO_KEYS = new Set(['title', 'description']);
 
+const EXTENSIBLE_KEY_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+const ASSET_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isForbiddenKey(key: string): boolean {
   return FORBIDDEN_KEY_PATTERNS.some((re) => re.test(key));
+}
+
+function utf8ByteLength(value: string): number {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(value).length;
+  return Buffer.byteLength(value, 'utf8');
 }
 
 function pushForbiddenKeyIssues(value: unknown, path: string, issues: ValidationIssue[]): void {
@@ -121,7 +147,12 @@ function validateAllowedKeys(
   }
 }
 
-function validateString(value: unknown, path: string, issues: ValidationIssue[], max = 500): void {
+function validateString(
+  value: unknown,
+  path: string,
+  issues: ValidationIssue[],
+  max: number = SNAPSHOT_LIMITS.maxStringLength,
+): void {
   if (typeof value !== 'string') {
     issues.push({ path, code: 'snapshot.type', message: 'Expected string.' });
     return;
@@ -135,6 +166,100 @@ function validateString(value: unknown, path: string, issues: ValidationIssue[],
   }
 }
 
+function validateAssetRef(value: unknown, path: string, issues: ValidationIssue[]): void {
+  if (typeof value !== 'string') {
+    issues.push({ path, code: 'snapshot.type', message: 'Expected asset reference string.' });
+    return;
+  }
+  if (value.length > SNAPSHOT_LIMITS.maxAssetIdLength || !ASSET_ID_PATTERN.test(value)) {
+    issues.push({
+      path,
+      code: 'snapshot.media_ref',
+      message: 'Invalid media asset reference format.',
+    });
+  }
+}
+
+// Controlled, typed-extensible values for props/theme/effects:
+// primitives (null/boolean/finite number/bounded string), arrays, and plain objects
+// with bounded keys/counts/depth. No arbitrary/unsafe structures.
+function validateExtensibleValue(
+  value: unknown,
+  path: string,
+  depth: number,
+  issues: ValidationIssue[],
+): void {
+  if (depth > SNAPSHOT_LIMITS.maxDepth) {
+    issues.push({
+      path,
+      code: 'snapshot.depth',
+      message: `Maximum nesting depth (${SNAPSHOT_LIMITS.maxDepth}) exceeded.`,
+    });
+    return;
+  }
+  if (value === null) return;
+  const t = typeof value;
+  if (t === 'string') {
+    if ((value as string).length > SNAPSHOT_LIMITS.maxStringLength) {
+      issues.push({
+        path,
+        code: 'snapshot.length',
+        message: `String exceeds maximum length (${SNAPSHOT_LIMITS.maxStringLength}).`,
+      });
+    }
+    return;
+  }
+  if (t === 'number') {
+    if (!Number.isFinite(value as number)) {
+      issues.push({ path, code: 'snapshot.type', message: 'Number must be finite.' });
+    }
+    return;
+  }
+  if (t === 'boolean') return;
+  if (Array.isArray(value)) {
+    if (value.length > SNAPSHOT_LIMITS.maxArrayElements) {
+      issues.push({
+        path,
+        code: 'snapshot.limit',
+        message: `Array exceeds maximum elements (${SNAPSHOT_LIMITS.maxArrayElements}).`,
+      });
+      return;
+    }
+    value.forEach((item, i) => validateExtensibleValue(item, `${path}[${i}]`, depth + 1, issues));
+    return;
+  }
+  if (isPlainObject(value)) {
+    const keys = Object.keys(value);
+    if (keys.length > SNAPSHOT_LIMITS.maxObjectKeys) {
+      issues.push({
+        path,
+        code: 'snapshot.limit',
+        message: `Object exceeds maximum keys (${SNAPSHOT_LIMITS.maxObjectKeys}).`,
+      });
+      return;
+    }
+    for (const key of keys) {
+      if (isForbiddenKey(key)) {
+        issues.push({
+          path: `${path}.${key}`,
+          code: 'snapshot.forbidden_key',
+          message: `Forbidden key "${key}" is not allowed in publishable snapshot content.`,
+        });
+      }
+      if (!EXTENSIBLE_KEY_PATTERN.test(key)) {
+        issues.push({
+          path: `${path}.${key}`,
+          code: 'snapshot.key',
+          message: 'Extensible keys must match [a-zA-Z0-9_-]{1,64}.',
+        });
+      }
+      validateExtensibleValue(value[key], `${path}.${key}`, depth + 1, issues);
+    }
+    return;
+  }
+  issues.push({ path, code: 'snapshot.type', message: 'Unsupported value type.' });
+}
+
 export function validatePublishableSnapshotContent(
   input: unknown,
 ): ValidationResult<PublishableSnapshotContent> {
@@ -143,6 +268,24 @@ export function validatePublishableSnapshotContent(
     return failure([
       { path: 'content', code: 'snapshot.type', message: 'Snapshot content must be an object.' },
     ]);
+  }
+
+  // Total payload size bound (defense in depth)
+  try {
+    const size = utf8ByteLength(JSON.stringify(input));
+    if (size > SNAPSHOT_LIMITS.maxTotalBytes) {
+      issues.push({
+        path: 'content',
+        code: 'snapshot.size',
+        message: `Snapshot exceeds maximum size (${SNAPSHOT_LIMITS.maxTotalBytes} bytes).`,
+      });
+    }
+  } catch {
+    issues.push({
+      path: 'content',
+      code: 'snapshot.type',
+      message: 'Snapshot content is not serializable JSON.',
+    });
   }
 
   // Recursive forbidden key scan (defense in depth)
@@ -179,19 +322,24 @@ export function validatePublishableSnapshotContent(
         code: 'snapshot.required',
         message: 'profile.displayName is required.',
       });
-    } else if (input.profile.displayName.length > 80) {
+    } else if (input.profile.displayName.length > SNAPSHOT_LIMITS.maxDisplayNameLength) {
       issues.push({
         path: 'content.profile.displayName',
         code: 'snapshot.length',
-        message: 'profile.displayName exceeds 80 characters.',
+        message: `profile.displayName exceeds ${SNAPSHOT_LIMITS.maxDisplayNameLength} characters.`,
       });
     }
     if (input.profile.bio !== undefined)
-      validateString(input.profile.bio, 'content.profile.bio', issues, 2000);
+      validateString(
+        input.profile.bio,
+        'content.profile.bio',
+        issues,
+        SNAPSHOT_LIMITS.maxBioLength,
+      );
     if (input.profile.avatarAssetId !== undefined)
-      validateString(input.profile.avatarAssetId, 'content.profile.avatarAssetId', issues, 128);
+      validateAssetRef(input.profile.avatarAssetId, 'content.profile.avatarAssetId', issues);
     if (input.profile.bannerAssetId !== undefined)
-      validateString(input.profile.bannerAssetId, 'content.profile.bannerAssetId', issues, 128);
+      validateAssetRef(input.profile.bannerAssetId, 'content.profile.bannerAssetId', issues);
   }
 
   if (!Array.isArray(input.sections)) {
@@ -201,6 +349,13 @@ export function validatePublishableSnapshotContent(
       message: 'sections must be an array.',
     });
   } else {
+    if (input.sections.length > SNAPSHOT_LIMITS.maxSections) {
+      issues.push({
+        path: 'content.sections',
+        code: 'snapshot.limit',
+        message: `sections exceeds maximum (${SNAPSHOT_LIMITS.maxSections}).`,
+      });
+    }
     input.sections.forEach((section, i) => {
       const sp = `content.sections[${i}]`;
       if (!isPlainObject(section)) {
@@ -214,11 +369,14 @@ export function validatePublishableSnapshotContent(
           code: 'snapshot.required',
           message: 'section.id is required.',
         });
-      else if (section.id.length > 128)
+      else if (
+        section.id.length > SNAPSHOT_LIMITS.maxIdLength ||
+        !EXTENSIBLE_KEY_PATTERN.test(section.id)
+      )
         issues.push({
           path: `${sp}.id`,
-          code: 'snapshot.length',
-          message: 'section.id exceeds 128 characters.',
+          code: 'snapshot.format',
+          message: 'section.id has invalid format/length.',
         });
       if (typeof section.type !== 'string' || !section.type)
         issues.push({
@@ -226,11 +384,14 @@ export function validatePublishableSnapshotContent(
           code: 'snapshot.required',
           message: 'section.type is required.',
         });
-      else if (section.type.length > 64)
+      else if (
+        section.type.length > SNAPSHOT_LIMITS.maxTypeLength ||
+        !EXTENSIBLE_KEY_PATTERN.test(section.type)
+      )
         issues.push({
           path: `${sp}.type`,
-          code: 'snapshot.length',
-          message: 'section.type exceeds 64 characters.',
+          code: 'snapshot.format',
+          message: 'section.type has invalid format/length.',
         });
       if (typeof section.visible !== 'boolean')
         issues.push({
@@ -238,11 +399,11 @@ export function validatePublishableSnapshotContent(
           code: 'snapshot.type',
           message: 'section.visible must be boolean.',
         });
-      if (typeof section.order !== 'number')
+      if (typeof section.order !== 'number' || !Number.isFinite(section.order))
         issues.push({
           path: `${sp}.order`,
           code: 'snapshot.type',
-          message: 'section.order must be number.',
+          message: 'section.order must be a finite number.',
         });
       if (!Array.isArray(section.blocks)) {
         issues.push({
@@ -251,6 +412,13 @@ export function validatePublishableSnapshotContent(
           message: 'section.blocks must be an array.',
         });
       } else {
+        if (section.blocks.length > SNAPSHOT_LIMITS.maxBlocksPerSection) {
+          issues.push({
+            path: `${sp}.blocks`,
+            code: 'snapshot.limit',
+            message: `blocks exceeds maximum (${SNAPSHOT_LIMITS.maxBlocksPerSection}).`,
+          });
+        }
         section.blocks.forEach((block, j) => {
           const bp = `${sp}.blocks[${j}]`;
           if (!isPlainObject(block)) {
@@ -264,11 +432,14 @@ export function validatePublishableSnapshotContent(
               code: 'snapshot.required',
               message: 'block.id is required.',
             });
-          else if (block.id.length > 128)
+          else if (
+            block.id.length > SNAPSHOT_LIMITS.maxIdLength ||
+            !EXTENSIBLE_KEY_PATTERN.test(block.id)
+          )
             issues.push({
               path: `${bp}.id`,
-              code: 'snapshot.length',
-              message: 'block.id exceeds 128 characters.',
+              code: 'snapshot.format',
+              message: 'block.id has invalid format/length.',
             });
           if (typeof block.type !== 'string' || !block.type)
             issues.push({
@@ -276,11 +447,14 @@ export function validatePublishableSnapshotContent(
               code: 'snapshot.required',
               message: 'block.type is required.',
             });
-          else if (block.type.length > 64)
+          else if (
+            block.type.length > SNAPSHOT_LIMITS.maxTypeLength ||
+            !EXTENSIBLE_KEY_PATTERN.test(block.type)
+          )
             issues.push({
               path: `${bp}.type`,
-              code: 'snapshot.length',
-              message: 'block.type exceeds 64 characters.',
+              code: 'snapshot.format',
+              message: 'block.type has invalid format/length.',
             });
           if (typeof block.visible !== 'boolean')
             issues.push({
@@ -288,36 +462,48 @@ export function validatePublishableSnapshotContent(
               code: 'snapshot.type',
               message: 'block.visible must be boolean.',
             });
-          if (typeof block.order !== 'number')
+          if (typeof block.order !== 'number' || !Number.isFinite(block.order))
             issues.push({
               path: `${bp}.order`,
               code: 'snapshot.type',
-              message: 'block.order must be number.',
+              message: 'block.order must be a finite number.',
             });
-          if (!isPlainObject(block.props))
+          if (!isPlainObject(block.props)) {
             issues.push({
               path: `${bp}.props`,
               code: 'snapshot.type',
               message: 'block.props must be an object.',
             });
+          } else {
+            // props is extensible but controlled/typed/bounded
+            validateExtensibleValue(block.props, `${bp}.props`, 1, issues);
+          }
         });
       }
     });
   }
 
-  if (input.theme !== undefined && !isPlainObject(input.theme)) {
-    issues.push({
-      path: 'content.theme',
-      code: 'snapshot.type',
-      message: 'theme must be an object.',
-    });
+  if (input.theme !== undefined) {
+    if (!isPlainObject(input.theme)) {
+      issues.push({
+        path: 'content.theme',
+        code: 'snapshot.type',
+        message: 'theme must be an object.',
+      });
+    } else {
+      validateExtensibleValue(input.theme, 'content.theme', 1, issues);
+    }
   }
-  if (input.effects !== undefined && !isPlainObject(input.effects)) {
-    issues.push({
-      path: 'content.effects',
-      code: 'snapshot.type',
-      message: 'effects must be an object.',
-    });
+  if (input.effects !== undefined) {
+    if (!isPlainObject(input.effects)) {
+      issues.push({
+        path: 'content.effects',
+        code: 'snapshot.type',
+        message: 'effects must be an object.',
+      });
+    } else {
+      validateExtensibleValue(input.effects, 'content.effects', 1, issues);
+    }
   }
   if (input.seo !== undefined) {
     if (!isPlainObject(input.seo)) {
@@ -329,9 +515,19 @@ export function validatePublishableSnapshotContent(
     } else {
       validateAllowedKeys(input.seo, ALLOWED_SEO_KEYS, 'content.seo', issues);
       if (input.seo.title !== undefined)
-        validateString(input.seo.title, 'content.seo.title', issues, 120);
+        validateString(
+          input.seo.title,
+          'content.seo.title',
+          issues,
+          SNAPSHOT_LIMITS.maxSeoTitleLength,
+        );
       if (input.seo.description !== undefined)
-        validateString(input.seo.description, 'content.seo.description', issues, 300);
+        validateString(
+          input.seo.description,
+          'content.seo.description',
+          issues,
+          SNAPSHOT_LIMITS.maxSeoDescriptionLength,
+        );
     }
   }
 

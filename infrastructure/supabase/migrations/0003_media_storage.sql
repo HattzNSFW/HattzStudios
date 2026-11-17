@@ -57,4 +57,19 @@ create trigger trg_profile_storage_usage_updated_at
 before update on public.profile_storage_usage
 for each row execute function public.set_updated_at();
 
+-- Integridade referencial de mídia em snapshot (0002 cria a coluna antes de media_assets existir).
+-- ON DELETE SET NULL preserva histórico de publicação e evita referências quebradas sem cascata destrutiva.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'profile_public_snapshots_og_image_asset_id_fkey'
+  ) then
+    alter table public.profile_public_snapshots
+      add constraint profile_public_snapshots_og_image_asset_id_fkey
+      foreign key (og_image_asset_id)
+      references public.media_assets(id)
+      on delete set null;
+  end if;
+end $$;
+
 commit;

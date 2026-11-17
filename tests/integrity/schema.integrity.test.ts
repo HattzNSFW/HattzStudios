@@ -105,11 +105,26 @@ describe('database schema integrity (migrations) — structural tests', () => {
       'grant select (publication_id, profile_id, version, visibility, seo_title, seo_description, content)',
     );
     expect(m8).toContain('create policy share_select_public_snapshots');
+    expect(m8).toContain('public.profiles: sem grant e sem policy pública');
 
     expect(m9).toContain('create or replace view public.v_share_published_profiles');
     expect(m9).toContain('create or replace view public.v_share_public_media');
     expect(m9).toContain('security_invoker = true, security_barrier = true');
     expect(m9).toContain('create or replace function public.validate_publishable_snapshot_content');
     expect(m9).toContain('trg_validate_publishable_snapshot');
+  });
+
+  it('enforces snapshot referential integrity for OG media with history-preserving delete behavior', () => {
+    const m2 = readMigration('0002_profiles_and_publications.sql');
+    const m3 = readMigration('0003_media_storage.sql');
+    expect(m2).toContain(
+      'og_image_asset_id uuid references public.media_assets(id) on delete set null',
+    );
+    expect(m3).toContain('add constraint profile_public_snapshots_og_image_asset_id_fkey');
+    expect(m3).toMatch(
+      /add constraint profile_public_snapshots_og_image_asset_id_fkey[\s\S]*?references public\.media_assets\(id\)[\s\S]*?on delete set null/i,
+    );
+    // Ensure no destructive cascade on the snapshot OG image FK (other cascades in media/storage are intentional)
+    expect(m3).not.toMatch(/og_image_asset_id_fkey[\s\S]{0,120}?on delete cascade/i);
   });
 });

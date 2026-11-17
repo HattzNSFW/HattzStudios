@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { validatePublishableSnapshotContent } from '@hattz/validation';
+import { SNAPSHOT_LIMITS, validatePublishableSnapshotContent } from '@hattz/validation';
 
 const sql = readFileSync(
   resolve(
@@ -20,28 +20,34 @@ const validContent = {
   },
   sections: [
     {
-      id: 'sec1',
+      id: 'sec-1',
       type: 'hero',
       visible: true,
       order: 0,
       blocks: [
         {
-          id: 'blk1',
+          id: 'blk-1',
           type: 'text',
           visible: true,
           order: 0,
-          props: { text: 'Olá' },
+          props: { text: 'Olá', nested: { enabled: true } },
         },
       ],
     },
   ],
-  theme: { color: 'x' },
+  theme: { color: 'x', tokens: { radius: 8 } },
   effects: { glow: true },
   seo: { title: 't', description: 'd' },
 };
 
+function deepObject(depth: number): Record<string, unknown> {
+  let obj: Record<string, unknown> = { leaf: 'ok' };
+  for (let i = 0; i < depth; i++) obj = { [`k${i}`]: obj };
+  return obj;
+}
+
 describe('publishable snapshot validation — TypeScript validator (automated)', () => {
-  it('accepts valid publishable content', () => {
+  it('accepts valid publishable content with controlled extensible props/theme/effects', () => {
     const res = validatePublishableSnapshotContent(validContent);
     expect(res.ok).toBe(true);
   });
@@ -89,7 +95,7 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
     }
   });
 
-  it('rejects unknown keys and invalid structure/types/lengths (explicit schema)', () => {
+  it('rejects unknown keys and invalid structure/types/lengths/formats (explicit schema)', () => {
     expect(validatePublishableSnapshotContent({ ...validContent, extraRoot: 1 }).ok).toBe(false);
     expect(
       validatePublishableSnapshotContent({
@@ -118,10 +124,98 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
         sections: [
           {
             ...validContent.sections[0],
-            id: 'x'.repeat(129),
+            id: 'bad id!',
             blocks: validContent.sections[0].blocks,
           },
         ],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        profile: { ...validContent.profile, avatarAssetId: '../bad' },
+      }).ok,
+    ).toBe(false);
+  });
+
+  it('enforces explicit limits (sections, blocks, arrays, object keys, depth, string/size, controlled extensibility)', () => {
+    // too many sections
+    const manySections = Array.from({ length: SNAPSHOT_LIMITS.maxSections + 1 }, (_, i) => ({
+      ...validContent.sections[0],
+      id: `s-${i}`,
+    }));
+    expect(validatePublishableSnapshotContent({ ...validContent, sections: manySections }).ok).toBe(
+      false,
+    );
+
+    // too many blocks per section
+    const manyBlocks = Array.from({ length: SNAPSHOT_LIMITS.maxBlocksPerSection + 1 }, (_, i) => ({
+      ...validContent.sections[0].blocks[0],
+      id: `b-${i}`,
+    }));
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        sections: [{ ...validContent.sections[0], blocks: manyBlocks }],
+      }).ok,
+    ).toBe(false);
+
+    // array/object/key/depth/type limits in extensible props/theme/effects
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        theme: { arr: Array.from({ length: SNAPSHOT_LIMITS.maxArrayElements + 1 }, () => 1) },
+      }).ok,
+    ).toBe(false);
+    const manyKeys: Record<string, number> = {};
+    for (let i = 0; i < SNAPSHOT_LIMITS.maxObjectKeys + 1; i++) manyKeys[`k${i}`] = i;
+    expect(validatePublishableSnapshotContent({ ...validContent, effects: manyKeys }).ok).toBe(
+      false,
+    );
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        sections: [
+          {
+            ...validContent.sections[0],
+            blocks: [
+              {
+                ...validContent.sections[0].blocks[0],
+                props: deepObject(SNAPSHOT_LIMITS.maxDepth + 2),
+              },
+            ],
+          },
+        ],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        theme: { 'bad key': 'x' },
+      }).ok,
+    ).toBe(false);
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        sections: [
+          {
+            ...validContent.sections[0],
+            blocks: [
+              {
+                ...validContent.sections[0].blocks[0],
+                props: { txt: 'x'.repeat(SNAPSHOT_LIMITS.maxStringLength + 1) },
+              },
+            ],
+          },
+        ],
+      }).ok,
+    ).toBe(false);
+
+    // total payload size limit
+    expect(
+      validatePublishableSnapshotContent({
+        ...validContent,
+        seo: { description: 'x'.repeat(SNAPSHOT_LIMITS.maxTotalBytes) },
       }).ok,
     ).toBe(false);
   });
@@ -141,15 +235,21 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
 });
 
 describe('publishable snapshot validation — TS/SQL structural equivalence (migration SQL inspection)', () => {
-  it('SQL validator enforces same core constraints: recursive forbidden scan, explicit allowed keys, required structure and key length/type limits', () => {
-    // Forbidden/recursive scan parity (key blocking present; some tokens underscore-tolerant)
-    expect(sql).toMatch(/with recursive kv/);
+  it('SQL validator enforces same core constraints: recursive forbidden scan, explicit schema, limits and controlled extensibility', () => {
+    // Forbidden/recursive scan and limits
+    expect(sql).toMatch(/with recursive walk/);
     expect(sql).toMatch(/role\[_\]\?assignment/);
     expect(sql).toMatch(/permission\[_\]\?override/);
     expect(sql).toMatch(/storage_path/);
     expect(sql).toMatch(/storage_bucket/);
     expect(sql).toMatch(/manifest_ref/);
     expect(sql).toMatch(/ip_hash/);
+    expect(sql).toContain('max_total_bytes int := 262144');
+    expect(sql).toContain('max_depth int := 12');
+    expect(sql).toContain('max_sections int := 50');
+    expect(sql).toContain('max_blocks_per_section int := 50');
+    expect(sql).toContain('max_array_elements int := 100');
+    expect(sql).toContain('max_object_keys int := 50');
 
     // Explicit schema parity
     expect(sql).toContain(
@@ -164,12 +264,14 @@ describe('publishable snapshot validation — TS/SQL structural equivalence (mig
     expect(sql).toContain("allowed_block text[] := array['id','type','visible','order','props']");
     expect(sql).toContain("allowed_seo text[] := array['title','description']");
 
-    // Structural/type/length checks parity for key fields
+    // Structural/type/length/format and controlled extensibility parity
     expect(sql).toContain("length(content->'profile'->>'displayName') > 80");
     expect(sql).toContain("length(content->'profile'->>'bio') > 2000");
     expect(sql).toContain("length(content->'seo'->>'title') > 120");
-    expect(sql).toContain("length(section->>'id') > 128");
+    expect(sql).toMatch(/avatarAssetId' !~ '\^\[a-zA-Z0-9_-]\{1,128\}\$'/);
+    expect(sql).toMatch(/section->>'id' !~ '\^\[a-zA-Z0-9_-]\{1,128\}\$'/);
     expect(sql).toContain("jsonb_typeof(blk->'props') = 'object'");
+    expect(sql).toMatch(/p\.key !~ '\^\[a-zA-Z0-9_-]\{1,64\}\$'/);
   });
 
   it('DB trigger blocks invalid snapshots at write boundary (not only app-side)', () => {

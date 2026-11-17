@@ -125,9 +125,12 @@ revoke all on schema hattz_audit from public, anon, authenticated;
 
 -- Grants mínimos de coluna (somente colunas necessárias para views públicas security_invoker em 0009).
 -- RLS limita as linhas a conteúdo efetivamente publicado/público/ativo. Sem grants em colunas internas/admin.
-grant select (id, profile_id) on table public.profiles to anon, authenticated;
+-- Nota: grants em colunas de junção/filtro (ex.: profile_id, publication_id, ids/flags de visibilidade/estado)
+-- são necessários para execução das views security_invoker; acesso direto à tabela-base, se tentado, fica restrito
+-- a essas colunas e às linhas permitidas por policy. Colunas sensíveis (technical_id, display_name, storage_path/
+-- bucket, checksum, metadata, manifest/failure_reason, etc.) permanecem sem grant.
 grant select (profile_id, slug, is_current) on table public.profile_slugs to anon, authenticated;
-grant select (id, profile_id, state, published_at) on table public.profile_publications to anon, authenticated;
+grant select (id, state, published_at) on table public.profile_publications to anon, authenticated;
 grant select (publication_id, profile_id, version, visibility, seo_title, seo_description, content)
   on table public.profile_public_snapshots to anon, authenticated;
 
@@ -138,20 +141,7 @@ grant select (asset_id, variant, format, width, height)
 
 -- Policies públicas restritas (apenas leitura, apenas linhas publicáveis/publicadas/ativas)
 drop policy if exists share_select_published_profiles on public.profiles;
-create policy share_select_published_profiles
-on public.profiles
-for select
-to anon, authenticated
-using (
-  exists (
-    select 1
-    from public.profile_public_snapshots s
-    join public.profile_publications pub on pub.id = s.publication_id
-    where s.profile_id = profiles.id
-      and s.visibility = 'public'
-      and pub.state = 'published'
-  )
-);
+-- public.profiles: sem grant e sem policy pública (não referenciada pelas views públicas atuais).
 
 drop policy if exists share_select_current_public_slugs on public.profile_slugs;
 create policy share_select_current_public_slugs
