@@ -72,11 +72,17 @@ function revokeObjectUrl(url: string): void {
 export class LocalPublicationSource implements ShareDataSource {
   private readonly urls = new Map<string, string>();
   private created: string[] = [];
+  private mediaLoadGeneration = 0;
 
   async getPublishedProfileBySlug(slug: string): Promise<PublishedProfileSnapshotContract | null> {
+    const generation = ++this.mediaLoadGeneration;
+    this.releaseMedia();
+
     const record = await findPublishedPublicationBySlug(slug);
-    if (!record) return null;
-    await this.loadMedia(collectAssetIds(record.content), record.profileTechnicalId);
+    if (generation !== this.mediaLoadGeneration || !record) return null;
+
+    await this.loadMedia(collectAssetIds(record.content), record.profileTechnicalId, generation);
+    if (generation !== this.mediaLoadGeneration) return null;
     return publicationToSnapshot(record);
   }
 
@@ -92,12 +98,17 @@ export class LocalPublicationSource implements ShareDataSource {
     return this.urls.get(assetId) ?? null;
   }
 
-  private async loadMedia(assetIds: string[], ownerProfileTechnicalId: string): Promise<void> {
-    this.releaseMedia();
+  private async loadMedia(
+    assetIds: string[],
+    ownerProfileTechnicalId: string,
+    generation: number,
+  ): Promise<void> {
     if (assetIds.length === 0) return;
 
     const db = getStudioDb();
     const records = await db.mediaAssets.bulkGet(assetIds);
+    if (generation !== this.mediaLoadGeneration) return;
+
     for (const record of records) {
       // Uma referência adulterada não pode fazer o Share resolver mídia pertencente a outro perfil.
       if (!record || record.profileTechnicalId !== ownerProfileTechnicalId) continue;

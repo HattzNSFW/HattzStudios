@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeStudioDb, getStudioDb, StudioDatabase } from '@hattz/local-store';
 import {
   createLocalDraftProfile,
@@ -85,6 +85,7 @@ describe('Share LocalPublicationSource (reads only what the Studio published)', 
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await closeStudioDb();
     const cleanup = new StudioDatabase();
     await cleanup.delete();
@@ -205,6 +206,76 @@ describe('Share LocalPublicationSource (reads only what the Studio published)', 
     const source = new LocalPublicationSource();
     await source.getPublishedProfileBySlug('outra');
     expect(source.resolveMediaUrl(foreignAsset.assetId)).toBeNull();
+  });
+
+  it('ignores stale media preloads when a newer profile request finishes first', async () => {
+    const db = getStudioDb();
+    await ensureStudioDbReady(db);
+
+    const firstAsset = await (async () => {
+      await createLocalDraftProfile({
+        technicalId: 'prof_race_a',
+        displayName: 'Perfil A',
+        publicSlugDraft: 'perfil-a',
+      });
+      const asset = await storeMediaAsset({
+        profileTechnicalId: 'prof_race_a',
+        kind: 'avatar',
+        blob: new Blob(['avatar-a'], { type: 'image/png' }),
+      });
+      await createWorkingDraft(
+        'prof_race_a',
+        makeContent('Perfil A', 'A', { avatarAssetId: asset.assetId }),
+      );
+      await publishWorkingDraft('prof_race_a', { slug: 'perfil-a' });
+      return asset;
+    })();
+
+    const secondAsset = await (async () => {
+      await createLocalDraftProfile({
+        technicalId: 'prof_race_b',
+        displayName: 'Perfil B',
+        publicSlugDraft: 'perfil-b',
+      });
+      const asset = await storeMediaAsset({
+        profileTechnicalId: 'prof_race_b',
+        kind: 'avatar',
+        blob: new Blob(['avatar-b'], { type: 'image/png' }),
+      });
+      await createWorkingDraft(
+        'prof_race_b',
+        makeContent('Perfil B', 'B', { avatarAssetId: asset.assetId }),
+      );
+      await publishWorkingDraft('prof_race_b', { slug: 'perfil-b' });
+      return asset;
+    })();
+
+    let releaseFirstRead!: () => void;
+    let firstReadStarted!: () => void;
+    const firstReadGate = new Promise<void>((resolve) => {
+      releaseFirstRead = resolve;
+    });
+    const started = new Promise<void>((resolve) => {
+      firstReadStarted = resolve;
+    });
+    const originalBulkGet = db.mediaAssets.bulkGet.bind(db.mediaAssets);
+    vi.spyOn(db.mediaAssets, 'bulkGet').mockImplementation(async (keys) => {
+      if (keys.includes(firstAsset.assetId)) {
+        firstReadStarted();
+        await firstReadGate;
+      }
+      return originalBulkGet(keys);
+    });
+
+    const source = new LocalPublicationSource();
+    const staleRequest = source.getPublishedProfileBySlug('perfil-a');
+    await started;
+    await source.getPublishedProfileBySlug('perfil-b');
+    releaseFirstRead();
+    await staleRequest;
+
+    expect(source.resolveMediaUrl(secondAsset.assetId)).toMatch(/^blob:mock\//);
+    expect(source.resolveMediaUrl(firstAsset.assetId)).toBeNull();
   });
 
   it('pre-resolves the media referenced by the published snapshot', async () => {

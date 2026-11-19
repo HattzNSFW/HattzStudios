@@ -1,6 +1,6 @@
 # Hättz 2.0 — Relatório Final (22 itens) — 2026-11-19
 
-> **Classificação: PREPARADO PARA LANÇAMENTO, NÃO LANÇADO.** Não há autorização do Owner para
+> **Classificação: PREPARADO PARA A PRÓXIMA ETAPA DE INTEGRAÇÃO; NÃO PRONTO PARA LANÇAMENTO PÚBLICO.** Não há autorização do Owner para
 > deploy, publicação, push ou operação remota. Aguarda-se auditoria/aprovação independente.
 >
 > **Legenda de evidência:** **[IMPLEMENTADO]** código/feature executável no repositório ·
@@ -24,7 +24,7 @@
 ## 1. Resumo executivo
 
 **[IMPLEMENTADO] [TESTADO] [NAVEGADOR] [INTEGRAÇÃO]** O projeto foi inventariado integralmente e os
-oito blocos foram fechados dentro do permitido: arquitetura, banco/RLS, Share, Studio,
+oito blocos foram avaliados e avançados apenas dentro do escopo autorizado: arquitetura, banco/RLS, Share, Studio,
 colecionáveis/permissões, Control (somente leitura), integração local e infraestrutura/operações.
 As ressalvas da B4.2 foram corrigidas **antes** de avançar; o Control continua **somente leitura**.
 Foram fechadas as lacunas do Studio (aba Dados, export/import/backup/restore, histórico,
@@ -33,7 +33,7 @@ canônica do fixture) e duas correções reais encontradas em execução: o **sl
 usar `publicSlugDraft`, não o nome de exibição) e o **`robots.txt`** do hub (passou a servir texto
 válido em vez de HTML).
 
-**Números reais da Rodada Final:** 42 arquivos / **249 testes** aprovados (exit 0); typecheck, lint,
+**Números reportados da Rodada Final anterior a esta auditoria:** 42 arquivos / **249 testes** aprovados (exit 0); esta auditoria acrescentou um teste de regressão ainda não executado; typecheck, lint,
 Prettier e builds das três apps (exit 0); `npm audit --omit=dev` e `npm audit` com **0
 vulnerabilidades**; validação SQL/RLS em PostgreSQL **17.12** local descartável com **36 etapas / 0
 falhas** (27 execuções de concorrência, todas `PASS`); Lighthouse no Share com
@@ -282,9 +282,9 @@ temporários. O conteúdo foi listado como evidência após a geração.
 
 ## 22. Classificação de conclusão
 
-**PREPARADO PARA LANÇAMENTO, NÃO LANÇADO.**
+**PREPARADO PARA A PRÓXIMA ETAPA DE INTEGRAÇÃO, NÃO PRONTO PARA LANÇAMENTO PÚBLICO.**
 
-- **Implementado e testado:** blocos 1–5 e 7–8 nas camadas locais; B4.2 corrigida; 249 testes,
+- **Implementado e testado na rodada anterior:** fundação dos blocos 1–5 e 7–8 nas camadas locais, com limites explícitos; B4.2 corrigida; 249 testes (o teste adicionado nesta auditoria ainda não foi executado),
   builds e auditorias aprovados.
 - **Validado em navegador:** Hub, Studio, Share e Control, 0 erros de console, Lighthouse 1/1/1,
   slug e metadados corretos.
