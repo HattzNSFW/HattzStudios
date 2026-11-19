@@ -2,12 +2,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   StudioDatabase,
   closeStudioDb,
+  getStudioDb,
   STUDIO_DB_VERSION,
 } from '../../apps/studio/src/persistence/db';
 import {
   ensureStudioDbReady,
   getLocalMigrationStatus,
 } from '../../apps/studio/src/persistence/migrations';
+import {
+  createLocalDraftProfile,
+  enqueuePendingSyncOperation,
+  saveDraftSnapshot,
+} from '../../apps/studio/src/persistence/repository';
 
 const testDbName = () => `hattz_studio_test_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -98,5 +104,55 @@ describe('Studio IndexedDB persistence (Dexie)', () => {
     const op = await db.pendingSyncOps.get('op_123');
     expect(op?.state).toBe('pendente');
     expect(op?.operationId).toBe('op_123');
+  });
+
+  it('assigns sequential snapshot versions under concurrent saves (no lost update)', async () => {
+    const db = getStudioDb();
+    dbs.push(db);
+    await ensureStudioDbReady(db);
+    await createLocalDraftProfile({
+      technicalId: 'prof_race',
+      displayName: 'Race',
+      publicSlugDraft: 'race',
+    });
+
+    const [first, second] = await Promise.all([
+      saveDraftSnapshot('prof_race', { n: 1 }),
+      saveDraftSnapshot('prof_race', { n: 2 }),
+    ]);
+
+    // Read-modify-write must be serialized: both saves would otherwise pick the same
+    // next version and overwrite each other (duplicate version + lost update).
+    expect(new Set([first.version, second.version]).size).toBe(2);
+    const profile = await db.localProfiles.get('prof_race');
+    expect(profile?.contentVersion).toBe(3);
+    expect(await db.draftSnapshots.where('profileTechnicalId').equals('prof_race').count()).toBe(2);
+  });
+
+  it('rejects duplicate profile creation and duplicate sync operations (explicit failure, no silent overwrite)', async () => {
+    const db = getStudioDb();
+    dbs.push(db);
+    await ensureStudioDbReady(db);
+
+    await createLocalDraftProfile({
+      technicalId: 'prof_dup',
+      displayName: 'A',
+      publicSlugDraft: 'a',
+    });
+    await expect(
+      createLocalDraftProfile({ technicalId: 'prof_dup', displayName: 'B', publicSlugDraft: 'b' }),
+    ).rejects.toThrow(/já existe/i);
+
+    const op = {
+      operationId: 'op_dup',
+      profileTechnicalId: 'prof_dup',
+      type: 'publish_snapshot',
+      payload: {},
+      baseVersion: null,
+      lastError: null,
+    };
+    await enqueuePendingSyncOperation(op);
+    await expect(enqueuePendingSyncOperation(op)).rejects.toThrow(/já existe/i);
+    expect(await db.pendingSyncOps.where('operationId').equals('op_dup').count()).toBe(1);
   });
 });

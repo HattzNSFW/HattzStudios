@@ -16,16 +16,23 @@ export const colorTokens = {
 } as const;
 
 export const liquidGlassTokens = {
+  surfaceSoft: 'rgba(18, 20, 26, 0.42)',
   surface: 'rgba(18, 20, 26, 0.55)',
   surfaceStrong: 'rgba(18, 20, 26, 0.72)',
   border: 'rgba(199, 204, 214, 0.18)',
+  borderStrong: 'rgba(199, 204, 214, 0.3)',
   borderHighlight: 'rgba(242, 244, 247, 0.28)',
   highlight: 'rgba(167, 139, 250, 0.22)',
+  reflection: 'rgba(242, 244, 247, 0.08)',
+  shadowSoft: '0 6px 20px rgba(0, 0, 0, 0.32)',
   shadow: '0 12px 40px rgba(0, 0, 0, 0.45)',
+  shadowLifted: '0 18px 60px rgba(0, 0, 0, 0.55)',
   blur: '16px',
   saturation: '140%',
-  radiusLg: '20px',
+  radiusSm: '10px',
   radiusMd: '14px',
+  radiusLg: '20px',
+  radiusPill: '999px',
 } as const;
 
 export const typographyTokens = {

@@ -1,0 +1,103 @@
+{
+  "slug": "lena",
+  "profileVersion": 5,
+  "publishedAt": "2026-11-16T20:40:00.000Z",
+  "seoTitle": "Lena Voss — Hättz",
+  "seoDescription": "Perfil público de Lena Voss: fotografia, conquistas e links.",
+  "content": {
+    "schemaVersion": 1,
+    "profile": {
+      "displayName": "Lena Voss",
+      "bio": "Fotógrafa. Luz, contraste e silêncio.",
+      "avatarAssetId": "avatar_lena",
+      "bannerAssetId": "banner_lena"
+    },
+    "theme": {
+      "accent": "#5fd0a0",
+      "background": "#0b0c10",
+      "headingFont": "serif",
+      "bodyFont": "sans",
+      "radius": 14,
+      "backgroundStyle": "gradient",
+      "avatarFrame": "frame-emerald"
+    },
+    "effects": { "grain": true, "glow": false },
+    "seo": {
+      "title": "Lena Voss — Hättz",
+      "description": "Perfil público de Lena Voss: fotografia, conquistas e links."
+    },
+    "sections": [
+      {
+        "id": "sec_gallery",
+        "type": "gallery",
+        "visible": true,
+        "order": 1,
+        "blocks": [
+          {
+            "id": "blk_gallery_heading",
+            "type": "heading",
+            "visible": true,
+            "order": 1,
+            "props": { "text": "Galeria" }
+          },
+          {
+            "id": "blk_gallery_image",
+            "type": "image",
+            "visible": true,
+            "order": 2,
+            "props": {
+              "assetId": "photo_lena_1",
+              "alt": "Composição abstrata em grafite e prata",
+              "caption": "Estudo em grafite — 2026"
+            }
+          }
+        ]
+      },
+      {
+        "id": "sec_badges",
+        "type": "badges",
+        "visible": true,
+        "order": 2,
+        "blocks": [
+          {
+            "id": "blk_badges",
+            "type": "badges",
+            "visible": true,
+            "order": 1,
+            "props": {
+              "title": "Conquistas",
+              "items": [
+                {
+                  "name": "Olhar Atento",
+                  "rarity": "especial",
+                  "description": "Coleção completa de fotografia."
+                },
+                { "name": "Mítica", "rarity": "mitica" },
+                { "name": "Rara", "rarity": "rara" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "sec_links",
+        "type": "links",
+        "visible": true,
+        "order": 3,
+        "blocks": [
+          {
+            "id": "blk_links",
+            "type": "link",
+            "visible": true,
+            "order": 1,
+            "props": {
+              "label": "Instagram",
+              "url": "https://www.instagram.com/example",
+              "description": "Trabalhos recentes"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

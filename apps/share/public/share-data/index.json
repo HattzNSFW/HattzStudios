@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    { "slug": "alice", "state": "published", "snapshot": "profiles/alice.json" },
+    { "slug": "bruno", "state": "published", "snapshot": "profiles/bruno.json" },
+    { "slug": "lena", "state": "published", "snapshot": "profiles/lena.json" },
+    { "slug": "marina", "state": "unpublished" }
+  ],
+  "media": {
+    "avatar_alice": "/share-data/media/avatar-alice.svg",
+    "banner_alice": "/share-data/media/banner-alice.svg",
+    "cover_alice": "/share-data/media/cover-alice.svg",
+    "audio_alice": "/share-data/media/tone.wav",
+    "avatar_bruno": "/share-data/media/avatar-bruno.svg",
+    "avatar_lena": "/share-data/media/avatar-lena.svg",
+    "banner_lena": "/share-data/media/banner-lena.svg",
+    "photo_lena_1": "/share-data/media/photo-lena-1.svg"
+  }
+}

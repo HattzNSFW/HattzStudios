@@ -156,4 +156,31 @@ describe('data isolation (RLS hardening and boundaries) — structural migration
       /não configurado\/conectado nesta fase/i,
     );
   });
+
+  it('removes the public-read RLS recursion (0010) with a self-sufficient publications policy and a derived visibility flag', () => {
+    const fix = readFileSync(
+      resolve(
+        process.cwd(),
+        'infrastructure/supabase/migrations/0010_public_read_visibility_fix.sql',
+      ),
+      'utf8',
+    );
+    expect(fix).toContain('is_publicly_visible boolean not null default false');
+
+    // P2 (publications) no longer references snapshots -> cycle broken.
+    const p2 = fix.match(/create policy share_select_published_publications[\s\S]*?;/i)?.[0] ?? '';
+    expect(p2).toContain('using (is_publicly_visible)');
+    expect(p2).not.toContain('profile_public_snapshots');
+
+    // P1/P3 rely on the derived flag and remain restrictive.
+    expect(fix).toMatch(/and pub\.is_publicly_visible/);
+    expect(fix).toContain("visibility = 'public'");
+    expect(fix).toContain('is_current = true');
+
+    // Minimal, read-only column grant required by P1/P3 (no table/write privileges).
+    expect(fix).toContain(
+      'grant select (is_publicly_visible) on public.profile_publications to anon, authenticated;',
+    );
+    expect(fix).not.toMatch(/grant\s+(insert|update|delete|all)\b/i);
+  });
 });

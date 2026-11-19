@@ -23,7 +23,10 @@
       "@hattz/design-system": ["packages/design-system/src/index.ts"],
       "@hattz/permissions": ["packages/permissions/src/index.ts"],
       "@hattz/validation": ["packages/validation/src/index.ts"],
-      "@hattz/shared-utils": ["packages/shared-utils/src/index.ts"]
+      "@hattz/shared-utils": ["packages/shared-utils/src/index.ts"],
+      "@hattz/local-store/testing": ["packages/local-store/src/trustedAuthority.ts"],
+      "@hattz/local-store": ["packages/local-store/src/index.ts"],
+      "@hattz/profile-view": ["packages/profile-view/src/index.ts"]
     }
   }
 }

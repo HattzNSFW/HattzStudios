@@ -16,6 +16,9 @@ export default defineConfig({
       '@hattz/permissions': resolve(rootDir, 'packages/permissions/src/index.ts'),
       '@hattz/validation': resolve(rootDir, 'packages/validation/src/index.ts'),
       '@hattz/shared-utils': resolve(rootDir, 'packages/shared-utils/src/index.ts'),
+      '@hattz/local-store': resolve(rootDir, 'packages/local-store/src/index.ts'),
+      '@hattz/profile-view/styles.css': resolve(rootDir, 'packages/profile-view/src/styles.css'),
+      '@hattz/profile-view': resolve(rootDir, 'packages/profile-view/src/index.ts'),
     },
   },
 });

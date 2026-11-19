@@ -1,4 +1,6 @@
-export type RoleKey = 'member' | 'vip' | 'owner';
+export * from './roles';
+export * from './benefits';
+export * from './authorization';
 
 export interface PermissionDefinition {
   id: string;
@@ -6,12 +8,6 @@ export interface PermissionDefinition {
   category: string;
   description: string;
 }
-
-export const BASE_ROLES: ReadonlyArray<{ key: RoleKey; name: string; hierarchy: number }> = [
-  { key: 'member', name: 'Member', hierarchy: 10 },
-  { key: 'vip', name: 'VIP', hierarchy: 20 },
-  { key: 'owner', name: 'Owner', hierarchy: 100 },
-];
 
 export const FOUNDATION_PERMISSIONS: readonly PermissionDefinition[] = [
   {

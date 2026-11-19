@@ -1,0 +1,158 @@
+{
+  "slug": "alice",
+  "profileVersion": 3,
+  "publishedAt": "2026-11-10T18:24:00.000Z",
+  "seoTitle": "Alice Andrade — Hättz",
+  "seoDescription": "Perfil público de Alice Andrade: sobre, links, conquistas e faixas favoritas.",
+  "content": {
+    "schemaVersion": 1,
+    "profile": {
+      "displayName": "Alice Andrade",
+      "bio": "Designer de produto. Construindo interfaces calmas, escuras e precisas.",
+      "avatarAssetId": "avatar_alice",
+      "bannerAssetId": "banner_alice"
+    },
+    "theme": {
+      "accent": "#a78bfa",
+      "background": "#0b0c10",
+      "surface": "rgba(18, 20, 26, 0.55)",
+      "text": "#f2f4f7",
+      "headingFont": "sans",
+      "bodyFont": "sans",
+      "radius": 20,
+      "backgroundStyle": "aurora",
+      "avatarFrame": "frame-purple"
+    },
+    "effects": { "glow": true, "grain": false },
+    "seo": {
+      "title": "Alice Andrade — Hättz",
+      "description": "Perfil público de Alice Andrade: sobre, links, conquistas e faixas favoritas."
+    },
+    "sections": [
+      {
+        "id": "sec_about",
+        "type": "about",
+        "visible": true,
+        "order": 1,
+        "blocks": [
+          {
+            "id": "blk_about_heading",
+            "type": "heading",
+            "visible": true,
+            "order": 1,
+            "props": { "text": "Sobre" }
+          },
+          {
+            "id": "blk_about_text",
+            "type": "text",
+            "visible": true,
+            "order": 2,
+            "props": {
+              "text": "Trabalho com design de produto e sistemas de design.\nInteresses: tipografia, interfaces escuras e detalhes discretos."
+            }
+          },
+          {
+            "id": "blk_about_divider",
+            "type": "divider",
+            "visible": true,
+            "order": 3,
+            "props": {}
+          },
+          {
+            "id": "blk_about_note",
+            "type": "text",
+            "visible": true,
+            "order": 4,
+            "props": { "text": "Disponível para colaborações pontuais." }
+          }
+        ]
+      },
+      {
+        "id": "sec_links",
+        "type": "links",
+        "visible": true,
+        "order": 2,
+        "blocks": [
+          {
+            "id": "blk_links",
+            "type": "links",
+            "visible": true,
+            "order": 1,
+            "props": {
+              "items": [
+                {
+                  "label": "Portfólio",
+                  "url": "https://example.com/alice",
+                  "description": "Trabalhos selecionados"
+                },
+                { "label": "GitHub", "url": "https://github.com/example" },
+                { "label": "E-mail", "url": "mailto:alice@example.com" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "sec_badges",
+        "type": "badges",
+        "visible": true,
+        "order": 3,
+        "blocks": [
+          {
+            "id": "blk_badges",
+            "type": "badges",
+            "visible": true,
+            "order": 1,
+            "props": {
+              "title": "Coleção Fundadora",
+              "items": [
+                {
+                  "name": "Fundadora",
+                  "rarity": "lendaria",
+                  "description": "Participou da fundação do Hättz."
+                },
+                { "name": "Beta", "rarity": "epica" },
+                { "name": "Primeiro Perfil", "rarity": "comum" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "sec_music",
+        "type": "music",
+        "visible": true,
+        "order": 4,
+        "blocks": [
+          {
+            "id": "blk_music",
+            "type": "music",
+            "visible": true,
+            "order": 1,
+            "props": {
+              "title": "Nocturne",
+              "artist": "Alice Andrade",
+              "assetId": "audio_alice",
+              "coverAssetId": "cover_alice"
+            }
+          }
+        ]
+      },
+      {
+        "id": "sec_private_area",
+        "type": "content",
+        "visible": false,
+        "order": 5,
+        "blocks": [
+          {
+            "id": "blk_private_text",
+            "type": "text",
+            "visible": true,
+            "order": 1,
+            "props": { "text": "Conteúdo em preparação, ainda não publicado." }
+          }
+        ]
+      }
+    ]
+  }
+}

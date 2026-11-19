@@ -1,25 +1,27 @@
-import { SYSTEM_VERSION } from '@hattz/shared-utils';
-import { designSystemMeta } from '@hattz/design-system';
+import { useMemo } from 'react';
+import { HomeState, NotFoundState } from '@hattz/profile-view';
+import { LocalPublicationSource } from './data';
+import { useSlugRoute } from './routing/useSlugRoute';
+import { ErrorBoundary } from './rendering/ErrorBoundary';
+import { ProfileRoute } from './rendering/ProfileRoute';
 
 export function App() {
+  // Fonte de dados local integrada ao Studio: lê somente snapshots publicados na base local
+  // compartilhada (mesma origem). NÃO é o Supabase e NÃO usa dados de demonstração.
+  const source = useMemo(() => new LocalPublicationSource(), []);
+  const route = useSlugRoute();
+
   return (
-    <main className="app-shell">
-      <section className="panel hattz-liquid-glass" aria-labelledby="share-title">
-        <p className="eyebrow">Hättz 2.0</p>
-        <h1 id="share-title">Share</h1>
-        <p className="subtitle">Aplicação pública de visualização de perfis (fundação inicial).</p>
-        <ul className="status-list">
-          <li>
-            <strong>Status:</strong> estrutura base configurada (Fases 0–1)
-          </li>
-          <li>
-            <strong>Versão do sistema:</strong> {SYSTEM_VERSION}
-          </li>
-          <li>
-            <strong>Design System:</strong> {designSystemMeta.theme}
-          </li>
-        </ul>
-      </section>
+    <main className="share-app">
+      <ErrorBoundary>
+        {route.kind === 'slug' ? (
+          <ProfileRoute source={source} slug={route.slug} />
+        ) : route.kind === 'root' ? (
+          <HomeState />
+        ) : (
+          <NotFoundState />
+        )}
+      </ErrorBoundary>
     </main>
   );
 }

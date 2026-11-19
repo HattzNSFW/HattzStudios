@@ -62,7 +62,10 @@ for each row execute function public.set_updated_at();
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint where conname = 'profile_public_snapshots_og_image_asset_id_fkey'
+    select 1 from pg_constraint
+    where conname = 'profile_public_snapshots_og_image_asset_id_fkey'
+      and conrelid = 'public.profile_public_snapshots'::regclass
+      and contype = 'f'
   ) then
     alter table public.profile_public_snapshots
       add constraint profile_public_snapshots_og_image_asset_id_fkey

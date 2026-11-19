@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Avatar de Lena">
+  <defs>
+    <radialGradient id="f" cx="30%" cy="25%" r="85%">
+      <stop offset="0%" stop-color="#5fd0a0" />
+      <stop offset="55%" stop-color="#123a2c" />
+      <stop offset="100%" stop-color="#0b0c10" />
+    </radialGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#f)" />
+  <circle cx="128" cy="104" r="46" fill="#f2f4f7" opacity="0.9" />
+  <path d="M44 236c12-52 44-78 84-78s72 26 84 78z" fill="#f2f4f7" opacity="0.9" />
+</svg>

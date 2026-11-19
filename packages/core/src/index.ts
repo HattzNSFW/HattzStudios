@@ -1,3 +1,7 @@
+export * from './availability';
+export * from './collectibles';
+export * from './catalog';
+
 export type ProfileVisibility = 'public' | 'private' | 'unpublished';
 
 export interface ProfileIdentity {
@@ -12,18 +16,6 @@ export interface ProfileSectionMeta {
   visible: boolean;
   order: number;
 }
-
-export const COLLECTIBLE_RARITIES = [
-  'comum',
-  'incomum',
-  'rara',
-  'epica',
-  'lendaria',
-  'mitica',
-  'especial',
-] as const;
-
-export type CollectibleRarity = (typeof COLLECTIBLE_RARITIES)[number];
 
 export interface FoundationModuleStatus {
   module: string;

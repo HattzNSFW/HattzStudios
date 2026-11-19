@@ -41,10 +41,8 @@ export function validateSlug(value: string): ValidationResult<string> {
 export function validateHttpsUrl(value: string): ValidationResult<string> {
   try {
     const url = new URL(value);
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-      return failure([
-        { path: 'url', code: 'url.protocol', message: 'URL must use http or https.' },
-      ]);
+    if (url.protocol !== 'https:') {
+      return failure([{ path: 'url', code: 'url.protocol', message: 'URL must use https.' }]);
     }
     return success(url.toString());
   } catch {

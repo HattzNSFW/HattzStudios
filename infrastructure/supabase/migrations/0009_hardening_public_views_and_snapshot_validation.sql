@@ -52,11 +52,11 @@ begin
     from walk w
     cross join lateral (
       select ce.key, ce.value
-      from jsonb_each(w.value) ce
+      from jsonb_each(case when jsonb_typeof(w.value) = 'object' then w.value else '{}'::jsonb end) ce
       where jsonb_typeof(w.value) = 'object'
       union all
       select null::text as key, ae.elem as value
-      from jsonb_array_elements(w.value) ae(elem)
+      from jsonb_array_elements(case when jsonb_typeof(w.value) = 'array' then w.value else '[]'::jsonb end) ae(elem)
       where jsonb_typeof(w.value) = 'array'
     ) c
     where w.depth < 100
@@ -66,9 +66,12 @@ begin
     from walk w
     where
       w.depth > max_depth
-      or (w.key is not null and w.key ~* '(password|credential|secret|token(?!s\b)|session|cookie|recovery|private|draft|admin|internal|audit|role[_]?assignment|permission[_]?override|sync[_]?operation|setting[_]?history|feature[_]?flag|notification|storage[_]?usage|assigned_by|revoked_by|failure_reason|manifest_ref|storage_path|storage_bucket|checksum|ip_hash|user_agent_hash)')
-      or (jsonb_typeof(w.value) = 'object' and (select count(*) from jsonb_object_keys(w.value)) > max_object_keys)
-      or (jsonb_typeof(w.value) = 'array' and jsonb_array_length(w.value) > max_array_elements)
+      -- Nota: em PostgreSQL `\b` NÃO é fronteira de palavra (usa-se `\y`). O padrão precisa
+      -- permitir `tokens` (design tokens) tal como o validador TypeScript (JS `\b`), senão o
+      -- conteúdo válido seria rejeitado no banco e aceito no app (divergência TS↔SQL).
+      or (w.key is not null and w.key ~* '(password|credential|secret|token(?!s\y)|session|cookie|recovery|private|draft|admin|internal|audit|role[_]?assignment|permission[_]?override|sync[_]?operation|setting[_]?history|feature[_]?flag|notification|storage[_]?usage|assigned_by|revoked_by|failure_reason|manifest_ref|storage_path|storage_bucket|checksum|ip_hash|user_agent_hash)')
+      or (jsonb_typeof(w.value) = 'object' and (select count(*) from jsonb_object_keys(case when jsonb_typeof(w.value) = 'object' then w.value else '{}'::jsonb end)) > max_object_keys)
+      or (jsonb_typeof(w.value) = 'array' and jsonb_array_length(case when jsonb_typeof(w.value) = 'array' then w.value else '[]'::jsonb end) > max_array_elements)
       or (jsonb_typeof(w.value) = 'string' and length(w.value #>> '{}') > max_string_length)
       or (jsonb_typeof(w.value) = 'number' and (w.value::text in ('NaN','Infinity','-Infinity')))
   ) into has_forbidden;
@@ -82,8 +85,14 @@ begin
   end loop;
 
   if not (content ? 'schemaVersion' and jsonb_typeof(content->'schemaVersion') = 'number') then return false; end if;
+  -- Parity with the TS validator: positive integer within the JS safe-integer range.
+  -- `::int` would overflow (error) on huge values; `::numeric` avoids the error and the
+  -- upper bound keeps SQL and TS aligned (TS uses Number.isSafeInteger).
   if (content->>'schemaVersion') !~ '^[0-9]+$' then return false; end if;
-  if (content->>'schemaVersion')::int < 1 then return false; end if;
+  if (content->>'schemaVersion')::numeric < 1
+     or (content->>'schemaVersion')::numeric > 9007199254740991 then
+    return false;
+  end if;
 
   -- profile
   if not (content ? 'profile' and jsonb_typeof(content->'profile') = 'object') then return false; end if;
@@ -142,9 +151,9 @@ begin
           select c.key, c.value, p.depth + 1
           from p
           cross join lateral (
-            select ce.key, ce.value from jsonb_each(p.value) ce where jsonb_typeof(p.value) = 'object'
+            select ce.key, ce.value from jsonb_each(case when jsonb_typeof(p.value) = 'object' then p.value else '{}'::jsonb end) ce where jsonb_typeof(p.value) = 'object'
             union all
-            select null::text, ae.elem from jsonb_array_elements(p.value) ae(elem) where jsonb_typeof(p.value) = 'array'
+            select null::text, ae.elem from jsonb_array_elements(case when jsonb_typeof(p.value) = 'array' then p.value else '[]'::jsonb end) ae(elem) where jsonb_typeof(p.value) = 'array'
           ) c
           where p.depth < 100
         )
@@ -167,9 +176,9 @@ begin
         select c.key, c.value, t.depth + 1
         from t
         cross join lateral (
-          select ce.key, ce.value from jsonb_each(t.value) ce where jsonb_typeof(t.value) = 'object'
+          select ce.key, ce.value from jsonb_each(case when jsonb_typeof(t.value) = 'object' then t.value else '{}'::jsonb end) ce where jsonb_typeof(t.value) = 'object'
           union all
-          select null::text, ae.elem from jsonb_array_elements(t.value) ae(elem) where jsonb_typeof(t.value) = 'array'
+          select null::text, ae.elem from jsonb_array_elements(case when jsonb_typeof(t.value) = 'array' then t.value else '[]'::jsonb end) ae(elem) where jsonb_typeof(t.value) = 'array'
         ) c
         where t.depth < 100
       )
@@ -187,9 +196,9 @@ begin
         select c.key, c.value, fx.depth + 1
         from fx
         cross join lateral (
-          select ce.key, ce.value from jsonb_each(fx.value) ce where jsonb_typeof(fx.value) = 'object'
+          select ce.key, ce.value from jsonb_each(case when jsonb_typeof(fx.value) = 'object' then fx.value else '{}'::jsonb end) ce where jsonb_typeof(fx.value) = 'object'
           union all
-          select null::text, ae.elem from jsonb_array_elements(fx.value) ae(elem) where jsonb_typeof(fx.value) = 'array'
+          select null::text, ae.elem from jsonb_array_elements(case when jsonb_typeof(fx.value) = 'array' then fx.value else '[]'::jsonb end) ae(elem) where jsonb_typeof(fx.value) = 'array'
         ) c
         where fx.depth < 100
       )
@@ -228,10 +237,17 @@ language plpgsql
 set search_path = pg_catalog, public
 as $$
 begin
-  if not public.validate_publishable_snapshot_content(new.content) then
+  -- `validate_publishable_snapshot_content` is declared STRICT: a SQL NULL `new.content`
+  -- makes the function return SQL NULL, and `NOT NULL` is NULL (not TRUE). Using
+  -- `if not ... then` would therefore silently skip the guard on a NULL result (fail open).
+  -- Reject anything that is not exactly TRUE so a NULL/non-boolean result is a hard failure.
+  -- (The column is also NOT NULL DEFAULT '{}', so this is defense in depth, not the only guard.)
+  if public.validate_publishable_snapshot_content(new.content) is not true then
     raise exception 'Snapshot content is not publishable (forbidden/private/internal fields or invalid schema).';
   end if;
-  if new.visibility not in ('public', 'unpublished') then
+  -- Same reasoning for visibility: `NULL not in (...)` is NULL, which would skip the guard.
+  -- Explicitly reject NULL and any value outside the public/unpublished contract.
+  if new.visibility is null or new.visibility not in ('public', 'unpublished') then
     raise exception 'Invalid snapshot visibility.';
   end if;
   return new;

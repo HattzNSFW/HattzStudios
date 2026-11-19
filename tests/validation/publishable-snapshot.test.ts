@@ -56,13 +56,13 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
     const cases = [
       { ...validContent, adminNotes: 'x' },
       { ...validContent, profile: { ...validContent.profile, passwordHash: 'x' } },
-      { ...validContent, sections: [{ ...validContent.sections[0], draftState: true }] },
+      { ...validContent, sections: [{ ...validContent.sections[0]!, draftState: true }] },
       {
         ...validContent,
         sections: [
           {
-            ...validContent.sections[0],
-            blocks: [{ ...validContent.sections[0].blocks[0], props: { token: 'x' } }],
+            ...validContent.sections[0]!,
+            blocks: [{ ...validContent.sections[0]!.blocks[0]!, props: { token: 'x' } }],
           },
         ],
       },
@@ -74,10 +74,10 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
         ...validContent,
         sections: [
           {
-            ...validContent.sections[0],
+            ...validContent.sections[0]!,
             blocks: [
               {
-                ...validContent.sections[0].blocks[0],
+                ...validContent.sections[0]!.blocks[0]!,
                 props: { nested: [{ role_assignment: 'x' }] },
               },
             ],
@@ -123,9 +123,9 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
         ...validContent,
         sections: [
           {
-            ...validContent.sections[0],
+            ...validContent.sections[0]!,
             id: 'bad id!',
-            blocks: validContent.sections[0].blocks,
+            blocks: validContent.sections[0]!.blocks,
           },
         ],
       }).ok,
@@ -141,7 +141,7 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
   it('enforces explicit limits (sections, blocks, arrays, object keys, depth, string/size, controlled extensibility)', () => {
     // too many sections
     const manySections = Array.from({ length: SNAPSHOT_LIMITS.maxSections + 1 }, (_, i) => ({
-      ...validContent.sections[0],
+      ...validContent.sections[0]!,
       id: `s-${i}`,
     }));
     expect(validatePublishableSnapshotContent({ ...validContent, sections: manySections }).ok).toBe(
@@ -150,13 +150,13 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
 
     // too many blocks per section
     const manyBlocks = Array.from({ length: SNAPSHOT_LIMITS.maxBlocksPerSection + 1 }, (_, i) => ({
-      ...validContent.sections[0].blocks[0],
+      ...validContent.sections[0]!.blocks[0]!,
       id: `b-${i}`,
     }));
     expect(
       validatePublishableSnapshotContent({
         ...validContent,
-        sections: [{ ...validContent.sections[0], blocks: manyBlocks }],
+        sections: [{ ...validContent.sections[0]!, blocks: manyBlocks }],
       }).ok,
     ).toBe(false);
 
@@ -177,10 +177,10 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
         ...validContent,
         sections: [
           {
-            ...validContent.sections[0],
+            ...validContent.sections[0]!,
             blocks: [
               {
-                ...validContent.sections[0].blocks[0],
+                ...validContent.sections[0]!.blocks[0]!,
                 props: deepObject(SNAPSHOT_LIMITS.maxDepth + 2),
               },
             ],
@@ -199,10 +199,10 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
         ...validContent,
         sections: [
           {
-            ...validContent.sections[0],
+            ...validContent.sections[0]!,
             blocks: [
               {
-                ...validContent.sections[0].blocks[0],
+                ...validContent.sections[0]!.blocks[0]!,
                 props: { txt: 'x'.repeat(SNAPSHOT_LIMITS.maxStringLength + 1) },
               },
             ],
@@ -225,12 +225,45 @@ describe('publishable snapshot validation — TypeScript validator (automated)',
       ...validContent,
       sections: [
         {
-          ...validContent.sections[0],
-          blocks: [{ ...validContent.sections[0].blocks[0], props: { isDraft: true } }],
+          ...validContent.sections[0]!,
+          blocks: [{ ...validContent.sections[0]!.blocks[0]!, props: { isDraft: true } }],
         },
       ],
     });
     expect(res.ok).toBe(false);
+  });
+
+  it('accepts section/block ids up to 128 chars (TS/SQL parity) and rejects longer ids', () => {
+    const id128 = 'a'.repeat(SNAPSHOT_LIMITS.maxIdLength);
+    const accepted = validatePublishableSnapshotContent({
+      ...validContent,
+      sections: [
+        {
+          ...validContent.sections[0]!,
+          id: id128,
+          blocks: [{ ...validContent.sections[0]!.blocks[0]!, id: id128 }],
+        },
+      ],
+    });
+    expect(accepted.ok).toBe(true);
+
+    const rejected = validatePublishableSnapshotContent({
+      ...validContent,
+      sections: [{ ...validContent.sections[0]!, id: 'a'.repeat(SNAPSHOT_LIMITS.maxIdLength + 1) }],
+    });
+    expect(rejected.ok).toBe(false);
+  });
+
+  it('fails closed (returns a failure) on circular content instead of throwing', () => {
+    const circular: Record<string, unknown> = {
+      schemaVersion: 1,
+      profile: { displayName: 'A' },
+      sections: [],
+    };
+    circular.self = circular;
+
+    expect(() => validatePublishableSnapshotContent(circular)).not.toThrow();
+    expect(validatePublishableSnapshotContent(circular).ok).toBe(false);
   });
 });
 
@@ -272,6 +305,23 @@ describe('publishable snapshot validation — TS/SQL structural equivalence (mig
     expect(sql).toMatch(/section->>'id' !~ '\^\[a-zA-Z0-9_-]\{1,128\}\$'/);
     expect(sql).toContain("jsonb_typeof(blk->'props') = 'object'");
     expect(sql).toMatch(/p\.key !~ '\^\[a-zA-Z0-9_-]\{1,64\}\$'/);
+  });
+
+  it('keeps TS and SQL forbidden-key semantics aligned for design tokens (word-boundary fix)', () => {
+    // TS validator uses JS \b (a real word boundary), so the legitimate key `tokens`
+    // (design tokens) is allowed while a bare `token` is rejected.
+    expect(
+      validatePublishableSnapshotContent({ ...validContent, theme: { tokens: { radius: 8 } } }).ok,
+    ).toBe(true);
+    expect(validatePublishableSnapshotContent({ ...validContent, theme: { token: 'x' } }).ok).toBe(
+      false,
+    );
+
+    // PostgreSQL ARE `\b` is NOT a word boundary (it is a backspace); the SQL validator must
+    // use `\y`. Otherwise `tokens` would be wrongly rejected by the DB trigger while accepted
+    // by the app validator (TS↔SQL divergence).
+    expect(sql).toContain('token(?!s\\y)');
+    expect(sql).not.toContain('token(?!s\\b)');
   });
 
   it('DB trigger blocks invalid snapshots at write boundary (not only app-side)', () => {

@@ -1,0 +1,45 @@
+{
+  "slug": "bruno",
+  "profileVersion": 1,
+  "publishedAt": "2026-11-14T09:05:00.000Z",
+  "seoTitle": "Bruno Sato — Hättz",
+  "seoDescription": "Perfil público de Bruno Sato.",
+  "content": {
+    "schemaVersion": 1,
+    "profile": {
+      "displayName": "Bruno Sato",
+      "bio": "Engenheiro de software. Música e código.",
+      "avatarAssetId": "avatar_bruno"
+    },
+    "theme": {
+      "accent": "#c7ccd6",
+      "background": "#050507",
+      "backgroundStyle": "solid",
+      "headingFont": "sans",
+      "bodyFont": "sans",
+      "avatarFrame": "frame-silver"
+    },
+    "sections": [
+      {
+        "id": "sec_links",
+        "type": "links",
+        "visible": true,
+        "order": 1,
+        "blocks": [
+          {
+            "id": "blk_links",
+            "type": "links",
+            "visible": true,
+            "order": 1,
+            "props": {
+              "items": [
+                { "label": "GitHub", "url": "https://github.com/example" },
+                { "label": "LinkedIn", "url": "https://www.linkedin.com/in/example" }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -13,6 +13,8 @@
     "@hattz/contracts": "0.1.0",
     "@hattz/core": "0.1.0",
     "@hattz/design-system": "0.1.0",
+    "@hattz/local-store": "0.1.0",
+    "@hattz/profile-view": "0.1.0",
     "@hattz/shared-utils": "0.1.0",
     "@hattz/validation": "0.1.0",
     "dexie": "4.3.0",

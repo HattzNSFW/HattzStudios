@@ -96,6 +96,9 @@ const ALLOWED_BLOCK_KEYS = new Set(['id', 'type', 'visible', 'order', 'props']);
 const ALLOWED_SEO_KEYS = new Set(['title', 'description']);
 
 const EXTENSIBLE_KEY_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+// Section/block ids are bounded by maxIdLength (128), matching the DB validator in 0009.
+// Reusing the 64-char extensible-key pattern here made maxIdLength dead and diverged from SQL.
+const ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
 const ASSET_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -111,12 +114,35 @@ function utf8ByteLength(value: string): number {
   return Buffer.byteLength(value, 'utf8');
 }
 
-function pushForbiddenKeyIssues(value: unknown, path: string, issues: ValidationIssue[]): void {
+// PostgreSQL `length(text)` counts Unicode characters (code points); JS `.length` counts
+// UTF-16 code units. Using `.length` would make astral characters (e.g. emoji) count as 2 in
+// TS but 1 in SQL, diverging on the string-length limits. Count code points to stay aligned.
+function charLength(value: string): number {
+  return [...value].length;
+}
+
+function pushForbiddenKeyIssues(
+  value: unknown,
+  path: string,
+  issues: ValidationIssue[],
+  depth = 0,
+  stack = new WeakSet<object>(),
+): void {
+  // Public boundary: fail closed instead of overflowing the stack on circular or
+  // extremely deep input. `stack` tracks the current path so only true cycles stop.
+  if (depth > SNAPSHOT_LIMITS.maxDepth) return;
   if (Array.isArray(value)) {
-    value.forEach((item, i) => pushForbiddenKeyIssues(item, `${path}[${i}]`, issues));
+    if (stack.has(value)) return;
+    stack.add(value);
+    value.forEach((item, i) =>
+      pushForbiddenKeyIssues(item, `${path}[${i}]`, issues, depth + 1, stack),
+    );
+    stack.delete(value);
     return;
   }
   if (!isPlainObject(value)) return;
+  if (stack.has(value)) return;
+  stack.add(value);
   for (const [key, child] of Object.entries(value)) {
     const childPath = path ? `${path}.${key}` : key;
     if (isForbiddenKey(key)) {
@@ -126,8 +152,9 @@ function pushForbiddenKeyIssues(value: unknown, path: string, issues: Validation
         message: `Forbidden key "${key}" is not allowed in publishable snapshot content.`,
       });
     }
-    pushForbiddenKeyIssues(child, childPath, issues);
+    pushForbiddenKeyIssues(child, childPath, issues, depth + 1, stack);
   }
+  stack.delete(value);
 }
 
 function validateAllowedKeys(
@@ -157,7 +184,7 @@ function validateString(
     issues.push({ path, code: 'snapshot.type', message: 'Expected string.' });
     return;
   }
-  if (value.length > max) {
+  if (charLength(value) > max) {
     issues.push({
       path,
       code: 'snapshot.length',
@@ -171,7 +198,7 @@ function validateAssetRef(value: unknown, path: string, issues: ValidationIssue[
     issues.push({ path, code: 'snapshot.type', message: 'Expected asset reference string.' });
     return;
   }
-  if (value.length > SNAPSHOT_LIMITS.maxAssetIdLength || !ASSET_ID_PATTERN.test(value)) {
+  if (charLength(value) > SNAPSHOT_LIMITS.maxAssetIdLength || !ASSET_ID_PATTERN.test(value)) {
     issues.push({
       path,
       code: 'snapshot.media_ref',
@@ -200,7 +227,7 @@ function validateExtensibleValue(
   if (value === null) return;
   const t = typeof value;
   if (t === 'string') {
-    if ((value as string).length > SNAPSHOT_LIMITS.maxStringLength) {
+    if (charLength(value as string) > SNAPSHOT_LIMITS.maxStringLength) {
       issues.push({
         path,
         code: 'snapshot.length',
@@ -295,13 +322,13 @@ export function validatePublishableSnapshotContent(
 
   if (
     typeof input.schemaVersion !== 'number' ||
-    !Number.isInteger(input.schemaVersion) ||
+    !Number.isSafeInteger(input.schemaVersion) ||
     input.schemaVersion < 1
   ) {
     issues.push({
       path: 'content.schemaVersion',
       code: 'snapshot.schemaVersion',
-      message: 'schemaVersion must be a positive integer.',
+      message: 'schemaVersion must be a positive safe integer.',
     });
   }
 
@@ -322,7 +349,7 @@ export function validatePublishableSnapshotContent(
         code: 'snapshot.required',
         message: 'profile.displayName is required.',
       });
-    } else if (input.profile.displayName.length > SNAPSHOT_LIMITS.maxDisplayNameLength) {
+    } else if (charLength(input.profile.displayName) > SNAPSHOT_LIMITS.maxDisplayNameLength) {
       issues.push({
         path: 'content.profile.displayName',
         code: 'snapshot.length',
@@ -369,10 +396,7 @@ export function validatePublishableSnapshotContent(
           code: 'snapshot.required',
           message: 'section.id is required.',
         });
-      else if (
-        section.id.length > SNAPSHOT_LIMITS.maxIdLength ||
-        !EXTENSIBLE_KEY_PATTERN.test(section.id)
-      )
+      else if (section.id.length > SNAPSHOT_LIMITS.maxIdLength || !ID_PATTERN.test(section.id))
         issues.push({
           path: `${sp}.id`,
           code: 'snapshot.format',
@@ -432,10 +456,7 @@ export function validatePublishableSnapshotContent(
               code: 'snapshot.required',
               message: 'block.id is required.',
             });
-          else if (
-            block.id.length > SNAPSHOT_LIMITS.maxIdLength ||
-            !EXTENSIBLE_KEY_PATTERN.test(block.id)
-          )
+          else if (block.id.length > SNAPSHOT_LIMITS.maxIdLength || !ID_PATTERN.test(block.id))
             issues.push({
               path: `${bp}.id`,
               code: 'snapshot.format',
@@ -475,8 +496,13 @@ export function validatePublishableSnapshotContent(
               message: 'block.props must be an object.',
             });
           } else {
-            // props is extensible but controlled/typed/bounded
-            validateExtensibleValue(block.props, `${bp}.props`, 1, issues);
+            // props is extensible but controlled/typed/bounded.
+            // Depth origin must match the SQL validator's recursive walk: `block.props`
+            // sits at absolute content depth 5 (content=0 -> sections=1 -> section=2 ->
+            // blocks=3 -> block=4 -> props=5), so the declared maxDepth (12) is measured
+            // from the content root in BOTH validators. Passing 1 here made the TS limit
+            // four levels looser than SQL (SQL/TS divergence).
+            validateExtensibleValue(block.props, `${bp}.props`, 5, issues);
           }
         });
       }

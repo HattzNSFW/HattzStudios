@@ -14,7 +14,13 @@ describe('authorization foundations and isolation', () => {
     expect(controlPerm?.id).toBe('perm.control.access');
 
     // Ter papel público Owner (chave de domínio de perfis/cargos) não equivale a possuir permissão admin.
-    const publicOwnerGrantedPermissions: string[] = [];
+    // Derivar o conjunto real de permissões públicas (todas exceto a administrativa) para que a
+    // asserção exercite `hasPermission` em vez de ser trivialmente verdadeira sobre uma lista vazia.
+    const publicOwnerGrantedPermissions = FOUNDATION_PERMISSIONS.map((p) => p.id).filter(
+      (id) => id !== 'perm.control.access',
+    );
+    expect(publicOwnerGrantedPermissions.length).toBeGreaterThan(0);
+    expect(hasPermission(publicOwnerGrantedPermissions, 'perm.profile.view_public')).toBe(true);
     expect(hasPermission(publicOwnerGrantedPermissions, 'perm.control.access')).toBe(false);
   });
 

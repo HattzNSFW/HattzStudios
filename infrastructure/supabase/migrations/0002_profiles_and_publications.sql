@@ -68,14 +68,15 @@ create table if not exists public.profile_public_snapshots (
   seo_title text,
   seo_description text,
   -- Referência opcional à mídia OG; histórico preservado e integridade garantida sem cascata destrutiva.
-  og_image_asset_id uuid references public.media_assets(id) on delete set null,
+  -- A FK é criada pela migration 0003, depois da criação de public.media_assets.
+  og_image_asset_id uuid,
   content jsonb not null default '{}'::jsonb, -- blocos/seções/widgets/tema/efeitos já validados para público
   created_at timestamptz not null default now(),
   constraint chk_snapshot_public_visibility check (visibility in ('public', 'unpublished'))
 );
 
--- Nota: public.media_assets é criada em 0003; em execução sequencial a FK é adicionada abaixo quando aplicável.
--- (constraint definida inline quando a tabela já existir; ver 0003 para garantia em ordem de migrations)
+-- Nota: public.media_assets é criada na migration 0003; a FK de og_image_asset_id é adicionada lá,
+-- depois que ambas as tabelas existem.
 
 create index if not exists ix_profile_public_snapshots_profile_version
   on public.profile_public_snapshots(profile_id, version desc);

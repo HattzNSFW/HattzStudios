@@ -17,8 +17,9 @@
     "dev:share": "npm run dev --workspace @hattz/share",
     "dev:studio": "npm run dev --workspace @hattz/studio",
     "dev:control": "npm run dev --workspace @hattz/control",
+    "dev:hub": "vite --config vite.hub.config.ts",
     "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p infrastructure/adapters/tsconfig.json --noEmit",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p infrastructure/adapters/tsconfig.json --noEmit && tsc -p tsconfig.hub.json --noEmit && tsc -p tsconfig.tests.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --check",
@@ -38,6 +39,7 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-react-hooks": "7.0.1",
     "eslint-plugin-react-refresh": "0.4.26",
+    "fake-indexeddb": "6.2.5",
     "globals": "16.5.0",
     "jsdom": "27.4.0",
     "prettier": "3.8.3",
@@ -47,6 +49,6 @@
     "vitest": "4.1.12"
   },
   "dependencies": {
-    "dexie": "^4.3.0"
+    "dexie": "4.3.0"
   }
 }

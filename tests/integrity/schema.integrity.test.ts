@@ -112,19 +112,122 @@ describe('database schema integrity (migrations) — structural tests', () => {
     expect(m9).toContain('security_invoker = true, security_barrier = true');
     expect(m9).toContain('create or replace function public.validate_publishable_snapshot_content');
     expect(m9).toContain('trg_validate_publishable_snapshot');
+    // Guard set-returning JSON functions with CASE; a WHERE filter alone does not guarantee
+    // evaluation order and could otherwise call jsonb_each/jsonb_array_elements on scalars.
+    expect(m9).toContain("jsonb_each(case when jsonb_typeof(w.value) = 'object'");
+    expect(m9).toContain("jsonb_array_elements(case when jsonb_typeof(w.value) = 'array'");
+    expect(m9).toContain("jsonb_object_keys(case when jsonb_typeof(w.value) = 'object'");
+    expect(m9).toContain("jsonb_array_length(case when jsonb_typeof(w.value) = 'array'");
+    // PostgreSQL `\b` is not a word boundary (use `\y`); otherwise the legitimate key
+    // `tokens` (design tokens) would be rejected by the DB but accepted by the TS validator.
+    expect(m9).toContain('token(?!s\\y)');
+    expect(m9).not.toContain('token(?!s\\b)');
   });
 
   it('enforces snapshot referential integrity for OG media with history-preserving delete behavior', () => {
     const m2 = readMigration('0002_profiles_and_publications.sql');
     const m3 = readMigration('0003_media_storage.sql');
-    expect(m2).toContain(
-      'og_image_asset_id uuid references public.media_assets(id) on delete set null',
-    );
+    expect(m2).toContain('og_image_asset_id uuid');
+    expect(m2).not.toContain('references public.media_assets');
     expect(m3).toContain('add constraint profile_public_snapshots_og_image_asset_id_fkey');
+    expect(m3.indexOf('create table if not exists public.media_assets')).toBeLessThan(
+      m3.indexOf('add constraint profile_public_snapshots_og_image_asset_id_fkey'),
+    );
     expect(m3).toMatch(
       /add constraint profile_public_snapshots_og_image_asset_id_fkey[\s\S]*?references public\.media_assets\(id\)[\s\S]*?on delete set null/i,
     );
     // Ensure no destructive cascade on the snapshot OG image FK (other cascades in media/storage are intentional)
     expect(m3).not.toMatch(/og_image_asset_id_fkey[\s\S]{0,120}?on delete cascade/i);
+  });
+
+  it('binds each public snapshot to the exact publication, profile, and version (0011)', () => {
+    const m2 = readMigration('0002_profiles_and_publications.sql');
+    const m11 = readMigration('0011_snapshot_publication_identity_integrity.sql');
+
+    // The original model had only publication_id -> id; the additive migration
+    // replaces it with a composite FK that prevents cross-profile/version binding.
+    expect(m2).toContain(
+      'publication_id uuid not null unique references public.profile_publications(id)',
+    );
+    // The composite FK cannot be escaped through NULL components: all three identity columns are
+    // NOT NULL, so a NULL never disables the constraint's MATCH SIMPLE check.
+    expect(m2).toMatch(/profile_id uuid not null references public\.profiles\(id\)/);
+    expect(m2).toMatch(/version bigint not null check \(version > 0\)/);
+    expect(m11).toContain('unique (id, profile_id, version)');
+    // The legacy single-column FK is removed by DEFINITION (not by name), so reapplication is
+    // safe even if the constraint was renamed. Assert both the local-column detection and the
+    // definition-based drop are present.
+    expect(m11).toContain("array['publication_id']");
+    expect(m11).toContain('drop constraint %I');
+    // Local and referenced column sets are matched exactly.
+    expect(m11).toContain("array['profile_id', 'publication_id', 'version']");
+    expect(m11).toContain("array['id', 'profile_id', 'version']");
+    // Incompatible pre-existing data is rejected with a clear message (not a generic constraint error).
+    expect(m11).toMatch(/s\.profile_id <> p\.profile_id/);
+    expect(m11).toMatch(/s\.version <> p\.version/);
+    expect(m11).toMatch(
+      /raise exception[\s\S]*?snapshot\(s\) com profile_id\/version divergentes/i,
+    );
+    expect(m11).toMatch(
+      /foreign key \(publication_id, profile_id, version\)[\s\S]*?references public\.profile_publications \(id, profile_id, version\)[\s\S]*?on delete restrict/i,
+    );
+    expect(m11).not.toMatch(/on delete cascade/i);
+    // Additive/preserving: no data destruction.
+    expect(m11).not.toMatch(/\b(delete from|truncate|drop table)\b/i);
+  });
+
+  it('breaks the public-read policy recursion via a derived visibility flag (0010, A1-ii)', () => {
+    const m10 = readMigration('0010_public_read_visibility_fix.sql');
+
+    // Derived authoritative column + transactional backfill.
+    expect(m10).toContain(
+      'add column if not exists is_publicly_visible boolean not null default false',
+    );
+    expect(m10).toMatch(/update public\.profile_publications p[\s\S]*?set is_publicly_visible = /i);
+
+    // Triggers/functions with fixed search_path and no SECURITY DEFINER / bypass (comments excluded).
+    const sqlOnly = m10
+      .split('\n')
+      .filter((line) => !line.trimStart().startsWith('--'))
+      .join('\n');
+    expect(sqlOnly).not.toMatch(/security\s+definer/i);
+    expect(sqlOnly).not.toMatch(/bypassrls/i);
+    expect(m10).toContain('create or replace function public.sync_publication_visibility');
+    expect(m10).toContain('create or replace function public.sync_snapshot_parent_visibility');
+    expect(m10).toContain('set search_path = pg_catalog, public');
+    expect(m10).toContain('create trigger trg_sync_publication_visibility');
+    expect(m10).toContain('create trigger trg_sync_snapshot_parent_visibility');
+    expect(m10).toContain('before insert or update on public.profile_publications');
+    expect(m10).toContain(
+      'after insert or update of visibility, publication_id or delete on public.profile_public_snapshots',
+    );
+
+    // Minimal function privileges (no public EXECUTE).
+    expect(m10).toMatch(
+      /revoke all on function public\.sync_publication_visibility\(\) from public, anon, authenticated;/,
+    );
+    expect(m10).toMatch(
+      /revoke all on function public\.sync_snapshot_parent_visibility\(\) from public, anon, authenticated;/,
+    );
+
+    // P2 must be self-sufficient (no reference to snapshots) to break the P1<->P2 cycle.
+    const p2 = m10.match(/create policy share_select_published_publications[\s\S]*?;/i)?.[0];
+    expect(p2).toBeTruthy();
+    expect(p2).toContain('using (is_publicly_visible)');
+    expect(p2).not.toContain('profile_public_snapshots');
+
+    // P1/P3 depend on the derived flag (acyclic: -> P2).
+    expect(m10).toContain('and pub.is_publicly_visible');
+    expect(m10).toMatch(/create policy share_select_public_snapshots/);
+    expect(m10).toMatch(/create policy share_select_current_public_slugs/);
+
+    // No public write privileges added.
+    expect(sqlOnly).not.toMatch(/grant\s+(insert|update|delete|all)/i);
+
+    // Required column-level SELECT grant for the derived flag (verified in runtime round 3:
+    // P1/P3 reference it from a subquery on another relation, which enforces column privileges).
+    expect(m10).toContain(
+      'grant select (is_publicly_visible) on public.profile_publications to anon, authenticated;',
+    );
   });
 });
