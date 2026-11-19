@@ -1,5 +1,5 @@
 import type { MediaAssetKind, MediaAssetRecord } from '../persistence';
-import { withProfile, type StudioDraft } from '../editor';
+import { withProfile, withSeo, type StudioDraft } from '../editor';
 import { FileButton, TextArea, TextInput } from './fields';
 import type { StudioMediaState } from '../hooks/useStudioMedia';
 
@@ -53,6 +53,33 @@ export function ProfileFields({ draft, media, disabled, onUpdate, onUpload }: Pr
         placeholder="Fale um pouco sobre você"
         onChange={(value) => onUpdate((current) => withProfile(current, { bio: value }))}
       />
+
+      <fieldset className="studio-fieldset" disabled={disabled}>
+        <legend className="studio-panel__subtitle">SEO e metadados</legend>
+        <TextInput
+          id="studio-seo-title"
+          label="Título para mecanismos de busca"
+          value={draft.seo.title}
+          maxLength={120}
+          disabled={disabled}
+          placeholder="Título exibido na aba do navegador e em buscas"
+          onChange={(value) => onUpdate((current) => withSeo(current, { title: value }))}
+        />
+        <TextArea
+          id="studio-seo-description"
+          label="Descrição para mecanismos de busca"
+          value={draft.seo.description}
+          rows={3}
+          maxLength={300}
+          disabled={disabled}
+          placeholder="Resumo exibido em resultados e compartilhamentos"
+          onChange={(value) => onUpdate((current) => withSeo(current, { description: value }))}
+        />
+        <p className="studio-help">
+          O endereço público (/slug) é configurado na aba Dados. Publicar é necessário para que
+          estas informações apareçam no Share.
+        </p>
+      </fieldset>
 
       <div className="studio-media-row">
         <div className="studio-media-preview">

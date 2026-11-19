@@ -19,6 +19,9 @@ interface ResolvedState {
   state: ShareProfileState;
 }
 
+/** Mensagem pública e fixa: detalhes técnicos ficam apenas no console (nunca no estado/UI). */
+const PUBLIC_ERROR_MESSAGE = 'Não foi possível carregar este perfil.';
+
 /**
  * Carrega o perfil público de um slug através do boundary de dados do Share.
  *
@@ -54,14 +57,13 @@ export function useShareProfile(source: ShareDataSource, slug: string): UseShare
         setResolved({ requestKey, state: { status: 'ready', profile } });
       } catch (error) {
         if (cancelled) return;
+        // Diagnóstico completo para desenvolvimento; a UI recebe apenas a mensagem fixa.
+        console.error('[share] Falha ao carregar o perfil público.', error);
         setResolved({
           requestKey,
           state: {
             status: 'error',
-            message:
-              error instanceof Error
-                ? error.message
-                : 'Erro inesperado ao carregar o perfil público.',
+            message: PUBLIC_ERROR_MESSAGE,
           },
         });
       }

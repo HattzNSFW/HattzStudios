@@ -35,6 +35,8 @@ export interface StudioPublicationApi {
 
 export interface UseStudioPublicationOptions {
   profileId: string | null;
+  /** Endereço público rascunho do perfil — é ele, e não o nome, que congela o slug publicado. */
+  publicSlugDraft: string | null;
   draft: StudioDraft | null;
   /** Escoa o autosave pendente antes de publicar (garante que o snapshot é o rascunho atual). */
   flush: () => Promise<void>;
@@ -53,7 +55,7 @@ function messageOf(error: unknown, fallback: string): string {
  * Publicar/despublicar nunca altera o rascunho nem snapshots anteriores.
  */
 export function useStudioPublication(options: UseStudioPublicationOptions): StudioPublicationApi {
-  const { profileId, draft, flush, getRevision } = options;
+  const { profileId, publicSlugDraft, draft, flush, getRevision } = options;
   const [current, setCurrent] = useState<LocalPublicationRecord | null>(null);
   const [history, setHistory] = useState<LocalPublicationRecord[]>([]);
   const [status, setStatus] = useState<PublicationStatus>('idle');
@@ -65,6 +67,8 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
   profileIdRef.current = profileId;
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  const publicSlugRef = useRef(publicSlugDraft);
+  publicSlugRef.current = publicSlugDraft;
   const requestRef = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -116,7 +120,9 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
       await flush();
       const revision = getRevision();
       const record = await publishWorkingDraft(id, {
-        slug: slugForPreview(activeDraft.profile.displayName),
+        // O endereço editado na aba Dados é a fonte autoritativa; o fallback só cobre o caso
+        // de um perfil carregado sem slug rascunho (não acontece no fluxo normal do Studio).
+        slug: publicSlugRef.current ?? slugForPreview(activeDraft.profile.displayName),
         ...(revision !== null ? { expectedRevision: revision } : {}),
       });
       const list = await listPublications(id);

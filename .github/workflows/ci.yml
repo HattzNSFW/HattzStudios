@@ -33,5 +33,11 @@ jobs:
       - name: Test
         run: npm run test
 
+      - name: Control read-only static audit (B4.2)
+        run: npm run test -- tests/control/read-only-audit.test.ts
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev
+
       - name: Build
         run: npm run build

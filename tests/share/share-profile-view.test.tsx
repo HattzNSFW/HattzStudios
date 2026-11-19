@@ -118,7 +118,8 @@ describe('Share profile route states', () => {
     render(<ProfileRoute source={source} slug="alice" />);
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('falha temporária de rede');
+    expect(alert).toHaveTextContent('Não foi possível carregar este perfil.');
+    expect(alert).not.toHaveTextContent('falha temporária de rede');
 
     fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
 

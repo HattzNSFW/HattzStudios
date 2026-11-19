@@ -1,4 +1,5 @@
 import type { PublishedProfileSnapshotContract } from '@hattz/contracts';
+import { validatePublishableSnapshotContent } from '@hattz/validation';
 import type { ShareDataSource } from './types';
 
 /**
@@ -50,12 +51,12 @@ function isManifest(value: unknown): value is StaticManifest {
 function isSnapshot(value: unknown): value is PublishedProfileSnapshotContract {
   if (typeof value !== 'object' || value === null) return false;
   const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.slug === 'string' &&
-    typeof candidate.profileVersion === 'number' &&
-    typeof candidate.content === 'object' &&
-    candidate.content !== null
-  );
+  if (typeof candidate.slug !== 'string' || typeof candidate.profileVersion !== 'number') {
+    return false;
+  }
+  // Mesmo validador canônico do banco e do `parsePublishedSnapshot`: um fixture estático nunca
+  // pode introduzir chaves internas/privadas no conteúdo público, mesmo em desenvolvimento.
+  return validatePublishableSnapshotContent(candidate.content).ok;
 }
 
 export class StaticShareDataSource implements ShareDataSource {

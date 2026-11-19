@@ -23,7 +23,9 @@ const SECTIONS = [
 export function Control({ source }: { source?: ControlDataSource }) {
   const [state, setState] = useState<ControlState>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  const activeSource = source ?? DEFAULT_SOURCE;
+  // A fonte é resolvida uma única vez: um objeto inline recriado pelo chamador não deve
+  // disparar recarregamentos sucessivos desta visão somente leitura.
+  const [activeSource] = useState<ControlDataSource>(() => source ?? DEFAULT_SOURCE);
 
   useEffect(() => {
     let cancelled = false;

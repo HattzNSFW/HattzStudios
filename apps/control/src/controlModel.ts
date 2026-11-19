@@ -17,6 +17,7 @@ import {
   FRAME_CATALOG,
   type BadgeDefinition,
   type CollectionDefinition,
+  type CollectionStatus,
   type FrameDefinition,
   type FramePermanence,
 } from '@hattz/core';
@@ -32,7 +33,6 @@ import {
   type RoleDefinition,
   type RoleKey,
 } from '@hattz/permissions';
-import type { CollectionStatus } from '@hattz/core';
 
 /* ------------------------------------------------------------------ */
 /* Rótulos de apresentação (não são regras de domínio)                 */

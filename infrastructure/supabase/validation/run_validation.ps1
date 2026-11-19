@@ -82,6 +82,12 @@ if (-not $exists) {
   Write-Output "[OK  ] 00_createdb (database already exists, left as-is)"
 }
 
+# --- environment preflight (hard assertions on required stand-in roles) ------------------------
+$preflight = Join-Path $SqlDir '00_preflight.sql'
+$code = Run-PsqlFile $Database $preflight '00_preflight' $null
+Record '00_preflight' $code ''
+if ($code -ne 0) { Write-Output 'FATAL: preflight failed; stopping.'; $script:results | Export-Csv -NoTypeInformation (Join-Path $LogDir 'results.csv'); exit 2 }
+
 # --- migrations 0001..0013 in order ------------------------------------------------------------
 $migrations = Get-ChildItem $MigrationsDir -Filter '*.sql' |
   Where-Object { $_.Name -match '^\d{4}_.*\.sql$' } | Sort-Object Name

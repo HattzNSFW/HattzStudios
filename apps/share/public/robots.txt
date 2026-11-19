@@ -1,0 +1,8 @@
+# Hättz 2.0 — política de rastreamento
+# Perfis públicos do Share (rotas /<slug>) podem ser indexados.
+# Ferramentas internas (Studio e Control) não devem aparecer em resultados de busca.
+User-agent: *
+Allow: /
+Disallow: /studio/
+Disallow: /control/
+Disallow: /apps/

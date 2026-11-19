@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { BADGE_CATALOG } from '@hattz/core';
+import { App } from '../../apps/control/src/App';
 import { Control } from '../../apps/control/src/Control';
 import { buildControlSnapshot, type ControlSnapshot } from '../../apps/control/src/controlModel';
 import type { ControlDataSource } from '../../apps/control/src/controlSource';
@@ -27,6 +28,19 @@ describe('Control — interface de consulta somente leitura', () => {
       type: 'rewrite',
       url: '/apps/control/src/main.tsx',
     });
+  });
+
+  it('exercita o caminho de produção com LocalControlDataSource real, sem fonte injetada', async () => {
+    const { container } = render(<App />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando catálogos e contratos…');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Control' })).toBeVisible();
+    expect(await screen.findByText('Membro Inicial')).toBeVisible();
+
+    const overview = await region('Visão geral');
+    expect(within(overview).getByText(/Badges cadastrados/)).toBeVisible();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(container.querySelectorAll('button')).toHaveLength(0);
   });
 
   it('apresenta catálogos, cargos, benefícios e estado vazio de coleções com dados reais', async () => {
@@ -109,13 +123,20 @@ describe('Control — interface de consulta somente leitura', () => {
 
     const badges = await region('Catálogo de badges');
     expect(within(badges).getByText('Demonstração')).toBeVisible();
-    expect(within(badges).queryByText('Concedido com sucesso')).toBeNull();
     expect(screen.getByText(/Dados de demonstração são fictícios/)).toBeVisible();
     expect(screen.getByText(/nunca representam concessões reais/)).toBeVisible();
     expect(container.textContent).not.toMatch(/concessão real/i);
+    // A marcação de demonstração é feita no snapshot de leitura; o catálogo canônico não é mutado.
+    expect(original.isDemo ?? false).toBe(false);
+    expect(BADGE_CATALOG[0]).toBe(original);
   });
 
-  it('não oferece operações administrativas nem controles de escrita', async () => {
+  it('não oferece operações administrativas nem controles de escrita em nenhum estado de leitura', async () => {
+    const pending = render(<Control source={{ loadSnapshot: () => new Promise(() => {}) }} />);
+    expect(pending.container.querySelectorAll('button')).toHaveLength(0);
+    expect(pending.container.querySelectorAll('input, select, textarea, form')).toHaveLength(0);
+    pending.unmount();
+
     const { container } = render(<Control source={sourceFor(buildControlSnapshot())} />);
     await screen.findByText('Membro Inicial');
 
@@ -165,5 +186,58 @@ describe('Control — interface de consulta somente leitura', () => {
     expect(await screen.findByText('Moldura Padrão')).toBeVisible();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(attempts).toBe(2);
+  });
+
+  it('exibe mensagem segura quando a fonte rejeita com valor não-Error', async () => {
+    render(<Control source={{ loadSnapshot: () => Promise.reject('falha opaca') }} />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Não foi possível carregar os catálogos e contratos locais.');
+    expect(alert).not.toHaveTextContent('falha opaca');
+  });
+
+  it('recupera após múltiplas falhas consecutivas mantendo um único alerta', async () => {
+    let attempts = 0;
+    const source: ControlDataSource = {
+      loadSnapshot: async () => {
+        attempts += 1;
+        if (attempts < 3) throw new Error(`falha ${attempts}`);
+        return buildControlSnapshot();
+      },
+    };
+    render(<Control source={source} />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('falha 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar carregar novamente' }));
+    expect(await screen.findByText('falha 2')).toBeVisible();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar carregar novamente' }));
+    expect(await screen.findByText('Membro Inicial')).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(attempts).toBe(3);
+  });
+
+  it('não atualiza o estado após desmontagem durante o carregamento', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let resolveLoad: ((snapshot: ControlSnapshot) => void) | null = null;
+    const source: ControlDataSource = {
+      loadSnapshot: () =>
+        new Promise<ControlSnapshot>((resolve) => {
+          resolveLoad = resolve;
+        }),
+    };
+
+    const view = render(<Control source={source} />);
+    view.unmount();
+    await act(async () => {
+      resolveLoad!(buildControlSnapshot());
+    });
+
+    const stateUpdates = consoleError.mock.calls.filter((args) =>
+      String(args[0] ?? '').includes('state update'),
+    );
+    expect(stateUpdates).toHaveLength(0);
+    consoleError.mockRestore();
   });
 });

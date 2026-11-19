@@ -273,6 +273,151 @@ export async function listMediaAssets(profileTechnicalId: string): Promise<Media
   return db.mediaAssets.where('profileTechnicalId').equals(profileTechnicalId).toArray();
 }
 
+/**
+ * Erro de exclusão de mídia: o ativo ainda é referenciado por um rascunho, checkpoint ou
+ * publicação. A exclusão é recusada para não deixar referências quebradas no perfil publicado.
+ */
+export class MediaAssetInUseError extends Error {
+  constructor(
+    readonly assetId: string,
+    readonly references: readonly string[],
+  ) {
+    super(
+      `Este arquivo ainda é usado por ${references.length} conteúdo(s) e não pode ser excluído.`,
+    );
+    this.name = 'MediaAssetInUseError';
+  }
+}
+
+/** Varredura recursiva e à prova de ciclos de um conteúdo JSON em busca de um assetId. */
+function contentReferencesAssetId(value: unknown, assetId: string, seen = new WeakSet()): boolean {
+  if (typeof value === 'string') return value === assetId;
+  if (typeof value !== 'object' || value === null) return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  return Object.values(value as Record<string, unknown>).some((item) =>
+    contentReferencesAssetId(item, assetId, seen),
+  );
+}
+
+/**
+ * Exclui um ativo de mídia somente se nenhum rascunho/checkpoint/publicação o referenciar.
+ * A checagem e a exclusão acontecem na mesma transação read-write.
+ */
+export async function deleteMediaAsset(assetId: string): Promise<void> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  await db.transaction(
+    'rw',
+    db.mediaAssets,
+    db.workingDrafts,
+    db.draftSnapshots,
+    db.publications,
+    async () => {
+      const references: string[] = [];
+      const working = await db.workingDrafts
+        .filter((record) => contentReferencesAssetId(record.content, assetId))
+        .toArray();
+      references.push(...working.map((record) => `rascunho:${record.profileTechnicalId}`));
+      const snapshots = await db.draftSnapshots
+        .filter((record) => contentReferencesAssetId(record.content, assetId))
+        .toArray();
+      references.push(...snapshots.map((record) => `checkpoint:${record.id}`));
+      const publications = await db.publications
+        .filter((record) => contentReferencesAssetId(record.content, assetId))
+        .toArray();
+      references.push(...publications.map((record) => `publicacao:${record.publicationId}`));
+      if (references.length > 0) throw new MediaAssetInUseError(assetId, references);
+      await db.mediaAssets.delete(assetId);
+    },
+  );
+}
+
+/** Checkpoints salvos explicitamente, do mais recente para o mais antigo. */
+export async function listDraftSnapshots(
+  profileTechnicalId: string,
+): Promise<DraftSnapshotRecord[]> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const records = await db.draftSnapshots
+    .where('profileTechnicalId')
+    .equals(profileTechnicalId)
+    .toArray();
+  return records.sort((a, b) => b.version - a.version);
+}
+
+/**
+ * Restaura um checkpoint para o rascunho de trabalho usando a revisão esperada. Nunca apaga o
+ * checkpoint: a restauração é uma nova escrita do rascunho, auditável pelo número da revisão.
+ */
+export async function restoreDraftSnapshot(
+  profileTechnicalId: string,
+  version: number,
+  expectedRevision: number,
+): Promise<WorkingDraftRecord> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const snapshot = await db.draftSnapshots
+    .where('profileTechnicalId')
+    .equals(profileTechnicalId)
+    .filter((record) => record.version === version)
+    .first();
+  if (!snapshot) throw new Error('Checkpoint não encontrado para este perfil.');
+  return saveWorkingDraft(profileTechnicalId, cloneContent(snapshot.content), expectedRevision);
+}
+
+/** Restaura o conteúdo de uma versão publicada para o rascunho de trabalho, sem republicar. */
+export async function restorePublishedVersion(
+  profileTechnicalId: string,
+  version: number,
+  expectedRevision: number,
+): Promise<WorkingDraftRecord> {
+  const publication = await getPublicationByVersion(profileTechnicalId, version);
+  if (!publication) throw new Error('Versão publicada não encontrada para este perfil.');
+  return saveWorkingDraft(profileTechnicalId, cloneContent(publication.content), expectedRevision);
+}
+
+/** Estado da fila de sincronização (somente leitura — não há drenagem remota nesta fase). */
+export async function listPendingSyncOperations(
+  profileTechnicalId?: string,
+): Promise<PendingSyncOperationRecord[]> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const records = profileTechnicalId
+    ? await db.pendingSyncOps.where('profileTechnicalId').equals(profileTechnicalId).toArray()
+    : await db.pendingSyncOps.toArray();
+  return records.sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+/** Atualiza o endereço público rascunho com validação canônica, sem publicar automaticamente. */
+export async function updatePublicSlugDraft(
+  profileTechnicalId: string,
+  slug: string,
+): Promise<LocalProfileRecord> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const validation = validateSlug(slug);
+  if (!validation.ok || !validation.value) {
+    throw new PublicationSlugError(
+      'O endereço precisa ter entre 3 e 48 caracteres e usar apenas letras minúsculas, números e hífens.',
+      slug,
+    );
+  }
+  if (isReservedPublicSlug(validation.value)) {
+    throw new PublicationSlugError(
+      `O endereço /${validation.value} é reservado para uma rota interna do Hättz.`,
+      validation.value,
+    );
+  }
+  await db.localProfiles.update(profileTechnicalId, {
+    publicSlugDraft: validation.value,
+    updatedAt: Date.now(),
+  });
+  const updated = await db.localProfiles.get(profileTechnicalId);
+  if (!updated) throw new Error('Perfil local não encontrado.');
+  return updated;
+}
+
 /* ------------------------------------------------------------------ */
 /* Publicação local (snapshots imutáveis e versionados)               */
 /* ------------------------------------------------------------------ */

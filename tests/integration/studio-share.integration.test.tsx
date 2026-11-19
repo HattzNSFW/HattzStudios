@@ -112,6 +112,7 @@ describe('Studio → Share integration (same-origin local publication)', () => {
 
     renderShare();
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(/não corresponde ao contrato público/i);
+    expect(alert).toHaveTextContent('Não foi possível carregar este perfil.');
+    expect(alert).not.toHaveTextContent('contrato público');
   });
 });

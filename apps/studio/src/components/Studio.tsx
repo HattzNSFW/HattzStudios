@@ -4,6 +4,7 @@ import { useStudioEditor } from '../hooks/useStudioEditor';
 import { useStudioMedia } from '../hooks/useStudioMedia';
 import { useStudioPublication } from '../hooks/useStudioPublication';
 import { BlockEditor } from './BlockEditor';
+import { DataPanel } from './DataPanel';
 import { PreviewPane } from './PreviewPane';
 import { ProfileFields } from './ProfileFields';
 import { ProfileSidebar } from './ProfileSidebar';
@@ -13,20 +14,24 @@ import { SectionsEditor } from './SectionsEditor';
 import { ThemePanel } from './ThemePanel';
 import type { SelectedBlock } from './types';
 
-type StudioTab = 'perfil' | 'secoes' | 'tema' | 'publicacao';
+type StudioTab = 'perfil' | 'secoes' | 'tema' | 'publicacao' | 'dados';
 
 const TABS: readonly { id: StudioTab; label: string }[] = [
   { id: 'perfil', label: 'Perfil' },
   { id: 'secoes', label: 'Seções' },
   { id: 'tema', label: 'Tema' },
   { id: 'publicacao', label: 'Publicação' },
+  { id: 'dados', label: 'Dados' },
 ];
 
 export function Studio() {
   const editor = useStudioEditor();
+  const activeProfile =
+    editor.profiles.find((entry) => entry.technicalId === editor.activeProfileId) ?? null;
   const media = useStudioMedia(editor.activeProfileId);
   const publication = useStudioPublication({
     profileId: editor.activeProfileId,
+    publicSlugDraft: activeProfile?.publicSlugDraft ?? null,
     draft: editor.draft,
     flush: editor.saveNow,
     getRevision: editor.getRevision,
@@ -171,6 +176,20 @@ export function Studio() {
                   disabled={editor.busy}
                   onPublish={handlePublish}
                   onUnpublish={handleUnpublish}
+                />
+              ) : null}
+              {tab === 'dados' && activeProfile ? (
+                <DataPanel
+                  profileId={activeProfile.technicalId}
+                  slug={activeProfile.publicSlugDraft}
+                  draft={draft}
+                  media={media}
+                  disabled={editor.busy}
+                  flush={editor.saveNow}
+                  getRevision={editor.getRevision}
+                  reloadActive={editor.reloadActive}
+                  refreshProfiles={editor.refreshProfiles}
+                  onSlugChanged={() => void editor.refreshProfiles()}
                 />
               ) : null}
             </div>

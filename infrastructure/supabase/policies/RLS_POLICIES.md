@@ -16,7 +16,7 @@
 - `REVOKE ALL` em tabelas base e schemas sensíveis de `public, anon, authenticated`.
 - **Grants mínimos de coluna** (somente o necessário para as views públicas em 0009):
   - `profile_slugs(profile_id, slug, is_current)`
-  - `profile_publications(id, state, published_at, is_publicly_visible)`
+  - `profile_publications(id, state, published_at)` (a coluna derivada `is_publicly_visible` só é concedida em `0010`)
   - `profile_public_snapshots(publication_id, profile_id, version, visibility, seo_title, seo_description, content)`
   - `media_assets(id, kind, mime_type, width, height, status, is_public)`
   - `media_variants(asset_id, variant, format, width, height)`

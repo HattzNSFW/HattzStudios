@@ -67,5 +67,7 @@ describe('hub routing (single origin for Share, Studio and Control)', () => {
     expect(resolveHubRoute('/node_modules/.vite/deps/react.js?v=1')).toEqual({ type: 'pass' });
     expect(resolveHubRoute('/favicon.ico')).toEqual({ type: 'pass' });
     expect(resolveHubRoute('/share-data/index.json')).toEqual({ type: 'pass' });
+    // O robots.txt é um arquivo estático válido (não deve cair no fallback HTML do Share).
+    expect(resolveHubRoute('/robots.txt')).toEqual({ type: 'pass' });
   });
 });
