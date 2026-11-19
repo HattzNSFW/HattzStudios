@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   ErrorState,
   LoadingState,
@@ -17,6 +18,9 @@ interface ProfileRouteProps {
 /** Rota pública de um perfil: resolve os estados de conexão e renderiza o conteúdo publicado. */
 export function ProfileRoute({ source, slug }: ProfileRouteProps) {
   const { state, reload } = useShareProfile(source, slug);
+
+  // Ao sair da rota pública (home/404), a mídia pré-resolvida não tem mais consumidor.
+  useEffect(() => () => source.dispose?.(), [source]);
 
   // O título/descrição do documento refletem apenas o perfil pronto (efeito incondicional).
   useDocumentMeta(state.status === 'ready' ? state.profile : null);

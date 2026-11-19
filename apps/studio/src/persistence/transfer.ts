@@ -9,8 +9,8 @@
  * locais já existentes no IndexedDB. Todo conteúdo importado passa pelo validador canônico.
  */
 
-import { createLocalId } from '@hattz/shared-utils';
-import { validatePublishableSnapshotContent } from '@hattz/validation';
+import { createLocalId, isReservedPublicSlug } from '@hattz/shared-utils';
+import { validatePublishableSnapshotContent, validateSlug } from '@hattz/validation';
 import {
   STUDIO_DB_NAME,
   STUDIO_DB_VERSION,
@@ -35,6 +35,19 @@ export const BACKUP_FORMAT = 'hattz-studio-backup';
 export const BACKUP_FORMAT_VERSION = 1;
 
 const MEDIA_KINDS = new Set<MediaAssetKind>(['avatar', 'banner', 'image', 'audio', 'cover']);
+
+/**
+ * Limites TÉCNICOS de segurança para importação/restauração (proteção contra esgotamento de
+ * memória/cota e corrupção). Não são cotas de produto: quotas editoriais permanecem decisão do
+ * Owner. São aplicados ANTES de `atob()` e da alocação do Blob.
+ */
+export const MEDIA_SAFETY_LIMITS = {
+  maxAssets: 30,
+  maxAssetBytes: 12 * 1024 * 1024,
+  maxTotalBytes: 60 * 1024 * 1024,
+} as const;
+
+const MAX_BASE64_LENGTH = Math.ceil((MEDIA_SAFETY_LIMITS.maxAssetBytes * 4) / 3) + 256;
 
 /* ------------------------------------------------------------------ */
 /* Tipos de transporte                                                 */
@@ -127,8 +140,16 @@ export function dataUrlToBlob(
   if (!match || !match[2]) {
     throw new TransferFormatError('Arquivo de mídia inválido no arquivo importado.');
   }
+  const encoded = match[3]!;
+  // Validação antes da decodificação: um dataUrl gigante não pode virar um Blob gigante.
+  if (encoded.length > MAX_BASE64_LENGTH) {
+    throw new TransferFormatError('Arquivo de mídia excede o limite técnico de tamanho.');
+  }
+  const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+  if (bytes.length > MEDIA_SAFETY_LIMITS.maxAssetBytes) {
+    throw new TransferFormatError('Arquivo de mídia excede o limite técnico de tamanho.');
+  }
   const mimeType = match[1] || fallbackMimeType;
-  const bytes = Uint8Array.from(atob(match[3]!), (character) => character.charCodeAt(0));
   return new Blob([bytes], { type: mimeType });
 }
 
@@ -194,6 +215,43 @@ function assertPublishable(content: Record<string, unknown>): void {
   }
 }
 
+/** Slugs inválidos, reservados ou ausentes são rejeitados — nunca inventados nem normalizados. */
+function requireImportableSlug(value: unknown): string {
+  if (typeof value !== 'string' || !validateSlug(value).ok || isReservedPublicSlug(value)) {
+    throw new TransferFormatError(
+      'O endereço público do rascunho importado é inválido ou reservado.',
+    );
+  }
+  return value.trim().toLowerCase();
+}
+
+/** Checa contagem/tamanhos antes de qualquer decodificação de base64. */
+function assertMediaLimits(items: readonly unknown[], field: string): void {
+  if (items.length > MEDIA_SAFETY_LIMITS.maxAssets) {
+    throw new TransferFormatError(
+      `Campo "${field}" excede o limite técnico de ${MEDIA_SAFETY_LIMITS.maxAssets} arquivos.`,
+    );
+  }
+  let total = 0;
+  for (const item of items) {
+    if (!isRecord(item)) throw new TransferFormatError('Ativo de mídia inválido no arquivo.');
+    const size = item.size;
+    if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) {
+      throw new TransferFormatError('Tamanho de mídia inválido no arquivo importado.');
+    }
+    if (size > MEDIA_SAFETY_LIMITS.maxAssetBytes) {
+      throw new TransferFormatError('Arquivo de mídia excede o limite técnico de tamanho.');
+    }
+    total += size;
+    if (typeof item.dataUrl !== 'string' || item.dataUrl.length > MAX_BASE64_LENGTH) {
+      throw new TransferFormatError('Arquivo de mídia excede o limite técnico de tamanho.');
+    }
+  }
+  if (total > MEDIA_SAFETY_LIMITS.maxTotalBytes) {
+    throw new TransferFormatError('O total de mídia excede o limite técnico de tamanho.');
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Exportação / importação de um perfil                                */
 /* ------------------------------------------------------------------ */
@@ -213,6 +271,10 @@ export async function exportProfileDraft(profileTechnicalId: string): Promise<St
     .where('profileTechnicalId')
     .equals(profileTechnicalId)
     .toArray();
+  const content = requireContent(working.content);
+  // Exportar um conteúdo que a própria importação rejeitaria geraria um arquivo inútil e uma
+  // mensagem de erro confusa. A validação canônica é a mesma usada na publicação.
+  assertPublishable(content);
   return {
     format: DRAFT_FORMAT,
     formatVersion: DRAFT_FORMAT_VERSION,
@@ -220,7 +282,7 @@ export async function exportProfileDraft(profileTechnicalId: string): Promise<St
     profileTechnicalId: profile.technicalId,
     publicSlugDraft: profile.publicSlugDraft,
     displayName: profile.displayName,
-    content: requireContent(working.content),
+    content,
     mediaAssets: await Promise.all(media.map(toTransport)),
   };
 }
@@ -257,6 +319,7 @@ export async function importProfileDraft(payload: unknown): Promise<ImportedProf
   }
   const content = requireContent(payload.content);
   assertPublishable(content);
+  const importedSlug = requireImportableSlug(payload.publicSlugDraft);
 
   const db = getStudioDb();
   await ensureStudioDbReady(db);
@@ -268,7 +331,9 @@ export async function importProfileDraft(payload: unknown): Promise<ImportedProf
       : 'Perfil importado';
 
   const mapping = new Map<string, string>();
-  const transports = requireArray(payload.mediaAssets ?? [], 'mediaAssets').map((item) => {
+  const mediaItems = requireArray(payload.mediaAssets ?? [], 'mediaAssets');
+  assertMediaLimits(mediaItems, 'mediaAssets');
+  const transports = mediaItems.map((item) => {
     if (!isRecord(item)) throw new TransferFormatError('Ativo de mídia inválido.');
     return item as unknown as MediaAssetTransport;
   });
@@ -282,10 +347,7 @@ export async function importProfileDraft(payload: unknown): Promise<ImportedProf
 
   const profile: LocalProfileRecord = {
     technicalId,
-    publicSlugDraft:
-      typeof payload.publicSlugDraft === 'string' && payload.publicSlugDraft
-        ? payload.publicSlugDraft
-        : createLocalId('perfil'),
+    publicSlugDraft: importedSlug,
     displayName,
     visibility: 'unpublished',
     schemaVersion: 1,
@@ -322,6 +384,8 @@ export async function importProfileDraft(payload: unknown): Promise<ImportedProf
 export async function exportBackup(): Promise<StudioBackup> {
   const db = getStudioDb();
   await ensureStudioDbReady(db);
+  // Todas as tabelas são lidas em UMA transação de somente leitura: um backup não pode misturar
+  // uma metade pré-save e outra pós-save de um autosave concorrente.
   const [
     profiles,
     draftSnapshots,
@@ -333,18 +397,34 @@ export async function exportBackup(): Promise<StudioBackup> {
     userBadges,
     userFrames,
     userCollectionProgress,
-  ] = await Promise.all([
-    db.localProfiles.toArray(),
-    db.draftSnapshots.toArray(),
-    db.workingDrafts.toArray(),
-    db.publications.toArray(),
-    db.mediaAssets.toArray(),
-    db.pendingSyncOps.toArray(),
-    db.studioMeta.toArray(),
-    db.userBadges.toArray(),
-    db.userFrames.toArray(),
-    db.userCollectionProgress.toArray(),
-  ]);
+  ] = await db.transaction(
+    'r',
+    [
+      db.localProfiles,
+      db.draftSnapshots,
+      db.workingDrafts,
+      db.publications,
+      db.mediaAssets,
+      db.pendingSyncOps,
+      db.studioMeta,
+      db.userBadges,
+      db.userFrames,
+      db.userCollectionProgress,
+    ],
+    async () =>
+      Promise.all([
+        db.localProfiles.toArray(),
+        db.draftSnapshots.toArray(),
+        db.workingDrafts.toArray(),
+        db.publications.toArray(),
+        db.mediaAssets.toArray(),
+        db.pendingSyncOps.toArray(),
+        db.studioMeta.toArray(),
+        db.userBadges.toArray(),
+        db.userFrames.toArray(),
+        db.userCollectionProgress.toArray(),
+      ]),
+  );
   return {
     format: BACKUP_FORMAT,
     formatVersion: BACKUP_FORMAT_VERSION,
@@ -400,7 +480,9 @@ function parseBackup(payload: unknown): StudioBackup {
     payload.userCollectionProgress,
     'userCollectionProgress',
   ) as UserCollectionProgressRecord[];
-  const mediaAssets = requireArray(payload.mediaAssets, 'mediaAssets').map((item) => {
+  const mediaItems = requireArray(payload.mediaAssets, 'mediaAssets');
+  assertMediaLimits(mediaItems, 'mediaAssets');
+  const mediaAssets = mediaItems.map((item) => {
     if (!isRecord(item)) throw new TransferFormatError('Ativo de mídia inválido no backup.');
     return item as unknown as MediaAssetTransport;
   });
@@ -446,6 +528,12 @@ export async function restoreBackup(payload: unknown): Promise<BackupRestoreResu
   const db = getStudioDb();
   await ensureStudioDbReady(db);
   const mediaAssets: MediaAssetRecord[] = backup.mediaAssets.map(fromTransport);
+  // O schema físico é o da versão corrente do app, mesmo que o backup venha de uma versão anterior:
+  // os metadados restaurados não podem dizer que o banco está desatualizado.
+  const restoredMeta = [
+    ...backup.studioMeta.filter((record) => record.key !== 'db_schema_version'),
+    { key: 'db_schema_version', value: STUDIO_DB_VERSION, updatedAt: Date.now() },
+  ];
 
   await db.transaction(
     'rw',
@@ -481,7 +569,7 @@ export async function restoreBackup(payload: unknown): Promise<BackupRestoreResu
         db.publications.bulkAdd(backup.publications),
         db.mediaAssets.bulkAdd(mediaAssets),
         db.pendingSyncOps.bulkAdd(backup.pendingSyncOps),
-        db.studioMeta.bulkAdd(backup.studioMeta),
+        db.studioMeta.bulkAdd(restoredMeta),
         db.userBadges.bulkAdd(backup.userBadges),
         db.userFrames.bulkAdd(backup.userFrames),
         db.userCollectionProgress.bulkAdd(backup.userCollectionProgress),

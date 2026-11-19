@@ -1,20 +1,25 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { ErrorState } from '@hattz/profile-view';
+import { PUBLIC_PROFILE_ERROR_MESSAGE } from '../publicMessages';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
 
 interface ErrorBoundaryState {
-  message: string | null;
+  hasError: boolean;
 }
 
 /** Rede de segurança para erros de renderização inesperados (mantém o Share utilizável). */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  override state: ErrorBoundaryState = { message: null };
+  override state: ErrorBoundaryState = { hasError: false };
 
-  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
-    return { message: error instanceof Error ? error.message : 'Erro inesperado.' };
+  /**
+   * A mensagem da exceção NUNCA entra no estado público: ela pode conter detalhes internos
+   * (DSNs, tokens, caminhos). O diagnóstico completo fica apenas em `componentDidCatch`.
+   */
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
   }
 
   override componentDidCatch(error: unknown, info: ErrorInfo): void {
@@ -23,12 +28,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   private readonly handleRetry = () => {
-    this.setState({ message: null });
+    this.setState({ hasError: false });
   };
 
   override render(): ReactNode {
-    if (this.state.message !== null) {
-      return <ErrorState message={this.state.message} onRetry={this.handleRetry} />;
+    if (this.state.hasError) {
+      return <ErrorState message={PUBLIC_PROFILE_ERROR_MESSAGE} onRetry={this.handleRetry} />;
     }
     return this.props.children;
   }

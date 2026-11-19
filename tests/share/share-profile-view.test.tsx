@@ -126,4 +126,64 @@ describe('Share profile route states', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Alice Andrade' })).toBeVisible();
     expect(calls).toBe(2);
   });
+
+  it('does not resurrect a ready profile when navigating back to a previously visited slug', async () => {
+    let mediaRevoked = false;
+    let releaseAliceAgain!: () => void;
+    const aliceAgainGate = new Promise<void>((resolve) => {
+      releaseAliceAgain = resolve;
+    });
+    const brunoGate = new Promise<PublishedProfileSnapshotContract | null>(() => undefined);
+    let aliceCalls = 0;
+
+    const source = makeSource({
+      getPublishedProfileBySlug: async (slug) => {
+        if (slug === 'alice') {
+          aliceCalls += 1;
+          mediaRevoked = false;
+          if (aliceCalls === 1) return readySnapshot;
+          await aliceAgainGate;
+          return readySnapshot;
+        }
+        if (slug === 'bruno') {
+          mediaRevoked = true;
+          return brunoGate;
+        }
+        return null;
+      },
+      resolveMediaUrl: (assetId) =>
+        assetId === 'avatar_alice' && !mediaRevoked ? '/share-data/media/avatar-alice.svg' : null,
+    });
+
+    const view = render(<ProfileRoute source={source} slug="alice" />);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Alice Andrade' })).toBeVisible();
+    expect(screen.getByAltText('Avatar de Alice Andrade')).toBeVisible();
+
+    view.rerender(<ProfileRoute source={source} slug="bruno" />);
+    expect(await screen.findByRole('status')).toHaveTextContent('Carregando perfil');
+
+    // Uma nova visita a "alice" é uma nova requisição: o resultado antigo não pode ser
+    // ressuscitado enquanto a leitura atual está pendente (especialmente sem a mídia antiga).
+    view.rerender(<ProfileRoute source={source} slug="alice" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando perfil');
+    expect(screen.queryByRole('heading', { level: 1, name: 'Alice Andrade' })).toBeNull();
+
+    releaseAliceAgain();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Alice Andrade' })).toBeVisible();
+    expect(screen.getByAltText('Avatar de Alice Andrade')).toBeVisible();
+    expect(aliceCalls).toBe(2);
+  });
+
+  it('announces terminal not-found and unpublished states to assistive technology', async () => {
+    const notFound = render(<ProfileRoute source={makeSource()} slug="ghost" />);
+    expect(await screen.findByRole('heading', { name: 'Perfil não encontrado' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent('Perfil não encontrado');
+    notFound.unmount();
+
+    const unpublishedSource = makeSource({ isKnownUnpublishedSlug: async () => true });
+    const unpublished = render(<ProfileRoute source={unpublishedSource} slug="marina" />);
+    expect(await screen.findByRole('heading', { name: 'Perfil despublicado' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent('Perfil despublicado');
+    unpublished.unmount();
+  });
 });

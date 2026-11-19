@@ -38,6 +38,8 @@ export interface StudioEditorApi {
   updateDraft: (updater: (draft: StudioDraft) => StudioDraft) => void;
   saveNow: () => Promise<void>;
   reloadActive: () => Promise<void>;
+  /** Limpa o perfil ativo quando ele desaparece (por exemplo, após restaurar um backup). */
+  clearActiveProfile: () => void;
   /** Revisão atual do rascunho de trabalho (concorrência otimista na publicação). */
   getRevision: () => number | null;
   /** Recarrega a lista de perfis (ex.: após publicar/despublicar atualizar o rótulo). */
@@ -54,6 +56,11 @@ function messageOf(error: unknown, fallback: string): string {
  * O `draftRef` é a fonte da verdade (permite salvar sem depender do ciclo de render); o state
  * espelha para a UI. O salvamento é serializado (single-flight) e com verificação de revisão —
  * nunca sobrescreve silenciosamente (`StaleDraftError` → estado de conflito).
+ *
+ * Cargas de perfil também são serializadas por token: uma troca rápida A→B não pode terminar com
+ * o rascunho de A caso a leitura de A seja mais lenta que a de B. Toda troca/reload/criação espera
+ * o autosave em voo terminar antes de substituir `draftRef`, evitando gravar o rascunho novo no
+ * perfil antigo.
  */
 export function useStudioEditor(): StudioEditorApi {
   const [profiles, setProfiles] = useState<LocalProfileRecord[]>([]);
@@ -69,6 +76,7 @@ export function useStudioEditor(): StudioEditorApi {
   const draftRef = useRef<StudioDraft | null>(null);
   const revisionRef = useRef<number | null>(null);
   const profileIdRef = useRef<string | null>(null);
+  const loadTokenRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savingRef = useRef(false);
   const savePromiseRef = useRef<Promise<void> | null>(null);
@@ -83,10 +91,20 @@ export function useStudioEditor(): StudioEditorApi {
     }
   }, []);
 
+  const waitForSave = useCallback(async () => {
+    // `clearTimer()` impede novas gravações agendadas, mas não cancela uma gravação já em voo.
+    while (savingRef.current && savePromiseRef.current) {
+      await savePromiseRef.current;
+    }
+  }, []);
+
   const runSave = useCallback(async () => {
     // Se já existe uma gravação em voo, aguarde-a antes de decidir. Sem isso, um `flush()`
     // (chamado antes de publicar) retornaria imediatamente enquanto a escrita pendente ainda
     // avança a revisão, e a publicação seguinte falharia por revisão obsoleta.
+    // A verificação precisa ser síncrona: uma gravação iniciada por `pagehide` deve ser vista
+    // por um `flush()` imediato. Um `await` aqui abriria uma janela em que `savingRef` ainda é
+    // falso e a publicação usaria uma revisão obsoleta.
     while (savingRef.current && savePromiseRef.current) {
       await savePromiseRef.current;
     }
@@ -146,69 +164,105 @@ export function useStudioEditor(): StudioEditorApi {
     }, AUTOSAVE_DELAY_MS);
   }, [clearTimer, runSave]);
 
-  const loadProfile = useCallback(async (technicalId: string) => {
-    const profile = await getLocalProfile(technicalId);
-    if (!profile) throw new Error('Perfil local não encontrado.');
+  const loadProfile = useCallback(
+    async (technicalId: string) => {
+      const token = ++loadTokenRef.current;
+      // Nunca leia o banco enquanto uma gravação ainda pode estar mudando a revisão.
+      await waitForSave();
+      if (token !== loadTokenRef.current) return;
 
-    let working = await getWorkingDraft(technicalId);
-    if (!working) {
-      const seed = createEmptyDraft(profile.displayName);
-      working = await createWorkingDraft(technicalId, toSnapshotRecord(seed));
-    }
+      const profile = await getLocalProfile(technicalId);
+      if (!profile) throw new Error('Perfil local não encontrado.');
+      if (token !== loadTokenRef.current) return;
 
-    const loaded = draftFromContent(working.content);
-    if (!loaded.profile.displayName && profile.displayName) {
-      loaded.profile.displayName = profile.displayName;
-    }
+      let working = await getWorkingDraft(technicalId);
+      if (token !== loadTokenRef.current) return;
+      if (!working) {
+        const seed = createEmptyDraft(profile.displayName);
+        working = await createWorkingDraft(technicalId, toSnapshotRecord(seed));
+        if (token !== loadTokenRef.current) return;
+      }
 
-    draftRef.current = loaded;
-    revisionRef.current = working.revision;
-    profileIdRef.current = technicalId;
-    dirtyRef.current = false;
-    conflictRef.current = false;
-    setDraftState(loaded);
-    setActiveProfileId(technicalId);
-    setSaveStatus('idle');
-    setSaveError(null);
-    setLastSavedAt(working.updatedAt);
-  }, []);
+      const loaded = draftFromContent(working.content);
+      if (!loaded.profile.displayName && profile.displayName) {
+        loaded.profile.displayName = profile.displayName;
+      }
 
-  const createProfile = useCallback(async (displayName: string) => {
-    setBusy(true);
-    try {
-      const technicalId = createLocalId('prof');
-      const profile = await createLocalDraftProfile({
-        technicalId,
-        displayName: displayName.trim(),
-        publicSlugDraft: slugForPreview(displayName),
-      });
-      const seed = createEmptyDraft(profile.displayName);
-      const working = await createWorkingDraft(technicalId, toSnapshotRecord(seed));
-
-      draftRef.current = seed;
+      // Só o token mais recente pode publicar estado: uma leitura antiga que termina por último
+      // não pode fazer a UI voltar ao perfil errado nem sobrescrever um autosave mais novo.
+      if (token !== loadTokenRef.current || !mountedRef.current) return;
+      draftRef.current = loaded;
       revisionRef.current = working.revision;
       profileIdRef.current = technicalId;
       dirtyRef.current = false;
       conflictRef.current = false;
-      setDraftState(seed);
+      setDraftState(loaded);
       setActiveProfileId(technicalId);
       setSaveStatus('idle');
       setSaveError(null);
       setLastSavedAt(working.updatedAt);
-      setStorageError(null);
-      setProfiles(await listLocalProfiles());
-    } catch (error) {
-      setStorageError(messageOf(error, 'Falha ao criar o perfil local.'));
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+    },
+    [waitForSave],
+  );
+
+  const clearActiveProfile = useCallback(() => {
+    clearTimer();
+    loadTokenRef.current += 1;
+    draftRef.current = null;
+    revisionRef.current = null;
+    profileIdRef.current = null;
+    dirtyRef.current = false;
+    conflictRef.current = false;
+    setDraftState(null);
+    setActiveProfileId(null);
+    setSaveStatus('idle');
+    setSaveError(null);
+    setLastSavedAt(null);
+    setStorageError(null);
+  }, [clearTimer]);
+
+  const createProfile = useCallback(
+    async (displayName: string) => {
+      clearTimer();
+      await waitForSave();
+      setBusy(true);
+      try {
+        const technicalId = createLocalId('prof');
+        const profile = await createLocalDraftProfile({
+          technicalId,
+          displayName: displayName.trim(),
+          publicSlugDraft: slugForPreview(displayName),
+        });
+        const seed = createEmptyDraft(profile.displayName);
+        const working = await createWorkingDraft(technicalId, toSnapshotRecord(seed));
+
+        loadTokenRef.current += 1;
+        draftRef.current = seed;
+        revisionRef.current = working.revision;
+        profileIdRef.current = technicalId;
+        dirtyRef.current = false;
+        conflictRef.current = false;
+        setDraftState(seed);
+        setActiveProfileId(technicalId);
+        setSaveStatus('idle');
+        setSaveError(null);
+        setLastSavedAt(working.updatedAt);
+        setStorageError(null);
+        setProfiles(await listLocalProfiles());
+      } catch (error) {
+        setStorageError(messageOf(error, 'Falha ao criar o perfil local.'));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [clearTimer, waitForSave],
+  );
 
   const selectProfile = useCallback(
     async (technicalId: string) => {
       if (profileIdRef.current === technicalId) return;
       clearTimer();
-      if (dirtyRef.current) await runSave();
+      await runSave();
       setBusy(true);
       try {
         await loadProfile(technicalId);
@@ -228,6 +282,7 @@ export function useStudioEditor(): StudioEditorApi {
     clearTimer();
     setBusy(true);
     try {
+      await runSave();
       await loadProfile(id);
       setStorageError(null);
     } catch (error) {
@@ -235,7 +290,7 @@ export function useStudioEditor(): StudioEditorApi {
     } finally {
       setBusy(false);
     }
-  }, [clearTimer, loadProfile]);
+  }, [clearTimer, loadProfile, runSave]);
 
   const updateDraft = useCallback(
     (updater: (draft: StudioDraft) => StudioDraft) => {
@@ -289,6 +344,7 @@ export function useStudioEditor(): StudioEditorApi {
     })();
     return () => {
       mountedRef.current = false;
+      loadTokenRef.current += 1;
     };
   }, []);
 
@@ -338,6 +394,7 @@ export function useStudioEditor(): StudioEditorApi {
     updateDraft,
     saveNow,
     reloadActive,
+    clearActiveProfile,
     getRevision,
     refreshProfiles,
   };

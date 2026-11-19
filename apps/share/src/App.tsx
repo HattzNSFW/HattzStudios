@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { HomeState, NotFoundState } from '@hattz/profile-view';
 import { LocalPublicationSource } from './data';
 import { useSlugRoute } from './routing/useSlugRoute';
@@ -10,6 +10,8 @@ export function App() {
   // compartilhada (mesma origem). NÃO é o Supabase e NÃO usa dados de demonstração.
   const source = useMemo(() => new LocalPublicationSource(), []);
   const route = useSlugRoute();
+
+  useEffect(() => () => source.dispose(), [source]);
 
   return (
     <main className="share-app">

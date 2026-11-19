@@ -1338,6 +1338,119 @@
       }
     },
     {
+      "id": "display_name_tab_only",
+      "expect": false,
+      "content": {
+        "schemaVersion": 1,
+        "profile": { "displayName": "\t" },
+        "sections": [
+          {
+            "id": "sec-1",
+            "type": "hero",
+            "visible": true,
+            "order": 0,
+            "blocks": [
+              {
+                "id": "blk-1",
+                "type": "text",
+                "visible": true,
+                "order": 0,
+                "props": { "text": "hi" }
+              }
+            ]
+          }
+        ],
+        "theme": { "color": "#fff", "tokens": { "radius": 8 } },
+        "effects": { "glow": true },
+        "seo": { "title": "t", "description": "d" }
+      }
+    },
+    {
+      "id": "display_name_newline_only",
+      "expect": false,
+      "content": {
+        "schemaVersion": 1,
+        "profile": { "displayName": "\n" },
+        "sections": [
+          {
+            "id": "sec-1",
+            "type": "hero",
+            "visible": true,
+            "order": 0,
+            "blocks": [
+              {
+                "id": "blk-1",
+                "type": "text",
+                "visible": true,
+                "order": 0,
+                "props": { "text": "hi" }
+              }
+            ]
+          }
+        ],
+        "theme": { "color": "#fff", "tokens": { "radius": 8 } },
+        "effects": { "glow": true },
+        "seo": { "title": "t", "description": "d" }
+      }
+    },
+    {
+      "id": "display_name_nbsp_only",
+      "expect": false,
+      "content": {
+        "schemaVersion": 1,
+        "profile": { "displayName": " " },
+        "sections": [
+          {
+            "id": "sec-1",
+            "type": "hero",
+            "visible": true,
+            "order": 0,
+            "blocks": [
+              {
+                "id": "blk-1",
+                "type": "text",
+                "visible": true,
+                "order": 0,
+                "props": { "text": "hi" }
+              }
+            ]
+          }
+        ],
+        "theme": { "color": "#fff", "tokens": { "radius": 8 } },
+        "effects": { "glow": true },
+        "seo": { "title": "t", "description": "d" }
+      }
+    },
+    {
+      "id": "schema_version_decimal_point_zero",
+      "expect": true,
+      "content": {
+        "schemaVersion": 1,
+        "profile": { "displayName": "Perfil", "bio": "bio", "avatarAssetId": "asset_1" },
+        "sections": [
+          {
+            "id": "sec-1",
+            "type": "hero",
+            "visible": true,
+            "order": 0,
+            "blocks": [
+              {
+                "id": "blk-1",
+                "type": "text",
+                "visible": true,
+                "order": 0,
+                "props": { "text": "hi" }
+              }
+            ]
+          }
+        ],
+        "theme": { "color": "#fff", "tokens": { "radius": 8 } },
+        "effects": { "glow": true },
+        "seo": { "title": "t", "description": "d" }
+      },
+      "sql": "$j${\"schemaVersion\":1.0,\"profile\":{\"displayName\":\"Perfil\",\"bio\":\"bio\",\"avatarAssetId\":\"asset_1\"},\"sections\":[{\"id\":\"sec-1\",\"type\":\"hero\",\"visible\":true,\"order\":0,\"blocks\":[{\"id\":\"blk-1\",\"type\":\"text\",\"visible\":true,\"order\":0,\"props\":{\"text\":\"hi\"}}]}],\"theme\":{\"color\":\"#fff\",\"tokens\":{\"radius\":8}},\"effects\":{\"glow\":true},\"seo\":{\"title\":\"t\",\"description\":\"d\"}}$j$::jsonb"
+    },
+    {
       "id": "props_key_invalid",
       "expect": false,
       "content": {

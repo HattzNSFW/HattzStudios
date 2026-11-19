@@ -5,8 +5,10 @@
 //   * infrastructure/supabase/validation/sql/30_validator_parity.sql (consumed by psql)
 // so the TS and SQL validators are exercised against exactly the same inputs.
 //
-// Usage: node infrastructure/supabase/validation/parity/build_parity.mjs
-import { mkdirSync, writeFileSync } from 'node:fs';
+// Usage:
+//   node infrastructure/supabase/validation/parity/build_parity.mjs           # regenerates artifacts
+//   node infrastructure/supabase/validation/parity/build_parity.mjs --verify  # CI/test gate
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prettier from 'prettier';
@@ -205,6 +207,26 @@ const cases = [
     content: base({ profile: { displayName: astral(80) } }),
   },
   { id: 'display_name_over', expect: false, content: base({ profile: { displayName: rep(81) } }) },
+  // SQL `btrim` removes only U+0020; JS `trim()` removes the whole Unicode White_Space set.
+  { id: 'display_name_tab_only', expect: false, content: base({ profile: { displayName: '\t' } }) },
+  {
+    id: 'display_name_newline_only',
+    expect: false,
+    content: base({ profile: { displayName: '\n' } }),
+  },
+  {
+    id: 'display_name_nbsp_only',
+    expect: false,
+    content: base({ profile: { displayName: '\u00a0' } }),
+  },
+  {
+    id: 'schema_version_decimal_point_zero',
+    expect: true,
+    content: base({ schemaVersion: 1 }),
+    // JSON.stringify(1) emits `1`; the SQL side must exercise the JSON literal `1.0`, which is
+    // the same integer for the TS validator (Number.isSafeInteger(1.0) === true).
+    sql: `$j$${JSON.stringify(base()).replace('"schemaVersion":1,', '"schemaVersion":1.0,')}$j$::jsonb`,
+  },
   { id: 'props_key_invalid', expect: false, content: withProps({ 'bad key': 'x' }) },
 
   // --- sections / blocks limits ---
@@ -295,15 +317,36 @@ const fixture = {
   })),
 };
 
+const verifyMode = process.argv.includes('--verify');
+function emit(path, content) {
+  if (!verifyMode) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, content, 'utf8');
+    console.log(`wrote ${path}`);
+    return;
+  }
+  let current = null;
+  try {
+    current = readFileSync(path, 'utf8');
+  } catch {
+    current = null;
+  }
+  if (current !== content) {
+    console.error(`PARITY ARTIFACT OUT OF DATE: ${path} — run build_parity.mjs`);
+    process.exitCode = 1;
+  } else {
+    console.log(`PARITY ARTIFACT OK: ${path}`);
+  }
+}
+
 const fixturePath = resolve(repoRoot, 'tests', 'fixtures', 'publishable-snapshot-parity.json');
-mkdirSync(dirname(fixturePath), { recursive: true });
 // Format with the project's Prettier config so the generated fixture is stable under `npm run format`.
 const prettierOptions = (await prettier.resolveConfig(fixturePath)) ?? {};
 const fixtureJson = await prettier.format(JSON.stringify(fixture), {
   ...prettierOptions,
   parser: 'json',
 });
-writeFileSync(fixturePath, fixtureJson, 'utf8');
+emit(fixturePath, fixtureJson);
 
 const jsonLiteral = (c) => c.sql ?? `$j$${JSON.stringify(c.content)}$j$::jsonb`;
 
@@ -354,9 +397,6 @@ sqlLines.push('');
 sqlLines.push('commit;');
 
 const sqlPath = resolve(here, '..', 'sql', '30_validator_parity.sql');
-mkdirSync(dirname(sqlPath), { recursive: true });
-writeFileSync(sqlPath, `${sqlLines.join('\n')}\n`, 'utf8');
+emit(sqlPath, `${sqlLines.join('\n')}\n`);
 
-console.log(`wrote ${fixturePath}`);
-console.log(`wrote ${sqlPath}`);
 console.log(`cases: ${fixture.cases.length}`);

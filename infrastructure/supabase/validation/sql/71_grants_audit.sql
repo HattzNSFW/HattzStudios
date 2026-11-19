@@ -5,16 +5,16 @@
 -- RLS effectiveness is proven separately by 70_access_matrix.sql running as the real roles.
 \set ON_ERROR_STOP 1
 
-\echo === [INFO] table-level grants to anon/authenticated ===
+\echo === [INFO] table-level grants to anon/authenticated/PUBLIC ===
 select table_schema, table_name, privilege_type
 from information_schema.role_table_grants
-where grantee in ('anon', 'authenticated')
+where grantee in ('anon', 'authenticated', 'PUBLIC') and table_schema = 'public'
 order by 1, 2, 3;
 
-\echo === [INFO] column-level grants to anon/authenticated ===
+\echo === [INFO] column-level grants to anon/authenticated/PUBLIC ===
 select table_schema, table_name, column_name, privilege_type
 from information_schema.column_privileges
-where grantee in ('anon', 'authenticated')
+where grantee in ('anon', 'authenticated', 'PUBLIC') and table_schema = 'public'
 order by 1, 2, 3, 4;
 
 \echo === [HARD] no table-level write privilege for anon/authenticated ===
@@ -24,7 +24,7 @@ begin
   for r in
     select grantee, table_schema, table_name, privilege_type
     from information_schema.role_table_grants
-    where grantee in ('anon', 'authenticated')
+    where grantee in ('anon', 'authenticated', 'PUBLIC') and table_schema = 'public'
       and privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN')
   loop
     raise exception 'unexpected table write grant: % % % %', r.grantee, r.table_schema, r.table_name, r.privilege_type;
@@ -40,7 +40,7 @@ begin
   for r in
     select grantee, table_schema, table_name, column_name, privilege_type
     from information_schema.column_privileges
-    where grantee in ('anon', 'authenticated')
+    where grantee in ('anon', 'authenticated', 'PUBLIC') and table_schema = 'public'
       and privilege_type in ('INSERT', 'UPDATE', 'REFERENCES')
   loop
     raise exception 'unexpected column write grant: % % % % %', r.grantee, r.table_schema, r.table_name, r.column_name, r.privilege_type;
@@ -56,7 +56,7 @@ declare
 begin
   with actual as (
     select table_schema, table_name from information_schema.role_table_grants
-    where grantee in ('anon', 'authenticated') and privilege_type = 'SELECT'
+    where grantee in ('anon', 'authenticated', 'PUBLIC') and privilege_type = 'SELECT' and table_schema = 'public'
   ),
   expected(table_schema, table_name) as (
     values ('public', 'v_share_published_profiles'), ('public', 'v_share_public_media')
@@ -81,7 +81,7 @@ declare
 begin
   with actual as (
     select table_name, column_name from information_schema.column_privileges
-    where grantee in ('anon', 'authenticated') and privilege_type = 'SELECT' and table_schema = 'public'
+    where grantee in ('anon', 'authenticated', 'PUBLIC') and privilege_type = 'SELECT' and table_schema = 'public'
       -- view columns are audited separately by the explicit-projection check below
       and table_name not in ('v_share_published_profiles', 'v_share_public_media')
   ),

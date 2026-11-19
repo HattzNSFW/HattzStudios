@@ -69,9 +69,11 @@ describe('Share LocalPublicationSource (reads only what the Studio published)', 
   const originalCreateObjectURL = URL.createObjectURL;
   const originalRevokeObjectURL = URL.revokeObjectURL;
   let urlCounter = 0;
+  let revokedUrls: string[] = [];
 
   beforeEach(() => {
     urlCounter = 0;
+    revokedUrls = [];
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       writable: true,
@@ -80,7 +82,9 @@ describe('Share LocalPublicationSource (reads only what the Studio published)', 
     Object.defineProperty(URL, 'revokeObjectURL', {
       configurable: true,
       writable: true,
-      value: () => undefined,
+      value: (url: string) => {
+        revokedUrls.push(url);
+      },
     });
   });
 
@@ -259,13 +263,17 @@ describe('Share LocalPublicationSource (reads only what the Studio published)', 
       firstReadStarted = resolve;
     });
     const originalBulkGet = db.mediaAssets.bulkGet.bind(db.mediaAssets);
-    vi.spyOn(db.mediaAssets, 'bulkGet').mockImplementation(async (keys) => {
-      if (keys.includes(firstAsset.assetId)) {
-        firstReadStarted();
-        await firstReadGate;
-      }
-      return originalBulkGet(keys);
-    });
+    // Dexie tipa `bulkGet` como PromiseExtended: manter o `.then` da própria Promise preserva
+    // o tipo e adia apenas a resolução, exatamente como uma leitura IndexedDB lenta.
+    vi.spyOn(db.mediaAssets, 'bulkGet').mockImplementation((keys) =>
+      originalBulkGet(keys).then(async (records) => {
+        if (keys.includes(firstAsset.assetId)) {
+          firstReadStarted();
+          await firstReadGate;
+        }
+        return records;
+      }),
+    );
 
     const source = new LocalPublicationSource();
     const staleRequest = source.getPublishedProfileBySlug('perfil-a');
@@ -304,12 +312,168 @@ describe('Share LocalPublicationSource (reads only what the Studio published)', 
     expect(source.resolveMediaUrl(asset.assetId)).toBeNull();
 
     await source.getPublishedProfileBySlug('alice');
-    expect(source.resolveMediaUrl(asset.assetId)).toMatch(/^blob:mock\//);
+    const aliceUrl = source.resolveMediaUrl(asset.assetId);
+    expect(aliceUrl).toMatch(/^blob:mock\//);
+    expect(revokedUrls).toEqual([]);
 
     // Reading another profile (without media) releases the previous object URLs.
     await seedProfile('prof_plain', 'Bruno', makeContent('Bruno', 'Sem mídia'));
     await publishWorkingDraft('prof_plain', { slug: 'bruno' });
     await source.getPublishedProfileBySlug('bruno');
+    expect(source.resolveMediaUrl(asset.assetId)).toBeNull();
+    expect(revokedUrls).toEqual([aliceUrl]);
+    expect(new Set(revokedUrls).size).toBe(revokedUrls.length);
+  });
+
+  it('revokes every object URL of a replaced snapshot exactly once', async () => {
+    const db = getStudioDb();
+    await ensureStudioDbReady(db);
+    await createLocalDraftProfile({
+      technicalId: 'prof_multi_media',
+      displayName: 'Alice',
+      publicSlugDraft: 'alice',
+    });
+    const avatar = await storeMediaAsset({
+      profileTechnicalId: 'prof_multi_media',
+      kind: 'avatar',
+      blob: new Blob(['avatar'], { type: 'image/png' }),
+    });
+    const image = await storeMediaAsset({
+      profileTechnicalId: 'prof_multi_media',
+      kind: 'image',
+      blob: new Blob(['image'], { type: 'image/png' }),
+    });
+    await createWorkingDraft(
+      'prof_multi_media',
+      makeContent('Alice', 'Com mídia', {
+        avatarAssetId: avatar.assetId,
+        imageAssetId: image.assetId,
+      }),
+    );
+    await publishWorkingDraft('prof_multi_media', { slug: 'alice' });
+    await seedProfile('prof_multi_plain', 'Bruno', makeContent('Bruno', 'Sem mídia'));
+    await publishWorkingDraft('prof_multi_plain', { slug: 'bruno' });
+
+    const source = new LocalPublicationSource();
+    await source.getPublishedProfileBySlug('alice');
+    const created = [avatar.assetId, image.assetId].map((id) => source.resolveMediaUrl(id));
+    expect(created.every((url) => url?.startsWith('blob:mock/'))).toBe(true);
+
+    await source.getPublishedProfileBySlug('bruno');
+
+    expect(revokedUrls).toEqual(created);
+    expect(new Set(revokedUrls).size).toBe(2);
+    expect(source.resolveMediaUrl(avatar.assetId)).toBeNull();
+    expect(source.resolveMediaUrl(image.assetId)).toBeNull();
+  });
+
+  it('keeps the displayed media available while a newer profile read is still pending', async () => {
+    const db = getStudioDb();
+    await ensureStudioDbReady(db);
+
+    const firstAsset = await (async () => {
+      await createLocalDraftProfile({
+        technicalId: 'prof_pending_a',
+        displayName: 'Alice',
+        publicSlugDraft: 'alice',
+      });
+      const asset = await storeMediaAsset({
+        profileTechnicalId: 'prof_pending_a',
+        kind: 'avatar',
+        blob: new Blob(['avatar-a'], { type: 'image/png' }),
+      });
+      await createWorkingDraft(
+        'prof_pending_a',
+        makeContent('Alice', 'A', { avatarAssetId: asset.assetId }),
+      );
+      await publishWorkingDraft('prof_pending_a', { slug: 'alice' });
+      return asset;
+    })();
+
+    const secondAsset = await (async () => {
+      await createLocalDraftProfile({
+        technicalId: 'prof_pending_b',
+        displayName: 'Bruno',
+        publicSlugDraft: 'bruno',
+      });
+      const asset = await storeMediaAsset({
+        profileTechnicalId: 'prof_pending_b',
+        kind: 'avatar',
+        blob: new Blob(['avatar-b'], { type: 'image/png' }),
+      });
+      await createWorkingDraft(
+        'prof_pending_b',
+        makeContent('Bruno', 'B', { avatarAssetId: asset.assetId }),
+      );
+      await publishWorkingDraft('prof_pending_b', { slug: 'bruno' });
+      return asset;
+    })();
+
+    let releaseSecondRead!: () => void;
+    let secondReadStarted!: () => void;
+    const secondReadGate = new Promise<void>((resolve) => {
+      releaseSecondRead = resolve;
+    });
+    const started = new Promise<void>((resolve) => {
+      secondReadStarted = resolve;
+    });
+    const originalBulkGet = db.mediaAssets.bulkGet.bind(db.mediaAssets);
+    vi.spyOn(db.mediaAssets, 'bulkGet').mockImplementation((keys) =>
+      originalBulkGet(keys).then(async (records) => {
+        if (keys.includes(secondAsset.assetId)) {
+          secondReadStarted();
+          await secondReadGate;
+        }
+        return records;
+      }),
+    );
+
+    const source = new LocalPublicationSource();
+    await source.getPublishedProfileBySlug('alice');
+    const aliceUrl = source.resolveMediaUrl(firstAsset.assetId);
+    expect(aliceUrl).toMatch(/^blob:mock\//);
+
+    const pendingRead = source.getPublishedProfileBySlug('bruno');
+    await started;
+
+    // A leitura de Bruno ainda não terminou: revogar a URL de Alice quebraria a página montada.
+    expect(source.resolveMediaUrl(firstAsset.assetId)).toBe(aliceUrl);
+    expect(revokedUrls).toEqual([]);
+
+    releaseSecondRead();
+    await pendingRead;
+
+    expect(revokedUrls).toEqual([aliceUrl]);
+    expect(source.resolveMediaUrl(secondAsset.assetId)).toMatch(/^blob:mock\//);
+  });
+
+  it('releases object URLs when the source is disposed', async () => {
+    const db = getStudioDb();
+    await ensureStudioDbReady(db);
+    await createLocalDraftProfile({
+      technicalId: 'prof_dispose',
+      displayName: 'Alice',
+      publicSlugDraft: 'alice',
+    });
+    const asset = await storeMediaAsset({
+      profileTechnicalId: 'prof_dispose',
+      kind: 'avatar',
+      blob: new Blob(['avatar'], { type: 'image/png' }),
+    });
+    await createWorkingDraft(
+      'prof_dispose',
+      makeContent('Alice', 'Com mídia', { avatarAssetId: asset.assetId }),
+    );
+    await publishWorkingDraft('prof_dispose', { slug: 'alice' });
+
+    const source = new LocalPublicationSource();
+    await source.getPublishedProfileBySlug('alice');
+    const url = source.resolveMediaUrl(asset.assetId);
+    expect(url).toMatch(/^blob:mock\//);
+
+    source.dispose();
+
+    expect(revokedUrls).toEqual([url]);
     expect(source.resolveMediaUrl(asset.assetId)).toBeNull();
   });
 });

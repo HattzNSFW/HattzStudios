@@ -55,6 +55,14 @@ describe('StaticShareDataSource — validação canônica do fixture estático',
     );
   });
 
+  it('rejeita um fixture cujo slug diverge do endereço solicitado', async () => {
+    const source = sourceWithSnapshot(makeSnapshot({ ...validContent, slug: 'bob' }));
+
+    await expect(source.getPublishedProfileBySlug('alice')).rejects.toThrow(
+      'Snapshot público inválido',
+    );
+  });
+
   it('rejeita chaves proibidas também em níveis aninhados do fixture', async () => {
     const tainted = {
       ...validContent,

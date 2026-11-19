@@ -29,7 +29,11 @@ export interface ShareProfileSource extends PublicProfileReadAdapter {
  */
 export type { ShareMediaResolver };
 
-export type ShareDataSource = ShareProfileSource & ShareMediaResolver;
+export type ShareDataSource = ShareProfileSource &
+  ShareMediaResolver & {
+    /** Libera recursos mantidos pela fonte (por exemplo, object URLs de mídia local). */
+    dispose?(): void;
+  };
 
 export type ShareProfileLookup =
   | { status: 'found'; snapshot: PublishedProfileSnapshotContract }

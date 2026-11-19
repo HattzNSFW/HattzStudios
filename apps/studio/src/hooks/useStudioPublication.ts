@@ -52,7 +52,9 @@ function messageOf(error: unknown, fallback: string): string {
  * Estado de publicação local do perfil ativo.
  *
  * A publicação atual é lida do banco (`[profileTechnicalId+state]`), nunca derivada da lista.
- * Publicar/despublicar nunca altera o rascunho nem snapshots anteriores.
+ * Publicar/despublicar nunca altera o rascunho nem snapshots anteriores. Todas as operações
+ * assíncronas usam o mesmo token de requisição: trocar de perfil ou desmontar invalida resultado
+ * tardio, evitando que a publicação de A sobrescreva a UI de B.
  */
 export function useStudioPublication(options: UseStudioPublicationOptions): StudioPublicationApi {
   const { profileId, publicSlugDraft, draft, flush, getRevision } = options;
@@ -70,11 +72,26 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
   const publicSlugRef = useRef(publicSlugDraft);
   publicSlugRef.current = publicSlugDraft;
   const requestRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      requestRef.current += 1;
+    };
+  }, []);
+
+  const isCurrent = useCallback(
+    (token: number) => mountedRef.current && token === requestRef.current,
+    [],
+  );
 
   const refresh = useCallback(async () => {
     const id = profileIdRef.current;
     const token = ++requestRef.current;
     if (!id) {
+      if (!isCurrent(token)) return;
       setCurrent(null);
       setHistory([]);
       setStatus('idle');
@@ -88,20 +105,20 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
         getCurrentPublication(id),
         listPublications(id),
       ]);
-      if (token !== requestRef.current) return;
+      if (!isCurrent(token)) return;
       setCurrent(publication);
       setHistory(list);
       setStatus(publication ? 'published' : 'idle');
       setError(null);
       setIssues([]);
     } catch (err) {
-      if (token !== requestRef.current) return;
+      if (!isCurrent(token)) return;
       setError(messageOf(err, 'Falha ao carregar o estado de publicação.'));
       setStatus('error');
     } finally {
-      if (token === requestRef.current) setReady(true);
+      if (isCurrent(token)) setReady(true);
     }
-  }, []);
+  }, [isCurrent]);
 
   useEffect(() => {
     setReady(false);
@@ -112,6 +129,8 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
     const id = profileIdRef.current;
     const activeDraft = draftRef.current;
     if (!id || !activeDraft) return;
+    // Invalida leituras em voo deste mesmo hook; uma troca de perfil invalidará esta operação.
+    const token = ++requestRef.current;
     setStatus('publishing');
     setError(null);
     setIssues([]);
@@ -126,10 +145,12 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
         ...(revision !== null ? { expectedRevision: revision } : {}),
       });
       const list = await listPublications(id);
+      if (!isCurrent(token)) return;
       setCurrent(record);
       setHistory(list);
       setStatus('published');
     } catch (err) {
+      if (!isCurrent(token)) return;
       if (err instanceof PublicationValidationError) {
         setIssues(err.issues);
         setError('O rascunho atual tem problemas que impedem a publicação.');
@@ -140,24 +161,27 @@ export function useStudioPublication(options: UseStudioPublicationOptions): Stud
       }
       setStatus('error');
     }
-  }, [flush, getRevision]);
+  }, [flush, getRevision, isCurrent]);
 
   const unpublish = useCallback(async () => {
     const id = profileIdRef.current;
     if (!id) return;
+    const token = ++requestRef.current;
     setStatus('unpublishing');
     setError(null);
     try {
       await unpublishProfile(id);
       const list = await listPublications(id);
+      if (!isCurrent(token)) return;
       setCurrent(null);
       setHistory(list);
       setStatus('unpublished');
     } catch (err) {
+      if (!isCurrent(token)) return;
       setError(messageOf(err, 'Falha ao despublicar o perfil.'));
       setStatus('error');
     }
-  }, []);
+  }, [isCurrent]);
 
   const differsFromPublished = useMemo(() => {
     if (!current || !draft) return false;

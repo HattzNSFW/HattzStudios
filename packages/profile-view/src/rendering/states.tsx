@@ -43,7 +43,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
 export function NotFoundState() {
   return (
     <StateShell>
-      <div className="share-state__body">
+      <div className="share-state__body" role="status" aria-live="polite">
         <p className="share-state__eyebrow">404</p>
         <h1 className="share-state__title">Perfil não encontrado</h1>
         <p className="share-state__text">
@@ -57,7 +57,7 @@ export function NotFoundState() {
 export function UnpublishedState() {
   return (
     <StateShell>
-      <div className="share-state__body">
+      <div className="share-state__body" role="status" aria-live="polite">
         <p className="share-state__eyebrow">Indisponível</p>
         <h1 className="share-state__title">Perfil despublicado</h1>
         <p className="share-state__text">

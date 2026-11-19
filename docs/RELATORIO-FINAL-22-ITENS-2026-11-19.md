@@ -15,7 +15,10 @@
 >   arquivos, 2274 inserções, 81 remoções. É este o **hash do estado de lançamento**; nenhum push.
 > - Este relatório está registrado em commit local separado, após o commit de código/documentação;
 >   é obtido com `git log -1`. Os relatórios de 2026-11-17/18 permanecem como **registro histórico**;
->   este documento é a **fonte atual** de estado, evidências e classificação.
+>   este documento é a **fonte histórica** de estado, evidências e classificação da rodada anterior.
+>   A rodada posterior de auditoria corretiva integral está registrada em
+>   `docs/RELATORIO-AUDITORIA-CORRETIVA-INTEGRAL-2026-11-19.md`, com números e hashes atualizados;
+>   em caso de divergência, prevalece o relatório corretivo.
 >
 > **Regra de ouro respeitada:** nenhuma funcionalidade foi inventada, nenhum botão sem função foi
 > criado, nenhum dado de demonstração foi apresentado como real, nenhuma falha ou teste não
@@ -33,12 +36,20 @@ canônica do fixture) e duas correções reais encontradas em execução: o **sl
 usar `publicSlugDraft`, não o nome de exibição) e o **`robots.txt`** do hub (passou a servir texto
 válido em vez de HTML).
 
-**Números reportados da Rodada Final anterior a esta auditoria:** 42 arquivos / **249 testes** aprovados (exit 0); esta auditoria acrescentou um teste de regressão ainda não executado; typecheck, lint,
+**Números reportados da Rodada Final anterior a esta auditoria:** 42 arquivos / **249 testes** aprovados (exit 0); typecheck, lint,
 Prettier e builds das três apps (exit 0); `npm audit --omit=dev` e `npm audit` com **0
 vulnerabilidades**; validação SQL/RLS em PostgreSQL **17.12** local descartável com **36 etapas / 0
 falhas** (27 execuções de concorrência, todas `PASS`); Lighthouse no Share com
 **acessibilidade 1, boas práticas 1, SEO 1, sem falhas**; **0 erros de console** em todas as
 etapas de navegador.
+
+**Números da auditoria corretiva integral posterior (estado corrente):** **46 arquivos / 272
+testes** aprovados (exit 0), incluindo o teste de regressão de concorrência de mídia antes pendente;
+typecheck/lint/format/build e ambas as auditorias de dependências exit 0, **0 vulnerabilidades**;
+paridade SQL↔TS com **71 casos** (inclui trim Unicode e `schemaVersion: 1.0`); harness PostgreSQL
+**17.12** em banco novo e descartável com **38 etapas / 0 falhas** e 27 execuções de concorrência.
+Ambiente: Node **v26.13.0**, npm **11.20.0**. Ver o relatório corretivo para severidades, causas,
+arquivos e logs.
 
 **Limite material:** a validação do **Supabase real** (Auth/JWT/PostgREST/Storage) e as operações
 de escrita do **Bloco 6** dependem de ambiente autorizado e sessão administrativa legitimamente
@@ -46,16 +57,16 @@ autenticada — não foram executadas. Nada foi lançado.
 
 ## 2. Situação dos oito blocos
 
-| Bloco                                                | Situação                                                      | Evidência / limite                                                                                                              |
-| ---------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **BLOCO 1 — FUNDAÇÃO E ARQUITETURA**                 | Concluído                                                     | Monorepo, contratos canônicos, ADRs 001–004, design system, pacotes compartilhados; `npm run typecheck` exit 0.                 |
-| **BLOCO 2 — BANCO DE DADOS E PERSISTÊNCIA**          | Concluído em runtime local; Supabase real pendente            | Migrations `0001`–`0013` aplicadas em banco descartável; RLS/grants/triggers exercitados (36/0). **[PREPARADO]** no Supabase.   |
-| **BLOCO 3 — HÄTTZ SHARE**                            | Concluído e hardened                                          | Renderização por `/<slug>`, estados, SEO/OG/Twitter/canonical/robots, fixture validado; `tests/share` 44/44; Lighthouse 1/1/1.  |
-| **BLOCO 4 — HÄTTZ STUDIO**                           | Concluído localmente                                          | Editor dos oito blocos, autosave, publicação versionada, aba Dados, transfer/histórico/sync local; sem publicação pública.      |
-| **BLOCO 5 — COLECIONÁVEIS, CARGOS E PERMISSÕES**     | Modelo e fronteira concluídos; catálogo autoritativo pendente | Raridades, trust boundary (posse vs Owner público), `TrustedOwnershipAuthority` opaco; sem backend de catálogo.                 |
-| **BLOCO 6 — HÄTTZ CONTROL**                          | **Somente leitura**; escrita administrativa bloqueada         | B4.2 corrigida; 0 botões/0 forms/0 inputs; `assertAdminSession` fail-closed; sem sessão administrativa real — não simulada.     |
-| **BLOCO 7 — INTEGRAÇÕES E SINCRONIZAÇÃO**            | Integração local concluída; sync remoto pendente              | Hub na mesma origem, IndexedDB compartilhado, Studio → Share real; `pendingSyncOps` lido na aba Dados, **sem drenagem remota**. |
-| **BLOCO 8 — INFRAESTRUTURA, OPERAÇÕES E LANÇAMENTO** | Preparado; lançamento não autorizado                          | CI com auditoria do Control, harness validado, ZIP final gerado; **sem deploy/publicação/push**.                                |
+| Bloco                                                | Situação                                                      | Evidência / limite                                                                                                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **BLOCO 1 — FUNDAÇÃO E ARQUITETURA**                 | Concluído                                                     | Monorepo, contratos canônicos, ADRs 001–004, design system, pacotes compartilhados; `npm run typecheck` exit 0.                                           |
+| **BLOCO 2 — BANCO DE DADOS E PERSISTÊNCIA**          | Concluído em runtime local; Supabase real pendente            | Migrations `0001`–`0014` aplicadas em banco descartável; RLS/grants/triggers exercitados (38/0 na auditoria corretiva). **[PREPARADO]** no Supabase.      |
+| **BLOCO 3 — HÄTTZ SHARE**                            | Concluído e hardened                                          | Renderização por `/<slug>`, estados, SEO/OG/Twitter/canonical/robots, fixture validado; `tests/share` 52/52 após a auditoria corretiva; Lighthouse 1/1/1. |
+| **BLOCO 4 — HÄTTZ STUDIO**                           | Concluído localmente                                          | Editor dos oito blocos, autosave, publicação versionada, aba Dados, transfer/histórico/sync local; sem publicação pública.                                |
+| **BLOCO 5 — COLECIONÁVEIS, CARGOS E PERMISSÕES**     | Modelo e fronteira concluídos; catálogo autoritativo pendente | Raridades, trust boundary (posse vs Owner público), `TrustedOwnershipAuthority` opaco; sem backend de catálogo.                                           |
+| **BLOCO 6 — HÄTTZ CONTROL**                          | **Somente leitura**; escrita administrativa bloqueada         | B4.2 corrigida; 0 botões/0 forms/0 inputs; `assertAdminSession` fail-closed; sem sessão administrativa real — não simulada.                               |
+| **BLOCO 7 — INTEGRAÇÕES E SINCRONIZAÇÃO**            | Integração local concluída; sync remoto pendente              | Hub na mesma origem, IndexedDB compartilhado, Studio → Share real; `pendingSyncOps` lido na aba Dados, **sem drenagem remota**.                           |
+| **BLOCO 8 — INFRAESTRUTURA, OPERAÇÕES E LANÇAMENTO** | Preparado; lançamento não autorizado                          | CI com auditoria do Control e gate de reprodutibilidade de paridade, harness 38/0, ZIP final gerado; **sem deploy/publicação/push**.                      |
 
 ## 3. Funcionalidades implementadas
 
@@ -110,6 +121,13 @@ views públicas `security_invoker`/`security_barrier`, FK composta de identidade
 flag derivado `is_publicly_visible` (`0010`), grants mínimos por coluna (`0012`), regra "um slug
 atual por perfil" (`0013`) e paridade validador TS↔SQL (67 casos). Evidência:
 `%LOCALAPPDATA%\Hattz-2.0-postgres\logs\final_validation_20261119\runner-console.log`.
+
+**[TESTADO] [INTEGRAÇÃO] — auditoria corretiva:** migrations `0001`–`0014` em banco **novo** e
+descartável (`hattz_phase2b_validation_9_audit_20261119`): **38 etapas / 0 falhas**, exit 0, 27
+execuções de concorrência; paridade SQL direta **71/71**; grants auditados incluindo `PUBLIC` no
+schema `public`. A `0014` corrigiu, de forma aditiva, o trim Unicode e o `schemaVersion: 1.0`, e
+tornou a verificação do índice de `0013` idempotente por definição. Evidência:
+`%LOCALAPPDATA%\Temp\opencode\hattz-audit-logs\pg-validation9.log` e `parity-sql7.log`.
 **[IMPLEMENTADO]** No cliente: IndexedDB/Dexie v3 (`hattz_studio`) com rascunhos, snapshots,
 mídias, publicações e `pendingSyncOps`. **[PREPARADO]** Supabase real não conectado.
 
@@ -128,7 +146,7 @@ segredos: apenas `.env.example` com variáveis comentadas; nenhuma credencial re
 `Validacao Final — Hattz`, description/OG/Twitter/canonical e `robots=index, follow`;
 `/validacao-final` exibe "Perfil despublicado"; `/ghost` exibe "Perfil não encontrado". Runtime usa
 `LocalPublicationSource`; fixtures em `apps/share/public/share-data/` são **demonstração**, não
-dados reais. `tests/share` **44/44**. Screenshot capturado e exibido no Review pane; estilos
+dados reais. `tests/share` **52/52** após a auditoria corretiva (44/44 na rodada anterior). Screenshot capturado e exibido no Review pane; estilos
 computados confirmaram Liquid Glass. Lighthouse: 1/1/1.
 
 ## 9. Studio
@@ -166,7 +184,8 @@ integração Supabase não executados.
 
 **[IMPLEMENTADO]** CI (`.github/workflows/ci.yml`) com typecheck, lint, format, testes, auditoria
 estática do Control, `npm audit --omit=dev` e build. Harness versionado em
-`infrastructure/supabase/validation/` com preflight, 36 etapas, concorrência e logs por passo.
+`infrastructure/supabase/validation/` com preflight, 38 etapas na rodada corrente, concorrência e
+logs por passo, além de gate de reprodutibilidade dos artefatos de paridade no CI.
 Node **v26.13.0**, npm **11.20.0**, Vite **7.3.8**, Vitest **4.1.12**, PostgreSQL **17.12**.
 **[PREPARADO]** Deploy, domínio, HTTPS e secretos de produção — não configurados.
 
@@ -179,6 +198,9 @@ Node **v26.13.0**, npm **11.20.0**, Vite **7.3.8**, Vitest **4.1.12**, PostgreSQ
 - Focos: `tests/control` **24/24**, `tests/share` **44/44**, `studio-transfer` **10/10**,
   `migrations-0012-0013` **3/3**, regressão do slug **3 arquivos / 14 testes**.
 - Validação SQL/RLS: **36 etapas / 0 falhas**, exit 0; **27** execuções de concorrência `PASS`.
+- **Auditoria corretiva (estado corrente):** `npm run test` — **46 arquivos / 272 testes**, exit 0;
+  focos `tests/share` **11 arquivos / 52 testes**, regressões Studio **8/8 + 6/6**, reprodutibilidade
+  de paridade **1/1**; validação PostgreSQL **38 etapas / 0 falhas**, paridade SQL **71/71**.
 - Quatro categorias distintas e não confundidas: TypeScript, testes estruturais de migrations,
   comportamento SQL e RLS em PostgreSQL local. As duas últimas **não** provam Supabase real.
 
@@ -280,16 +302,23 @@ migrations, configs, lockfiles, design system e docs** (inclusive este relatóri
 `.git`, `node_modules`, `dist/`, credenciais, `.env` reais (só `.env.example` comentado), cache e
 temporários. O conteúdo foi listado como evidência após a geração.
 
+**[IMPLEMENTADO] — auditoria corretiva:** o ZIP corrente da entrega é
+`C:\Users\Noir\Documents\Hattz-2.0-CORRETIVA-INTEGRAL-2026-11-19.zip`, gerado com `git archive` a
+partir do HEAD final que contém o relatório corretivo. Mesmas exclusões acima. O SHA-256 é calculado
+após a geração e entregue na mensagem final (um arquivo não pode conter o próprio hash). O ZIP
+histórico acima permanece como registro da rodada anterior.
+
 ## 22. Classificação de conclusão
 
 **PREPARADO PARA A PRÓXIMA ETAPA DE INTEGRAÇÃO, NÃO PRONTO PARA LANÇAMENTO PÚBLICO.**
 
-- **Implementado e testado na rodada anterior:** fundação dos blocos 1–5 e 7–8 nas camadas locais, com limites explícitos; B4.2 corrigida; 249 testes (o teste adicionado nesta auditoria ainda não foi executado),
+- **Implementado e testado:** fundação dos blocos 1–5 e 7–8 nas camadas locais, com limites explícitos; B4.2 corrigida; 249 testes na rodada anterior e **272 testes** aprovados na auditoria corretiva,
   builds e auditorias aprovados.
 - **Validado em navegador:** Hub, Studio, Share e Control, 0 erros de console, Lighthouse 1/1/1,
   slug e metadados corretos.
 - **Validado em integração local:** migrations/RLS/grants/concorrência em PostgreSQL 17.12
-  descartável, 36/0.
+  descartável, 36/0 na rodada anterior e **38/0** na auditoria corretiva, com paridade SQL↔TS
+  **71/71**.
 - **Apenas preparado (não executado):** Supabase real, autenticação administrativa real, escrita do
   Bloco 6, sync remoto, deploy/publicação/push.
 - **Não há autorização para lançamento real.** A entrega é feita ao Owner para auditoria e aprovação

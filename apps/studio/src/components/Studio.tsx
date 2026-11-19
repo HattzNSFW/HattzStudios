@@ -1,5 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
-import { storeMediaAsset, type MediaAssetKind, type MediaAssetRecord } from '../persistence';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  deleteMediaAsset,
+  storeMediaAsset,
+  type MediaAssetKind,
+  type MediaAssetRecord,
+} from '../persistence';
 import { useStudioEditor } from '../hooks/useStudioEditor';
 import { useStudioMedia } from '../hooks/useStudioMedia';
 import { useStudioPublication } from '../hooks/useStudioPublication';
@@ -39,6 +44,14 @@ export function Studio() {
   const [tab, setTab] = useState<StudioTab>('perfil');
   const [selected, setSelected] = useState<SelectedBlock | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // O handler de upload captura o perfil no início, mas a promessa pode resolver depois de uma
+  // troca. Este espelho síncrono evita anexar ao rascunho de B um asset pertencente a A.
+  const activeProfileIdRef = useRef(editor.activeProfileId);
+  useEffect(() => {
+    activeProfileIdRef.current = editor.activeProfileId;
+  }, [editor.activeProfileId]);
 
   const reloadMedia = media.reload;
   const refreshProfiles = editor.refreshProfiles;
@@ -55,11 +68,18 @@ export function Studio() {
 
   const handleUpload = useCallback(
     async (kind: MediaAssetKind, file: File): Promise<MediaAssetRecord | null> => {
-      const profileId = editor.activeProfileId;
+      const profileId = activeProfileIdRef.current;
       if (!profileId) return null;
       try {
         const asset = await storeMediaAsset({ profileTechnicalId: profileId, kind, blob: file });
         setUploadError(null);
+        if (activeProfileIdRef.current !== profileId) {
+          // O perfil ativo mudou durante o upload. O asset pertence ao perfil de origem e não pode
+          // ser referenciado pelo rascunho de outro perfil (o Share rejeitaria a posse divergente).
+          await deleteMediaAsset(asset.assetId).catch(() => undefined);
+          reloadMedia();
+          return null;
+        }
         reloadMedia();
         return asset;
       } catch (error) {
@@ -67,7 +87,7 @@ export function Studio() {
         return null;
       }
     },
-    [editor.activeProfileId, reloadMedia],
+    [reloadMedia],
   );
 
   const draft = editor.draft;
@@ -79,6 +99,18 @@ export function Studio() {
     const block = section.blocks.find((entry) => entry.id === selected.blockId);
     return block ? { section, block } : null;
   }, [draft, selected, tab]);
+
+  const selectTabByKeyboard = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let next: number | null = null;
+    if (event.key === 'ArrowRight') next = (index + 1) % TABS.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + TABS.length) % TABS.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = TABS.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    setTab(TABS[next]!.id);
+    tabRefs.current[next]?.focus();
+  };
 
   return (
     <div className="studio-app">
@@ -102,14 +134,21 @@ export function Studio() {
       <main className="studio-main">
         <div className="studio-topbar">
           <div className="studio-tabs" role="tablist" aria-label="Áreas de edição">
-            {TABS.map((entry) => (
+            {TABS.map((entry, index) => (
               <button
                 key={entry.id}
+                ref={(element) => {
+                  tabRefs.current[index] = element;
+                }}
                 type="button"
+                id={`studio-tab-${entry.id}`}
                 role="tab"
                 aria-selected={tab === entry.id}
+                aria-controls={`studio-panel-${entry.id}`}
+                tabIndex={tab === entry.id ? 0 : -1}
                 className={`studio-tab${tab === entry.id ? ' is-active' : ''}`}
                 onClick={() => setTab(entry.id)}
+                onKeyDown={(event) => selectTabByKeyboard(event, index)}
               >
                 {entry.label}
               </button>
@@ -142,7 +181,13 @@ export function Studio() {
           </div>
         ) : (
           <div className="studio-content">
-            <div className="studio-edit">
+            <div
+              className="studio-edit"
+              role="tabpanel"
+              id={`studio-panel-${tab}`}
+              aria-labelledby={`studio-tab-${tab}`}
+              tabIndex={0}
+            >
               {tab === 'perfil' ? (
                 <ProfileFields
                   draft={draft}
@@ -188,6 +233,7 @@ export function Studio() {
                   flush={editor.saveNow}
                   getRevision={editor.getRevision}
                   reloadActive={editor.reloadActive}
+                  clearActiveProfile={editor.clearActiveProfile}
                   refreshProfiles={editor.refreshProfiles}
                   onSlugChanged={() => void editor.refreshProfiles()}
                 />

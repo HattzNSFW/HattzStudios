@@ -26,6 +26,7 @@ Você recebeu uma exportação corrigida do Hättz 2.0. Sua tarefa é continuar 
 ## Etapa 2 — reproduzir e corrigir qualidade
 
 Execute e corrija até passar:
+
 - `npm run typecheck`
 - `npm run lint`
 - `npm run format`
@@ -36,6 +37,7 @@ Execute e corrija até passar:
 Revise especialmente o novo teste de corrida de mídia em `tests/share/localPublicationSource.test.ts` e a invalidação por geração em `apps/share/src/data/localPublicationSource.ts`. Confirme que navegações concorrentes e respostas fora de ordem não deixam URLs de mídia obsoletas, não revogam URLs ainda usadas e não resolvem mídia de outro perfil. Se o teste revelar falha, corrija a implementação e acrescente regressões.
 
 Faça uma revisão manual adicional de:
+
 - autosave, concorrência otimista e transações Dexie;
 - publicação/despublicação, histórico e snapshots imutáveis;
 - export/import/backup/restore, limites de tamanho e validação de mídia;
@@ -48,32 +50,40 @@ Faça uma revisão manual adicional de:
 ## Etapa 3 — revisar os oito blocos canônicos
 
 ### BLOCO 1 — FUNDAÇÃO E ARQUITETURA
+
 Verifique estrutura, contratos, imports, aliases, design system, acessibilidade, responsividade, compatibilidade e CI. Corrija inconsistências sem introduzir dependências pagas ou desnecessárias.
 
 ### BLOCO 2 — BANCO DE DADOS E PERSISTÊNCIA
+
 Revise migrations `0001`–`0013`, grants, RLS, views públicas, triggers, constraints, `search_path`, privilégios por coluna, paridade TS↔SQL e harness.
 Se PostgreSQL local estiver disponível, rode o harness em banco descartável novo. Preserve todos os bancos anteriores. Não use Supabase remoto.
 Aponte explicitamente o que só pode ser validado em Auth/JWT/PostgREST/Storage reais.
 
 ### BLOCO 3 — HÄTTZ SHARE
+
 Garanta que só snapshots publicados/públicos/ativos sejam expostos, com projeção explícita e sem campos internos. Fixtures de demonstração devem ser claramente identificados e nunca confundidos com dados reais. Corrija falhas de mídia, rotas, metadados e mensagens públicas.
 
 ### BLOCO 4 — HÄTTZ STUDIO
+
 Verifique todos os oito blocos do editor, persistência local, autosave, concorrência, mídia, publicação local, histórico, import/export/backup/restore e acessibilidade. Importação deve regenerar IDs, validar payloads e limitar tamanho/recursos para evitar abuso ou corrupção.
 
 ### BLOCO 5 — COLECIONÁVEIS, CARGOS E PERMISSÕES
+
 Revise raridades, disponibilidades, coleções, conclusão de sets, badges especiais, frames e herança de benefícios. Mantenha cargos privados fora da seleção pública. Posse local não é autoridade. Só Owner por autoridade confiável pode conceder/revogar benefícios.
 Implemente catálogo local somente quando as definições e regras aprovadas estiverem documentadas. Não invente itens, disponibilidade ou privilégios. O catálogo remoto autoritativo depende de backend confiável e permanece bloqueado sem ele.
 
 ### BLOCO 6 — HÄTTZ CONTROL
+
 O Control atual é somente leitura. Preserve isso enquanto não houver autenticação administrativa real e backend confiável.
 Não adicione botões de concessão/revogação que não funcionem. Não crie sessão Owner por role pública, localStorage, IndexedDB, flag ou parâmetro de URL.
 Prepare apenas contratos/adapters fail-closed e testes de negação se isso for seguro. Operações de escrita reais dependem de identidade autenticada e autorização server-side.
 
 ### BLOCO 7 — INTEGRAÇÕES E SINCRONIZAÇÃO
+
 Revise contratos, fila `pendingSyncOps`, idempotência, retry/backoff, conflitos, cancelamento e reconciliação. Não marque a fila como sincronizada sem confirmação do servidor. Se não houver backend real, implemente apenas partes locais testáveis e mantenha status remoto como pendente.
 
 ### BLOCO 8 — INFRAESTRUTURA, OPERAÇÕES E LANÇAMENTO
+
 Revise CI, scripts, auditorias, documentação, builds e instruções Windows. Não configure domínio, HTTPS, produção, deploy ou secrets sem autorização explícita.
 Corrija a linguagem dos documentos: o projeto está preparado para a próxima etapa de integração, não pronto para lançamento público enquanto Supabase real, Control administrativo, sync remoto e catálogo autoritativo estiverem pendentes.
 
@@ -89,6 +99,7 @@ Corrija a linguagem dos documentos: o projeto está preparado para a próxima et
 ## Etapa 5 — entrega
 
 Entregue:
+
 1. resumo dos defeitos encontrados, severidade e causa;
 2. lista de arquivos corrigidos;
 3. testes executados com versões, contagens e códigos de saída;

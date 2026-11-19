@@ -18,7 +18,9 @@ import type { ShareDataSource } from './types';
  *
  * Como o renderizador resolve mídia de forma síncrona (`ShareMediaResolver`), os blobs referenciados
  * pelo snapshot são pré-carregados como object URLs em `getPublishedProfileBySlug`, antes de o
- * perfil ser renderizado. Os object URLs da leitura anterior são liberados a cada nova leitura.
+ * perfil ser renderizado. Cada leitura produz um conjunto isolado de URLs: o conjunto anterior só é
+ * liberado quando a leitura mais recente termina com sucesso. Assim, navegações pendentes ou
+ * canceladas não revogam URLs que ainda podem estar sendo exibidas.
  */
 
 /** Chaves de asset públicas que podem aparecer no conteúdo publicado. */
@@ -69,20 +71,47 @@ function revokeObjectUrl(url: string): void {
   }
 }
 
+interface MediaSet {
+  readonly urls: Map<string, string>;
+  readonly created: string[];
+}
+
+function createMediaSet(): MediaSet {
+  return { urls: new Map(), created: [] };
+}
+
+function disposeMediaSet(media: MediaSet): void {
+  for (const url of media.created) revokeObjectUrl(url);
+  media.created.length = 0;
+  media.urls.clear();
+}
+
 export class LocalPublicationSource implements ShareDataSource {
-  private readonly urls = new Map<string, string>();
-  private created: string[] = [];
+  private currentMedia: MediaSet = createMediaSet();
   private mediaLoadGeneration = 0;
 
   async getPublishedProfileBySlug(slug: string): Promise<PublishedProfileSnapshotContract | null> {
     const generation = ++this.mediaLoadGeneration;
-    this.releaseMedia();
+    // O conjunto anterior é capturado ANTES da leitura: se esta leitura for cancelada ou falhar,
+    // ele permanece válido para o perfil ainda exibido.
+    const previousMedia = this.currentMedia;
 
     const record = await findPublishedPublicationBySlug(slug);
     if (generation !== this.mediaLoadGeneration || !record) return null;
 
-    await this.loadMedia(collectAssetIds(record.content), record.profileTechnicalId, generation);
-    if (generation !== this.mediaLoadGeneration) return null;
+    const nextMedia = await this.loadMedia(
+      collectAssetIds(record.content),
+      record.profileTechnicalId,
+      generation,
+    );
+    if (generation !== this.mediaLoadGeneration) {
+      // Nunca publique object URLs criados por uma solicitação que já foi superada.
+      disposeMediaSet(nextMedia);
+      return null;
+    }
+
+    this.currentMedia = nextMedia;
+    if (previousMedia !== nextMedia) disposeMediaSet(previousMedia);
     return publicationToSnapshot(record);
   }
 
@@ -95,34 +124,39 @@ export class LocalPublicationSource implements ShareDataSource {
   }
 
   resolveMediaUrl(assetId: string): string | null {
-    return this.urls.get(assetId) ?? null;
+    return this.currentMedia.urls.get(assetId) ?? null;
+  }
+
+  /** Libera os object URLs desta fonte e invalida carregamentos em voo. */
+  dispose(): void {
+    this.mediaLoadGeneration += 1;
+    disposeMediaSet(this.currentMedia);
   }
 
   private async loadMedia(
     assetIds: string[],
     ownerProfileTechnicalId: string,
     generation: number,
-  ): Promise<void> {
-    if (assetIds.length === 0) return;
+  ): Promise<MediaSet> {
+    const media = createMediaSet();
+    if (assetIds.length === 0) return media;
 
     const db = getStudioDb();
     const records = await db.mediaAssets.bulkGet(assetIds);
-    if (generation !== this.mediaLoadGeneration) return;
+    if (generation !== this.mediaLoadGeneration) {
+      // Não cria object URLs para uma geração que já foi descartada.
+      return media;
+    }
 
     for (const record of records) {
       // Uma referência adulterada não pode fazer o Share resolver mídia pertencente a outro perfil.
       if (!record || record.profileTechnicalId !== ownerProfileTechnicalId) continue;
       const url = createObjectUrl(record.blob);
       if (url) {
-        this.urls.set(record.assetId, url);
-        this.created.push(url);
+        media.urls.set(record.assetId, url);
+        media.created.push(url);
       }
     }
-  }
-
-  private releaseMedia(): void {
-    for (const url of this.created) revokeObjectUrl(url);
-    this.created = [];
-    this.urls.clear();
+    return media;
   }
 }

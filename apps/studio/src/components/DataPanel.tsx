@@ -7,6 +7,7 @@ import {
   restorePublishedVersion,
   saveDraftSnapshot,
   updatePublicSlugDraft,
+  getLocalProfile,
   type DraftSnapshotRecord,
   type LocalPublicationRecord,
   type MediaAssetRecord,
@@ -33,16 +34,18 @@ interface DataPanelProps {
   flush: () => Promise<void>;
   getRevision: () => number | null;
   reloadActive: () => Promise<void>;
+  clearActiveProfile: () => void;
   refreshProfiles: () => Promise<void>;
   onSlugChanged: (slug: string) => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+// A fila é local e SOMENTE LIDA: nenhum estado pode sugerir envio/drenagem remota sem servidor.
 const SYNC_STATE_LABELS: Record<string, string> = {
-  pendente: 'Pendente',
-  falhou: 'Falhou',
-  conflito: 'Conflito',
-  sincronizando: 'Sincronizando',
+  pendente: 'Pendente na fila local',
+  falhou: 'Falha local — sem envio remoto nesta fase',
+  conflito: 'Conflito local — sem envio remoto nesta fase',
+  sincronizando: 'Preparado na fila local — sem envio remoto nesta fase',
 };
 
 function messageOf(error: unknown): string {
@@ -58,6 +61,7 @@ export function DataPanel({
   flush,
   getRevision,
   reloadActive,
+  clearActiveProfile,
   refreshProfiles,
   onSlugChanged,
 }: DataPanelProps) {
@@ -161,14 +165,29 @@ export function DataPanel({
       if (!backupConfirmed) {
         throw new Error('Confirme a substituição dos dados locais antes de restaurar.');
       }
-      const result = await restoreBackup(await readJsonFile(file));
-      setBackupConfirmed(false);
-      await refreshProfiles();
-      await reloadActive();
-      await refreshHistory();
-      setNotice(
-        `Backup restaurado: ${result.profiles} perfil(is), ${result.publications} publicação(ões), ${result.mediaAssets} arquivo(s).`,
-      );
+      // A confirmação é consumida por tentativa: uma leitura inválida não pode deixar a
+      // próxima restauração destrutiva pré-autorizada.
+      try {
+        const result = await restoreBackup(await readJsonFile(file));
+        await refreshProfiles();
+        const restoredProfile = await getLocalProfile(profileId);
+        if (!restoredProfile) {
+          // O perfil ativo não existia no backup. Manter o rascunho antigo em memória deixaria
+          // a UI editando um perfil inexistente (com falhas de save/publicação). Limpa o estado.
+          clearActiveProfile();
+          setNotice(
+            `Backup restaurado: ${result.profiles} perfil(is), ${result.publications} publicação(ões), ${result.mediaAssets} arquivo(s). O perfil ativo não estava no backup; selecione outro.`,
+          );
+          return;
+        }
+        await reloadActive();
+        await refreshHistory();
+        setNotice(
+          `Backup restaurado: ${result.profiles} perfil(is), ${result.publications} publicação(ões), ${result.mediaAssets} arquivo(s).`,
+        );
+      } finally {
+        setBackupConfirmed(false);
+      }
     });
 
   const handleDeleteMedia = (asset: MediaAssetRecord) =>
@@ -234,7 +253,8 @@ export function DataPanel({
           {connectivity.online ? 'Online' : 'Offline — o Studio continua funcionando localmente'}
         </p>
         <p>
-          Operações pendentes na fila local: <strong>{connectivity.pending.length}</strong>.
+          Registros na fila local (sem envio remoto nesta fase):{' '}
+          <strong>{connectivity.pending.length}</strong>.
         </p>
         {connectivity.error ? (
           <p className="studio-banner-error" role="alert">

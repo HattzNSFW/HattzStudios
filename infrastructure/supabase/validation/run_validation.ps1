@@ -1,6 +1,6 @@
 # run_validation.ps1 — round-6 local PostgreSQL validation orchestrator.
 #
-# Applies migrations 0001..0013 in order (ON_ERROR_STOP=1) to a NEW disposable database, then runs
+# Applies migrations 0001..0014 in order (ON_ERROR_STOP=1) to a NEW disposable database, then runs
 # the in-repo validation harness. Every step's exit code is recorded; the script stops and exits
 # non-zero on the first unexpected result. It never touches the prior validation databases.
 #
@@ -52,9 +52,30 @@ function Run-PsqlFile([string]$Database, [string]$file, [string]$baseName, [hash
   $argList = @('-h',$PgHost,'-p',$Port,'-U',$User,'-d',$Database,'-v','ON_ERROR_STOP=1')
   if ($vars) { foreach ($k in $vars.Keys) { $argList += @('-v', "$k=$($vars[$k])") } }
   $argList += @('-f', $file)
-  $p = Start-Process -FilePath $psql -PassThru -NoNewWindow -Wait -ArgumentList $argList `
-    -RedirectStandardOutput (Join-Path $LogDir "$baseName.out.log") `
-    -RedirectStandardError  (Join-Path $LogDir "$baseName.err.log")
+
+  # `Start-Process -RedirectStandard*` não propaga o exit code de forma confiável no Windows
+  # PowerShell (o objeto retornado pode terminar antes do redirecionamento ser descarregado).
+  # Use Process diretamente e leia stdout/stderr de forma assíncrona antes de WaitForExit para
+  # evitar deadlock quando o buffer de saída enche.
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $psql
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.Arguments = ($argList | ForEach-Object {
+    if ($_ -match '^[\w.\\/:=_-]+$') { [string]$_ } else { '"' + ([string]$_ -replace '"','\"') + '"' }
+  }) -join ' '
+
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+  [void]$p.Start()
+  $stdoutTask = $p.StandardOutput.ReadToEndAsync()
+  $stderrTask = $p.StandardError.ReadToEndAsync()
+  $p.WaitForExit()
+  $encoding = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText((Join-Path $LogDir "$baseName.out.log"), $stdoutTask.GetAwaiter().GetResult(), $encoding)
+  [System.IO.File]::WriteAllText((Join-Path $LogDir "$baseName.err.log"), $stderrTask.GetAwaiter().GetResult(), $encoding)
   return $p.ExitCode
 }
 function Run-Step([string]$baseName, [string]$file, [hashtable]$vars) {
@@ -88,7 +109,7 @@ $code = Run-PsqlFile $Database $preflight '00_preflight' $null
 Record '00_preflight' $code ''
 if ($code -ne 0) { Write-Output 'FATAL: preflight failed; stopping.'; $script:results | Export-Csv -NoTypeInformation (Join-Path $LogDir 'results.csv'); exit 2 }
 
-# --- migrations 0001..0013 in order ------------------------------------------------------------
+# --- migrations 0001..0014 in order ------------------------------------------------------------
 $migrations = Get-ChildItem $MigrationsDir -Filter '*.sql' |
   Where-Object { $_.Name -match '^\d{4}_.*\.sql$' } | Sort-Object Name
 foreach ($m in $migrations) {
@@ -98,8 +119,8 @@ foreach ($m in $migrations) {
   if ($code -ne 0) { Write-Output 'FATAL: migration failed; stopping.'; $script:results | Export-Csv -NoTypeInformation (Join-Path $LogDir 'results.csv'); exit 3 }
 }
 
-# --- 0012/0013 idempotency: re-applying the additive migrations must succeed as a no-op ---------
-foreach ($m in $migrations | Where-Object { $_.Name -like '0012_*' -or $_.Name -like '0013_*' }) {
+# --- 0012/0013/0014 idempotency: re-applying additive migrations must succeed as a no-op --------
+foreach ($m in $migrations | Where-Object { $_.Name -like '0012_*' -or $_.Name -like '0013_*' -or $_.Name -like '0014_*' }) {
   $base = "99_reapply_$($m.BaseName)"
   $code = Run-PsqlFile $Database $m.FullName $base $null
   Record $base $code ''

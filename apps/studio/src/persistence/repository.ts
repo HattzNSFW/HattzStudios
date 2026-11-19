@@ -309,10 +309,7 @@ export async function deleteMediaAsset(assetId: string): Promise<void> {
   await ensureStudioDbReady(db);
   await db.transaction(
     'rw',
-    db.mediaAssets,
-    db.workingDrafts,
-    db.draftSnapshots,
-    db.publications,
+    [db.mediaAssets, db.workingDrafts, db.draftSnapshots, db.publications, db.pendingSyncOps],
     async () => {
       const references: string[] = [];
       const working = await db.workingDrafts
@@ -327,6 +324,12 @@ export async function deleteMediaAsset(assetId: string): Promise<void> {
         .filter((record) => contentReferencesAssetId(record.content, assetId))
         .toArray();
       references.push(...publications.map((record) => `publicacao:${record.publicationId}`));
+      // A fila local é persistida, exportada e restaurada: uma operação pendente também é uma
+      // referência e não pode ficar apontando para um asset removido.
+      const pending = await db.pendingSyncOps
+        .filter((record) => contentReferencesAssetId(record.payload, assetId))
+        .toArray();
+      references.push(...pending.map((record) => `fila:${record.operationId}`));
       if (references.length > 0) throw new MediaAssetInUseError(assetId, references);
       await db.mediaAssets.delete(assetId);
     },

@@ -30,6 +30,9 @@ jobs:
       - name: Format check
         run: npm run format
 
+      - name: SQL/TS parity artifacts reproducibility
+        run: node infrastructure/supabase/validation/parity/build_parity.mjs --verify
+
       - name: Test
         run: npm run test
 

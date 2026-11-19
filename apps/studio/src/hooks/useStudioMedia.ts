@@ -78,6 +78,9 @@ export function useStudioMedia(profileTechnicalId: string | null): StudioMediaSt
     return () => {
       cancelled = true;
       for (const url of created) revokeObjectUrl(url);
+      // Limpa o mapa no mesmo instante em que as URLs são revogadas. Caso contrário, o resolver
+      // devolveria uma URL já inválida enquanto a próxima leitura (reload/troca) ainda termina.
+      setUrls(new Map());
     };
   }, [profileTechnicalId, token]);
 

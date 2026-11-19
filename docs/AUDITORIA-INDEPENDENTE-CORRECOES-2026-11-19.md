@@ -11,6 +11,7 @@ Revisão estática da exportação limpa do commit `63b77b1e9939b8633a4afb2b8411
 `LocalPublicationSource` podia terminar um carregamento de mídia iniciado por uma navegação anterior depois que uma navegação mais recente já havia concluído. O resultado era a criação tardia de object URLs obsoletas, mantidas no resolver até a próxima leitura.
 
 Correção:
+
 - cada pré-carregamento recebe uma geração;
 - uma solicitação mais recente invalida a geração anterior;
 - resultados de `bulkGet` obsoletos são descartados antes da criação de object URLs;
@@ -19,6 +20,7 @@ Correção:
 ## Correção documental
 
 Os documentos de status usavam expressões como “lacunas dos oito blocos implementadas” e “preparado para lançamento”, embora o próprio relatório declarasse pendências materiais:
+
 - Bloco 5: catálogo autoritativo remoto;
 - Bloco 6: autenticação administrativa real e operações de escrita;
 - Bloco 7: sincronização remota;

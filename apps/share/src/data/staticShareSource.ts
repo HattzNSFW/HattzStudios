@@ -107,7 +107,9 @@ export class StaticShareDataSource implements ShareDataSource {
       throw new Error(`Falha ao carregar o perfil "${slug}" (HTTP ${response.status}).`);
     }
     const json: unknown = await response.json();
-    if (!isSnapshot(json)) {
+    // O endereço solicitado, o conteúdo e o canonical precisam concordar. Um fixture desatualizado
+    // não pode fazer `/alice` renderizar (e anunciar como canonical) o slug de outro perfil.
+    if (!isSnapshot(json) || json.slug !== slug) {
       throw new Error(`Snapshot público inválido para o perfil "${slug}".`);
     }
     return json;
