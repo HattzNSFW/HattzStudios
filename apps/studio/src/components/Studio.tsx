@@ -55,6 +55,7 @@ export function Studio() {
 
   const reloadMedia = media.reload;
   const refreshProfiles = editor.refreshProfiles;
+  const reloadActive = editor.reloadActive;
   const publish = publication.publish;
   const unpublish = publication.unpublish;
 
@@ -65,6 +66,15 @@ export function Studio() {
   const handleUnpublish = useCallback(() => {
     void unpublish().then(() => refreshProfiles());
   }, [unpublish, refreshProfiles]);
+
+  // Recuperação explícita: a leitura da lista limpa o erro no hook; se já havia um perfil ativo,
+  // o rascunho também é recarregado para não deixar a UI presa a um estado parcial.
+  const handleRetryStorage = useCallback(() => {
+    setSelected(null);
+    void refreshProfiles().then(() => {
+      if (activeProfileIdRef.current) void reloadActive();
+    });
+  }, [refreshProfiles, reloadActive]);
 
   const handleUpload = useCallback(
     async (kind: MediaAssetKind, file: File): Promise<MediaAssetRecord | null> => {
@@ -91,6 +101,15 @@ export function Studio() {
   );
 
   const draft = editor.draft;
+
+  // Estados mutuamente exclusivos do painel principal. `draft !== null` significa que há um
+  // perfil ativo carregado; os demais casos são inferidos de prontidão/erro/lista de perfis.
+  let placeholder: 'loading' | 'empty' | 'no-selection' | 'error' | null = null;
+  if (!editor.storageReady) placeholder = 'loading';
+  else if (draft !== null) placeholder = null;
+  else if (editor.storageError) placeholder = 'error';
+  else if (editor.profiles.length === 0) placeholder = 'empty';
+  else placeholder = 'no-selection';
 
   const publishedProfiles = editor.profiles.filter(
     (profile) => (profile.lastPublishedVersion ?? 0) > 0,
@@ -177,17 +196,22 @@ export function Studio() {
           />
         </div>
 
-        <section className="studio-overview hattz-liquid-glass" aria-label="Visão geral do Studio">
-          <dl className="studio-overview__grid">
-            {overview.map((item) => (
-              <div className="studio-overview__item" key={item.label}>
-                <span className={`hattz-icon hattz-icon--${item.icon}`} aria-hidden="true" />
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        {editor.storageReady && !editor.storageError ? (
+          <section
+            className="studio-overview hattz-liquid-glass"
+            aria-label="Visão geral do Studio"
+          >
+            <dl className="studio-overview__grid">
+              {overview.map((item) => (
+                <div className="studio-overview__item" key={item.label}>
+                  <span className={`hattz-icon hattz-icon--${item.icon}`} aria-hidden="true" />
+                  <dt>{item.label}</dt>
+                  <dd>{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ) : null}
 
         {uploadError ? (
           <p className="studio-banner-error" role="alert">
@@ -195,14 +219,59 @@ export function Studio() {
           </p>
         ) : null}
 
-        {draft === null ? (
-          <div className="studio-welcome hattz-liquid-glass">
+        {placeholder !== null || draft === null ? (
+          <div
+            className={`studio-welcome studio-welcome--${placeholder} hattz-liquid-glass`}
+            role={
+              placeholder === 'error' ? 'alert' : placeholder === 'loading' ? 'status' : undefined
+            }
+          >
             <p className="studio-eyebrow">Hättz Studio</p>
-            <h2 className="studio-welcome__title">Crie seu primeiro perfil</h2>
-            <p className="studio-welcome__text">
-              Use a barra lateral para criar um perfil local. Tudo é salvo automaticamente no seu
-              navegador (IndexedDB) e funciona sem internet.
-            </p>
+            {placeholder === 'loading' ? (
+              <>
+                <span className="studio-welcome__spinner" aria-hidden="true" />
+                <h2 className="studio-welcome__title">Carregando armazenamento local…</h2>
+                <p className="studio-welcome__text">
+                  Lendo perfis e rascunhos salvos no navegador. As contagens aparecem quando a
+                  leitura terminar.
+                </p>
+              </>
+            ) : null}
+            {placeholder === 'empty' ? (
+              <>
+                <h2 className="studio-welcome__title">Crie seu primeiro perfil</h2>
+                <p className="studio-welcome__text">
+                  Use a barra lateral para criar um perfil local. Tudo é salvo automaticamente no
+                  seu navegador (IndexedDB) e funciona sem internet.
+                </p>
+              </>
+            ) : null}
+            {placeholder === 'no-selection' ? (
+              <>
+                <h2 className="studio-welcome__title">Selecione um perfil para continuar</h2>
+                <p className="studio-welcome__text">
+                  Use a barra lateral para abrir um perfil local existente. O rascunho permanece
+                  salvo no navegador.
+                </p>
+              </>
+            ) : null}
+            {placeholder === 'error' ? (
+              <>
+                <h2 className="studio-welcome__title">
+                  Não foi possível acessar o armazenamento local
+                </h2>
+                <p className="studio-welcome__text">{editor.storageError}</p>
+                <div className="studio-welcome__actions">
+                  <button
+                    type="button"
+                    className="studio-button studio-button--primary"
+                    onClick={handleRetryStorage}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
         ) : (
           <div className="studio-content">

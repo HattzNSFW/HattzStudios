@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createLocalId } from '@hattz/shared-utils';
 import {
   StaleDraftError,
-  createLocalDraftProfile,
+  createLocalProfileWithDraft,
   createWorkingDraft,
   getLocalProfile,
   getWorkingDraft,
@@ -228,13 +228,17 @@ export function useStudioEditor(): StudioEditorApi {
       setBusy(true);
       try {
         const technicalId = createLocalId('prof');
-        const profile = await createLocalDraftProfile({
-          technicalId,
-          displayName: displayName.trim(),
-          publicSlugDraft: slugForPreview(displayName),
-        });
-        const seed = createEmptyDraft(profile.displayName);
-        const working = await createWorkingDraft(technicalId, toSnapshotRecord(seed));
+        const seed = createEmptyDraft(displayName.trim());
+        // Perfil e primeiro rascunho entram juntos: uma falha na segunda escrita não deixa
+        // um perfil órfão (sem rascunho) na lista local.
+        const { draft: working } = await createLocalProfileWithDraft(
+          {
+            technicalId,
+            displayName: displayName.trim(),
+            publicSlugDraft: slugForPreview(displayName),
+          },
+          toSnapshotRecord(seed),
+        );
 
         loadTokenRef.current += 1;
         draftRef.current = seed;
@@ -321,6 +325,8 @@ export function useStudioEditor(): StudioEditorApi {
       const list = await listLocalProfiles();
       if (!mountedRef.current) return;
       setProfiles(list);
+      // Uma recuperação bem-sucedida (botão "Tentar novamente") precisa limpar o erro anterior.
+      setStorageError(null);
     } catch (error) {
       if (!mountedRef.current) return;
       setStorageError(messageOf(error, 'Falha ao atualizar a lista de perfis.'));

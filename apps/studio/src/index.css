@@ -346,6 +346,40 @@ body {
   max-width: 56ch;
 }
 
+.studio-welcome--error {
+  border-color: rgba(255, 138, 128, 0.38);
+}
+
+.studio-welcome__spinner {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid rgba(199, 204, 214, 0.2);
+  border-top-color: var(--hattz-accent);
+  border-radius: 50%;
+  animation: studio-welcome-spin 0.9s linear infinite;
+}
+
+.studio-welcome__actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+@keyframes studio-welcome-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-welcome__spinner {
+    animation: none;
+  }
+}
+
 .studio-overview {
   display: flex;
   padding: 0.85rem 1rem;
