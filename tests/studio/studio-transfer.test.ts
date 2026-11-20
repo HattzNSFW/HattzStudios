@@ -165,6 +165,28 @@ describe('Studio — transferência, histórico e mídia referência-segura', ()
     await expect(restoreBackup(future)).rejects.toThrow(/versão mais recente/i);
   });
 
+  it('recusa campos de identidade oficial em qualquer registro do backup', async () => {
+    await seed('prof_official');
+    const backup = await exportBackup();
+    backup.userBadges.push({ officialCode: 'MT7QTEVMZY' } as never);
+    await expect(restoreBackup(backup)).rejects.toThrow(/identidade oficial/i);
+  });
+
+  it('recusa evidência de autoridade forjada em posses restauradas', async () => {
+    await seed('prof_authority');
+    const backup = await exportBackup();
+    backup.userFrames.push({ authorityProof: 'forged' } as never);
+    await expect(restoreBackup(backup)).rejects.toThrow(/autoridade não é aceita/i);
+  });
+
+  it('recusa perfil oculto com publicação ativa no backup', async () => {
+    await seed('prof_hidden');
+    await publishWorkingDraft('prof_hidden', { slug: 'hidden' });
+    const backup = await exportBackup();
+    backup.profiles[0]!.isDeleted = true;
+    await expect(restoreBackup(backup)).rejects.toThrow(/perfil oculto/i);
+  });
+
   it('salva e restaura checkpoints sem apagar o histórico', async () => {
     await seed('prof_hist');
     const first = await saveDraftSnapshot(

@@ -53,6 +53,35 @@ function assertNoOfficialIdentityFields(record: Record<string, unknown>, field: 
   }
 }
 
+/** Varredura recursiva: nenhum registro restaurado pode carregar campos de identidade oficial. */
+function assertNoOfficialIdentityValue(value: unknown, field: string): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertNoOfficialIdentityValue(item, `${field}[${index}]`));
+    return;
+  }
+  if (!isRecord(value)) return;
+  assertNoOfficialIdentityFields(value, field);
+  for (const [key, nested] of Object.entries(value)) {
+    assertNoOfficialIdentityValue(nested, `${field}.${key}`);
+  }
+}
+
+/**
+ * Posses criadas localmente nunca carregam evidência de autoridade. Um backup forjado não pode
+ * plantar `authorityProof` para um importador futuro confiar nela.
+ */
+function assertNoBackupAuthorityProof(records: readonly unknown[], field: string): void {
+  records.forEach((item, index) => {
+    const record = requireRecordBackup(item, `${field}[${index}]`);
+    const proof = record.authorityProof;
+    if (proof !== null && proof !== undefined) {
+      throw new TransferFormatError(
+        `Evidência de autoridade não é aceita em backup: ${field}[${index}].authorityProof`,
+      );
+    }
+  });
+}
+
 /**
  * Limites TÉCNICOS de segurança para importação/restauração (proteção contra esgotamento de
  * memória/cota e corrupção). Não são cotas de produto: quotas editoriais permanecem decisão do
@@ -65,6 +94,8 @@ export const MEDIA_SAFETY_LIMITS = {
 } as const;
 
 const MAX_BASE64_LENGTH = Math.ceil((MEDIA_SAFETY_LIMITS.maxAssetBytes * 4) / 3) + 256;
+/** Teto do arquivo JSON antes de qualquer parsing/base64 (limite técnico, não cota editorial). */
+const MAX_TRANSFER_FILE_BYTES = 128 * 1024 * 1024;
 
 /* ------------------------------------------------------------------ */
 /* Tipos de transporte                                                 */
@@ -336,12 +367,18 @@ function assertBackupIntegrity(input: {
   publications: readonly unknown[];
   mediaAssets: readonly MediaAssetTransport[];
   pendingSyncOps: readonly unknown[];
+  studioMeta: readonly unknown[];
+  userBadges: readonly unknown[];
+  userFrames: readonly unknown[];
+  userCollectionProgress: readonly unknown[];
 }): void {
+  assertNoOfficialIdentityValue(input, 'backup');
+
   const profileIds = new Set<string>();
+  const deletedProfileIds = new Set<string>();
   input.profiles.forEach((item, index) => {
     const field = `profiles[${index}]`;
     const record = requireRecordBackup(item, field);
-    assertNoOfficialIdentityFields(record, field);
     const technicalId = requireStringBackup(record.technicalId, `${field}.technicalId`);
     if (profileIds.has(technicalId)) {
       throw new TransferFormatError(`technicalId duplicado no backup: ${field}.`);
@@ -355,7 +392,9 @@ function assertBackupIntegrity(input: {
     requireFiniteBackup(record.createdAt, `${field}.createdAt`);
     requireFiniteBackup(record.updatedAt, `${field}.updatedAt`);
     requireNullableIntegerBackup(record.lastPublishedVersion, `${field}.lastPublishedVersion`);
-    requireBooleanBackup(record.isDeleted, `${field}.isDeleted`);
+    if (requireBooleanBackup(record.isDeleted, `${field}.isDeleted`)) {
+      deletedProfileIds.add(technicalId);
+    }
   });
 
   const snapshotIds = new Set<string>();
@@ -425,6 +464,11 @@ function assertBackupIntegrity(input: {
     assertPublishable(requireContent(record.content));
     requireFiniteBackup(record.publishedAt, `${field}.publishedAt`);
     if (state === 'published') {
+      if (deletedProfileIds.has(profileId)) {
+        throw new TransferFormatError(
+          `Perfil oculto não pode manter publicação ativa no backup: ${profileId}.`,
+        );
+      }
       if (publishedByProfile.has(profileId)) {
         throw new TransferFormatError(`Mais de uma publicação ativa para ${profileId} no backup.`);
       }
@@ -761,11 +805,17 @@ function parseBackup(payload: unknown): StudioBackup {
     return item as unknown as MediaAssetTransport;
   });
 
+  assertNoBackupAuthorityProof(userBadges, 'userBadges');
+  assertNoBackupAuthorityProof(userFrames, 'userFrames');
   for (const record of [...draftSnapshots, ...workingDrafts, ...publications]) {
     requireContent(record.content);
   }
   for (const publication of publications) assertPublishable(publication.content);
-  for (const asset of mediaAssets) fromTransport(asset);
+  const decodedMedia = mediaAssets.map(fromTransport);
+  const decodedTotal = decodedMedia.reduce((total, asset) => total + asset.blob.size, 0);
+  if (decodedTotal > MEDIA_SAFETY_LIMITS.maxTotalBytes) {
+    throw new TransferFormatError('Mídia do backup excede o limite total após decodificação.');
+  }
   assertBackupIntegrity({
     profiles,
     draftSnapshots,
@@ -773,6 +823,10 @@ function parseBackup(payload: unknown): StudioBackup {
     publications,
     mediaAssets,
     pendingSyncOps,
+    studioMeta,
+    userBadges,
+    userFrames,
+    userCollectionProgress,
   });
 
   return {
@@ -883,6 +937,9 @@ export function downloadJson(value: unknown, filename: string): void {
 }
 
 export function readJsonFile(file: File): Promise<unknown> {
+  if (file.size > MAX_TRANSFER_FILE_BYTES) {
+    return Promise.reject(new TransferFormatError('O arquivo selecionado é grande demais.'));
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {

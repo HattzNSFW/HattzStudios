@@ -81,10 +81,11 @@ export function Hub() {
         </a>
 
         <a className="hub-card hattz-liquid-glass" href="/control/">
-          <span className="hub-card__eyebrow">Administração</span>
+          <span className="hub-card__eyebrow">Consulta</span>
           <span className="hub-card__title">Control</span>
           <span className="hub-card__text">
-            Área administrativa privada. A fundação atual permanece para o Bloco 5.
+            Consulta somente leitura de catálogos, cargos e benefícios. Nenhuma ação administrativa
+            é executada sem autoridade confiável.
           </span>
         </a>
       </nav>
