@@ -10,6 +10,21 @@
   let maintenanceAllowedCodes = new Set();
   let maintenanceTextareaCodes = new Set();
   let toastTimer;
+  let ecosystemBenefits = [];
+  let ecosystemCollections = [];
+  const statusLabels = { idle: "Pronto", online: "Sincronizado", offline: "Sem conexão", syncing: "Sincronizando…", degraded: "Serviço instável", error: "Falha" };
+
+  function setupStatus() {
+    const element = $("controlConnectionStatus");
+    window.HATTZ_CORE?.subscribeConnection?.((state) => {
+      if (!element) return;
+      element.dataset.state = state.state;
+      element.textContent = statusLabels[state.state] || statusLabels.idle;
+      element.title = state.detail || element.textContent;
+      element.hidden = state.state === "idle";
+      element.classList.toggle("warning", ["offline", "error", "degraded"].includes(state.state));
+    });
+  }
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -39,13 +54,20 @@
     const headers = new Headers(options.headers || {});
     if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     if (authenticated && token) headers.set("Authorization", `Bearer ${token}`);
-    const response = await fetch(`${API}${path}`, { ...options, headers, cache: "no-store" });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (response.status === 401 && authenticated) logout(false);
-      throw new Error(data.error || `Falha HTTP ${response.status}`);
+    window.HATTZ_CORE?.setConnectionState?.("syncing", path);
+    try {
+      const response = await fetch(`${API}${path}`, { ...options, headers, cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401 && authenticated) logout(false);
+        throw new Error(data.error || `Falha HTTP ${response.status}`);
+      }
+      window.HATTZ_CORE?.setConnectionState?.("online");
+      return data;
+    } catch (error) {
+      window.HATTZ_CORE?.setConnectionState?.(error.status >= 500 ? "degraded" : "offline", error.message);
+      throw error;
     }
-    return data;
   }
   function showApp(isLogged) {
     $("loginView").hidden = isLogged;
@@ -284,21 +306,172 @@
     } catch (error) { notify(error.message); }
     finally { button.disabled = false; button.textContent = "Enviar fundo"; }
   }
+  function parseAsset(value) { try { return JSON.parse(value || '{}') || {}; } catch { return {}; } }
+  function effectValue(effect = {}) {
+    const [key, value] = Object.entries(effect)[0] || ["", ""];
+    return { key, value };
+  }
+  function effectValueLabel(effect = {}) {
+    return Object.entries(effect).map(([key, value]) => {
+      if (key === "profileStorageLimitBytes" && Number(value)) return `${Math.round(Number(value) / 1048576)} MB`;
+      return `${key}: ${value}`;
+    }).join(" · ") || "Sem efeito";
+  }
+
   async function loadEcosystem() {
     try {
-      const [data, roleData] = await Promise.all([api('/api/admin/catalog'), api('/api/admin/roles')]);
+      const [catalogResult, rolesResult, collectionsResult, benefitsResult] = await Promise.allSettled([
+        api('/api/admin/catalog'), api('/api/admin/roles'),
+        api('/api/admin/collections'), api('/api/admin/benefits')
+      ]);
+      if (catalogResult.status === 'rejected') throw catalogResult.reason;
+      if (rolesResult.status === 'rejected') throw rolesResult.reason;
+      const data = catalogResult.value;
+      const roleData = rolesResult.value;
+      ecosystemCollections = collectionsResult.status === 'fulfilled' ? (collectionsResult.value.collections || []) : [];
+      ecosystemBenefits = benefitsResult.status === 'fulfilled' ? (benefitsResult.value.benefits || []) : [];
       const frames = data.frames || [], badges = data.badges || [];
       const roles = roleData.roles || [];
-      $('grantRoleId').innerHTML = roles.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.label)}</option>`).join('') || '<option value="">Nenhum cargo disponível</option>';
-      $('roleDefinitionList').innerHTML = roles.map(role => `<div class="role-definition-row"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color)}">${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)}${Number(role.enabled) === 0 ? ' · Desativado' : ''}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">${Number(role.enabled) === 0 ? 'Editar / reativar' : 'Editar'}</button>${Number(role.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Desativar</button>` : ''}</div>`).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
+      const activeRoles = roles.filter(x => Number(x.enabled) !== 0);
+      const roleOptions = activeRoles.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.label)}</option>`).join('') || '<option value="">Nenhum cargo disponível</option>';
+      $('grantRoleId').innerHTML = roleOptions;
+      $('catalogFrameRole').innerHTML = roleOptions;
+      $('roleDefinitionList').innerHTML = roles.map(role => `<div class="role-definition-row"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color)}">${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)}${Number(role.enabled) === 0 ? ' · Desativado' : ''}${role.benefits && Object.keys(role.benefits).length ? ` · ${Object.keys(role.benefits).length} benefício(s)` : ''}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">${Number(role.enabled) === 0 ? 'Editar / reativar' : 'Editar'}</button>${Number(role.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Desativar</button>` : ''}</div>`).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
       $('roleDefinitionList').querySelectorAll('[data-edit-role]').forEach(button => button.addEventListener('click', () => editRoleDefinition(roles.find(role => role.id === button.dataset.editRole))));
       $('roleDefinitionList').querySelectorAll('[data-delete-role]').forEach(button => button.addEventListener('click', () => removeRoleDefinition(button.dataset.deleteRole)));
       $('grantBadgeId').innerHTML = badges.filter(x => Number(x.enabled) !== 0 && x.award_mode !== 'automatic').map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)} · Manual</option>`).join('') || '<option value="">Nenhuma tag manual disponível</option>';
+      $('collectionBadges').innerHTML = badges.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma insígnia disponível</option>';
       $('grantFrameId').innerHTML = frames.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
-      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({...x,kind:'Insígnia',catalogKind:'badges'})),...frames.map(x=>({...x,kind:'Moldura',catalogKind:'frames'}))].map(x=>`<div class="audit-item"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action">${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Desativar</button></div>`).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
+      $('grantBenefitId').innerHTML = ecosystemBenefits.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(effectValueLabel(x.effect))}</option>`).join('') || '<option value="">Nenhum benefício disponível</option>';
+      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({ ...x, kind: 'Insígnia', catalogKind: 'badges' })), ...frames.map(x => ({ ...x, kind: 'Moldura', catalogKind: 'frames' }))].map(x => {
+        const asset = x.kind === 'Moldura' ? parseAsset(x.asset_json) : {};
+        return `<div class="audit-item"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action">${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ` · Acesso: ${escapeHtml(asset.accessMode || 'public')}${asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : ''}`}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-access="${escapeHtml(asset.accessMode || 'public')}" data-catalog-role="${escapeHtml(asset.requiredRoleId || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Desativar</button></div>`;
+      }).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
       $('ecosystemCatalog').querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', () => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog)));
+      renderCollectionList();
+      renderBenefitList();
+      renderRoleBenefitOptions();
       await loadRoleAssignments();
       await loadStudioAccess();
+    } catch (error) { notify(error.message); }
+  }
+
+  function renderCollectionList() {
+    const root = $('collectionList');
+    if (!root) return;
+    root.innerHTML = ecosystemCollections.length ? ecosystemCollections.map(collection => `<div class="audit-item"><span class="audit-time">CONJUNTO</span><div><div class="audit-action">${escapeHtml(collection.name)}</div><div class="audit-detail">${escapeHtml(collection.description || '')} · ${(collection.badges || []).length} insígnia(s) · ${escapeHtml(effectValueLabel(collection.reward))}</div></div><span class="audit-target">${Number(collection.enabled) === 0 ? 'Desativada' : 'Ativa'}</span><button type="button" class="quiet-button" data-edit-collection="${escapeHtml(collection.id)}">Editar</button>${Number(collection.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-collection="${escapeHtml(collection.id)}">Desativar</button>` : ''}</div>`).join('') : '<p class="empty">Nenhuma coleção cadastrada.</p>';
+    root.querySelectorAll('[data-edit-collection]').forEach(button => button.addEventListener('click', () => editCollection(ecosystemCollections.find(item => item.id === button.dataset.editCollection))));
+    root.querySelectorAll('[data-delete-collection]').forEach(button => button.addEventListener('click', () => removeCollection(button.dataset.deleteCollection)));
+  }
+  function editCollection(collection) {
+    if (!collection) return;
+    $('collectionId').value = collection.id;
+    $('collectionId').readOnly = true;
+    $('collectionName').value = collection.name || '';
+    $('collectionDescription').value = collection.description || '';
+    $('collectionRewardTitle').value = collection.reward?.title || '';
+    const selected = new Set(collection.badges || []);
+    [...$('collectionBadges').options].forEach(option => { option.selected = selected.has(option.value); });
+    $('collectionName').focus();
+  }
+  function resetCollectionForm() {
+    $('collectionId').value = '';
+    $('collectionId').readOnly = false;
+    $('collectionName').value = '';
+    $('collectionDescription').value = '';
+    $('collectionRewardTitle').value = '';
+    [...$('collectionBadges').options].forEach(option => { option.selected = false; });
+  }
+  async function saveCollection() {
+    const id = $('collectionId').value.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(id)) { notify('Use um ID de 2 a 48 caracteres para a coleção.'); return; }
+    const badges = [...$('collectionBadges').selectedOptions].map(option => option.value);
+    if (!badges.length) { notify('Selecione ao menos uma insígnia para o conjunto.'); return; }
+    const title = $('collectionRewardTitle').value.trim();
+    const body = { name: $('collectionName').value.trim(), description: $('collectionDescription').value.trim(), badges, reward: title ? { title } : {} };
+    if (!body.name) { notify('Informe o nome da coleção.'); return; }
+    try {
+      await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
+      notify('Coleção salva.');
+      resetCollectionForm();
+      await loadEcosystem();
+    } catch (error) { notify(error.message); }
+  }
+  async function removeCollection(id) {
+    if (!id || !window.confirm(`Desativar a coleção "${id}"? As conquistas já concedidas serão preservadas.`)) return;
+    try { await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Coleção desativada. Conquistas preservadas.'); await loadEcosystem(); }
+    catch (error) { notify(error.message); }
+  }
+
+  function renderBenefitList() {
+    const root = $('benefitList');
+    if (!root) return;
+    root.innerHTML = ecosystemBenefits.length ? ecosystemBenefits.map(benefit => `<div class="audit-item"><span class="audit-time">BENEFÍCIO</span><div><div class="audit-action">${escapeHtml(benefit.name)}</div><div class="audit-detail">${escapeHtml(benefit.description || '')} · ${escapeHtml(effectValueLabel(benefit.effect))}</div></div><span class="audit-target">${Number(benefit.enabled) === 0 ? 'Desativado' : 'Ativo'}</span><button type="button" class="quiet-button" data-edit-benefit="${escapeHtml(benefit.id)}">Editar</button>${Number(benefit.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-benefit="${escapeHtml(benefit.id)}">Desativar</button>` : ''}</div>`).join('') : '<p class="empty">Nenhum benefício cadastrado.</p>';
+    root.querySelectorAll('[data-edit-benefit]').forEach(button => button.addEventListener('click', () => editBenefit(ecosystemBenefits.find(item => item.id === button.dataset.editBenefit))));
+    root.querySelectorAll('[data-delete-benefit]').forEach(button => button.addEventListener('click', () => removeBenefit(button.dataset.deleteBenefit)));
+  }
+  function editBenefit(benefit) {
+    if (!benefit) return;
+    $('benefitId').value = benefit.id;
+    $('benefitId').readOnly = true;
+    $('benefitName').value = benefit.name || '';
+    $('benefitDescription').value = benefit.description || '';
+    const { key, value } = effectValue(benefit.effect);
+    if (key) $('benefitEffect').value = key;
+    $('benefitValue').value = value == null ? '' : String(value);
+    $('benefitName').focus();
+  }
+  function resetBenefitForm() {
+    $('benefitId').value = '';
+    $('benefitId').readOnly = false;
+    $('benefitName').value = '';
+    $('benefitDescription').value = '';
+    $('benefitEffect').value = 'profileStorageLimitBytes';
+    $('benefitValue').value = '';
+  }
+  function buildEffect() {
+    const key = $('benefitEffect').value;
+    const raw = $('benefitValue').value.trim();
+    if (!raw) throw new Error('Informe o valor do benefício.');
+    if (key === 'profileStorageLimitBytes' || key === 'badgeSlots') {
+      const value = Number(raw);
+      if (!Number.isSafeInteger(value) || value <= 0) throw new Error('Use um número inteiro positivo para este efeito.');
+      return { [key]: value };
+    }
+    if (key === 'prioritySupport') return { prioritySupport: /^(true|sim|1)$/i.test(raw) };
+    return { [key]: raw.slice(0, 120) };
+  }
+  async function saveBenefit() {
+    const id = $('benefitId').value.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(id)) { notify('Use um ID de 2 a 48 caracteres para o benefício.'); return; }
+    try {
+      const body = { name: $('benefitName').value.trim(), description: $('benefitDescription').value.trim(), effect: buildEffect() };
+      if (!body.name) { notify('Informe o nome do benefício.'); return; }
+      await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
+      notify('Benefício salvo.');
+      resetBenefitForm();
+      await loadEcosystem();
+    } catch (error) { notify(error.message); }
+  }
+  async function removeBenefit(id) {
+    if (!id || !window.confirm(`Desativar o benefício "${id}"? Concessões existentes serão preservadas.`)) return;
+    try { await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Benefício desativado. Concessões preservadas.'); await loadEcosystem(); }
+    catch (error) { notify(error.message); }
+  }
+  function renderRoleBenefitOptions() {
+    const root = $('roleBenefitOptions');
+    if (!root) return;
+    root.innerHTML = ecosystemBenefits.length ? ecosystemBenefits.map(benefit => `<label class="role-access-option"><input type="checkbox" value="${escapeHtml(benefit.id)}" data-role-benefit><span>${escapeHtml(benefit.name)}</span><small>${escapeHtml(effectValueLabel(benefit.effect))}</small></label>`).join('') : '<p class="empty">Cadastre um benefício para herdá-lo por cargo.</p>';
+  }
+  async function mutateProfileBenefit(action) {
+    const code = entitlementCode();
+    if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code)) { notify('Informe um código de perfil válido.'); return; }
+    const benefitId = $('grantBenefitId').value;
+    if (!benefitId) { notify('Cadastre ou selecione um benefício primeiro.'); return; }
+    try {
+      await api(`/api/admin/profiles/${code}/benefits`, { method: 'POST', body: JSON.stringify({ benefitId, action }) });
+      notify(`Benefício ${action === 'grant' ? 'concedido' : 'revogado'}.`);
+      await loadProfileBadges();
     } catch (error) { notify(error.message); }
   }
   async function loadRoleAssignments() {
@@ -322,6 +495,12 @@
     $('roleDefinitionDescription').value = role.description || '';
     $('roleDefinitionColor').value = /^#[0-9a-f]{6}$/i.test(role.color || '') ? role.color : '#b99af0';
     Object.entries(ROLE_THEME_FIELDS).forEach(([key, id]) => { const value = role.theme?.[key]; $(id).value = /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#0b0a10'; });
+    const currentBenefits = role.benefits || {};
+    $('roleBenefitOptions').querySelectorAll('[data-role-benefit]').forEach(input => {
+      const benefit = ecosystemBenefits.find(item => item.id === input.value);
+      const effect = benefit?.effect || {};
+      input.checked = Object.keys(effect).length > 0 && Object.entries(effect).every(([key, value]) => currentBenefits[key] === value);
+    });
     $('saveRoleDefinition').textContent = 'Atualizar cargo';
     $('roleDefinitionId').readOnly = true;
     $('roleDefinitionLabel').focus();
@@ -331,12 +510,18 @@
     delete $('roleDefinitionId').dataset.originalId;
     $('roleDefinitionId').readOnly = false;
     $('roleDefinitionColor').value = '#b99af0';
+    $('roleBenefitOptions').querySelectorAll('[data-role-benefit]').forEach(input => { input.checked = false; });
     Object.values(ROLE_THEME_FIELDS).forEach((id, index) => { $(id).value = ['#0b0a10','#292333','#14121b','#a78bfa','#f4f0fa','#302a3a'][index]; });
     $('saveRoleDefinition').textContent = 'Salvar cargo especial';
   }
   async function saveRoleDefinition() {
     const id = $('roleDefinitionId').value.trim().toLowerCase();
-    const body = { id, label: $('roleDefinitionLabel').value.trim(), description: $('roleDefinitionDescription').value.trim(), color: $('roleDefinitionColor').value, theme: Object.fromEntries(Object.entries(ROLE_THEME_FIELDS).map(([key, field]) => [key, $(field).value])) };
+    const benefits = {};
+    for (const input of $('roleBenefitOptions').querySelectorAll('[data-role-benefit]:checked')) {
+      const benefit = ecosystemBenefits.find(item => item.id === input.value);
+      if (benefit?.effect) Object.assign(benefits, benefit.effect);
+    }
+    const body = { id, label: $('roleDefinitionLabel').value.trim(), description: $('roleDefinitionDescription').value.trim(), color: $('roleDefinitionColor').value, theme: Object.fromEntries(Object.entries(ROLE_THEME_FIELDS).map(([key, field]) => [key, $(field).value])), benefits };
     if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(id)) { notify('Use um ID de 2 a 48 caracteres, sem espaços.'); return; }
     if (!body.label) { notify('Informe o nome do cargo.'); return; }
     try {
@@ -361,6 +546,11 @@
     catch(error) { notify(error.message); }
   }
 
+  function syncFrameAccessFields() {
+    const isFrame = $('catalogKind').value === 'frames';
+    const access = $('catalogFrameAccess')?.value || 'public';
+    $('catalogFrameRoleField').hidden = !isFrame || access !== 'role';
+  }
   async function saveCatalogItem() {
     const kind = $('catalogKind').value, id = $('catalogId').value.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(id)) { notify('Use um ID de 2 a 48 caracteres: letras, números, hífen ou sublinhado.'); return; }
@@ -368,7 +558,14 @@
     const readPng = (file, limit) => new Promise((resolve,reject)=>{ if(!file){resolve("");return;} if(file.type!=="image/png"||file.size>limit){reject(new Error(`Envie um PNG de até ${Math.round(limit/1024)} KB.`));return;} const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result)); reader.onerror=()=>reject(new Error("Não foi possível ler o PNG.")); reader.readAsDataURL(file); });
     try {
       if (kind === 'badges') { body.category=$('catalogCategory').value; body.icon=await readPng($('catalogIconFile').files?.[0],128*1024)||$('catalogIcon').value||'✦'; }
-      else { body.asset={ imageData: await readPng($('catalogFrameFile').files?.[0],300*1024), scale:Number($('catalogFrameScale').value), x:Number($('catalogFrameX').value), y:Number($('catalogFrameY').value) }; }
+      else {
+        const accessMode = $('catalogFrameAccess').value;
+        const requiredRoleId = accessMode === 'role' ? $('catalogFrameRole').value : '';
+        if (accessMode === 'role' && !requiredRoleId) throw new Error('Selecione o cargo exigido por esta moldura.');
+        body.accessMode = accessMode;
+        body.requiredRoleId = requiredRoleId;
+        body.asset={ imageData: await readPng($('catalogFrameFile').files?.[0],300*1024), scale:Number($('catalogFrameScale').value), x:Number($('catalogFrameX').value), y:Number($('catalogFrameY').value) };
+      }
     } catch(error) { notify(error.message); return; }
     try { await api(`/api/admin/catalog/${kind}/${encodeURIComponent(id)}`, {method:'PUT',body:JSON.stringify(body)}); notify('Item salvo no catálogo.'); await loadEcosystem(); }
     catch(error) { notify(error.message); }
@@ -439,17 +636,19 @@
     const code = entitlementCode();
     if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code)) { notify('Informe um código de perfil válido.'); return; }
     try {
-      const [badgeData, frameData] = await Promise.all([
+      const [badgeData, frameData, benefitData] = await Promise.all([
         api(`/api/admin/profiles/${code}/badges`),
-        api(`/api/admin/profiles/${code}/frames`)
+        api(`/api/admin/profiles/${code}/frames`),
+        api(`/api/admin/profiles/${code}/benefits`)
       ]);
       const items = [
-        ...(badgeData.badges || []).map(item => ({ kind: 'Tag', ...item })),
-        ...(frameData.frames || []).map(item => ({ kind: 'Moldura', ...item }))
+        ...(badgeData.badges || []).map(item => ({ kind: 'Insígnia', ...item })),
+        ...(frameData.frames || []).map(item => ({ kind: 'Moldura', ...item })),
+        ...(benefitData.benefits || []).map(item => ({ kind: 'Benefício', name: item.name, id: item.id, detail: effectValueLabel(item.effect) }))
       ];
       $('profileBadgeList').innerHTML = items.length
-        ? items.map(item => `<div class="role-row"><strong>${escapeHtml(item.kind)} · ${escapeHtml(item.name)}</strong><span>${escapeHtml(item.id)}</span></div>`).join('')
-        : '<p class="empty">Este perfil não possui tags ou molduras atribuídas.</p>';
+        ? items.map(item => `<div class="role-row"><strong>${escapeHtml(item.kind)} · ${escapeHtml(item.name)}</strong><span>${escapeHtml(item.detail || item.id)}</span></div>`).join('')
+        : '<p class="empty">Este perfil não possui insígnias, molduras ou benefícios diretos atribuídos.</p>';
     } catch (error) { $('profileBadgeList').innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`; }
   }
 
@@ -529,15 +728,27 @@
   $("nextPage").addEventListener("click", () => { page = Math.min(totalPages, page + 1); loadProfiles(); });
   $("reloadStorage").addEventListener("click", loadStorage);
   $("reloadEcosystem").addEventListener("click", loadEcosystem);
-  $("catalogKind").addEventListener("change", () => { const badges=$("catalogKind").value === "badges"; $("catalogBadgeFields").hidden = !badges; $("catalogFrameFields").hidden = badges; });
+  $("catalogKind").addEventListener("change", () => { const badges=$("catalogKind").value === "badges"; $("catalogBadgeFields").hidden = !badges; $("catalogFrameFields").hidden = badges; syncFrameAccessFields(); });
+  $("catalogFrameAccess").addEventListener("change", syncFrameAccessFields);
   $("saveCatalogItem").addEventListener("click", saveCatalogItem);
+  $("saveCollection").addEventListener("click", saveCollection);
+  $("newCollection").addEventListener("click", resetCollectionForm);
+  $("saveBenefit").addEventListener("click", saveBenefit);
+  $("newBenefit").addEventListener("click", resetBenefitForm);
+  $("grantBenefit").addEventListener("click", () => mutateProfileBenefit("grant"));
+  $("revokeBenefit").addEventListener("click", () => mutateProfileBenefit("revoke"));
   $("ecosystemCatalog").addEventListener("click", (event) => {
     const button = event.target.closest("[data-edit-catalog]"); if (!button) return;
     const kind = button.dataset.catalogKind; $("catalogKind").value = kind; $("catalogKind").dispatchEvent(new Event("change"));
     $("catalogId").value = button.dataset.editCatalog; $("catalogName").value = button.dataset.catalogName || "";
     $("catalogDescription").value = button.dataset.catalogDescription || ""; $("catalogRarity").value = button.dataset.catalogRarity || "1";
     if (kind === "badges") { $("catalogCategory").value = button.dataset.catalogCategory || ""; $("catalogIsPublic").checked = button.dataset.catalogPublic !== "0"; $("catalogIcon").value = "✦"; $("catalogIconFile").value = ""; }
-    else { $("catalogFrameFile").value = ""; }
+    else {
+      $("catalogFrameFile").value = "";
+      $("catalogFrameAccess").value = button.dataset.catalogAccess || "public";
+      $("catalogFrameRole").value = button.dataset.catalogRole || "";
+      syncFrameAccessFields();
+    }
     $("catalogId").focus(); notify("Item carregado para edição. Envie um novo PNG se quiser substituir a imagem atual.");
   });
   $("saveStudioAccess").addEventListener("click", saveStudioAccess);
@@ -580,5 +791,7 @@
   $("reloadAudit").addEventListener("click", loadAudit);
   $("clearAudit").addEventListener("click", clearAudit);
 
+  setupStatus();
+  syncFrameAccessFields();
   if (token) showApp(true); else showApp(false);
 })();
