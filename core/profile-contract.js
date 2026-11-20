@@ -1,3 +1,4 @@
+/* Hättz Profile Contract — normalização compartilhada e previsível do Studio. */
 (() => {
   "use strict";
 
@@ -50,7 +51,7 @@
     };
   };
 
-  const api = Object.freeze({ version: "1.0.0", DEFAULTS, clamp, isSafeFrameId, normalizeStudio });
+  const api = Object.freeze({ version: "2.0.0", DEFAULTS, clamp, isSafeFrameId, normalizeStudio });
   if (typeof window !== "undefined") window.HATTZ_PROFILE_CONTRACT = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();
