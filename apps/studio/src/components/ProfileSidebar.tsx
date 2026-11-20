@@ -32,7 +32,10 @@ export function ProfileSidebar({
   return (
     <aside className="studio-sidebar hattz-liquid-glass" aria-label="Perfis locais">
       <div className="studio-sidebar__header">
-        <p className="studio-eyebrow">Hättz Studio</p>
+        <div className="studio-brand">
+          <span className="hattz-wordmark hattz-wordmark--sm" aria-hidden="true" />
+          <p className="studio-eyebrow">Hättz Studio</p>
+        </div>
         <h1 className="studio-sidebar__title">Perfis</h1>
       </div>
 

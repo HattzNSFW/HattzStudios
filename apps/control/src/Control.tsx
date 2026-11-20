@@ -12,12 +12,12 @@ type ControlState =
 const DEFAULT_SOURCE = new LocalControlDataSource();
 
 const SECTIONS = [
-  { id: 'visao-geral', label: 'Visão geral' },
-  { id: 'badges', label: 'Badges' },
-  { id: 'molduras', label: 'Molduras' },
-  { id: 'cargos', label: 'Cargos' },
-  { id: 'beneficios', label: 'Benefícios' },
-  { id: 'colecoes', label: 'Coleções' },
+  { id: 'visao-geral', label: 'Visão geral', icon: 'overview' },
+  { id: 'badges', label: 'Badges', icon: 'badge' },
+  { id: 'molduras', label: 'Molduras', icon: 'frame' },
+  { id: 'cargos', label: 'Cargos', icon: 'role' },
+  { id: 'beneficios', label: 'Benefícios', icon: 'benefit' },
+  { id: 'colecoes', label: 'Coleções', icon: 'collection' },
 ] as const;
 
 export function Control({ source }: { source?: ControlDataSource }) {
@@ -53,7 +53,10 @@ export function Control({ source }: { source?: ControlDataSource }) {
   return (
     <main className="control-app">
       <header className="control-header hattz-liquid-glass">
-        <p className="control-eyebrow">Hättz 2.0 · Consulta</p>
+        <div className="control-brand">
+          <span className="hattz-wordmark" aria-hidden="true" />
+          <p className="control-eyebrow">Hättz 2.0 · Consulta</p>
+        </div>
         <h1>Control</h1>
         <p className="control-lede">
           Consulta de catálogos, cargos, benefícios e coleções. Somente leitura: nenhuma operação
@@ -65,6 +68,7 @@ export function Control({ source }: { source?: ControlDataSource }) {
       <nav className="control-nav hattz-liquid-glass" aria-label="Seções do Control">
         {SECTIONS.map((section) => (
           <a key={section.id} href={`#${section.id}`}>
+            <span className={`hattz-icon hattz-icon--${section.icon}`} aria-hidden="true" />
             {section.label}
           </a>
         ))}

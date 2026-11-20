@@ -11,18 +11,23 @@ function Section({
   id,
   title,
   description,
+  icon,
   children,
 }: {
   id: string;
   title: string;
   description?: string;
+  icon: string;
   children: ReactNode;
 }) {
   return (
     <section className="control-section hattz-liquid-glass" aria-labelledby={`${id}-title`}>
       <header className="control-section__header">
-        <h2 id={`${id}-title`}>{title}</h2>
-        {description ? <p className="control-section__description">{description}</p> : null}
+        <span className={`hattz-icon hattz-icon--${icon}`} aria-hidden="true" />
+        <div className="control-section__heading">
+          <h2 id={`${id}-title`}>{title}</h2>
+          {description ? <p className="control-section__description">{description}</p> : null}
+        </div>
       </header>
       {children}
     </section>
@@ -91,6 +96,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
         role="note"
         aria-label="Limitações do Control"
       >
+        <span className="hattz-icon hattz-icon--shield" aria-hidden="true" />
         <p className="control-notice__title">Consulta somente leitura</p>
         <ul>
           <li>
@@ -109,6 +115,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
       <Section
         id="visao-geral"
         title="Visão geral"
+        icon="overview"
         description="Contagens derivadas dos catálogos e contratos carregados — nenhum número é fixo na interface."
       >
         <dl className="control-stats">
@@ -130,6 +137,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
       <Section
         id="badges"
         title="Catálogo de badges"
+        icon="badge"
         description="Definições de catálogo: cadastrar um badge não significa que alguém o possua."
       >
         {snapshot.badges.length === 0 ? (
@@ -166,6 +174,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
       <Section
         id="molduras"
         title="Catálogo de molduras"
+        icon="frame"
         description="Somente molduras efetivamente cadastradas no catálogo são exibidas."
       >
         {snapshot.frames.length === 0 ? (
@@ -204,6 +213,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
       <Section
         id="cargos"
         title="Cargos"
+        icon="role"
         description="Hierarquia e regras de herança conforme os contratos de permissões."
       >
         <div className="control-callout" role="note">
@@ -261,6 +271,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
       <Section
         id="beneficios"
         title="Benefícios"
+        icon="benefit"
         description="Catálogo independente de benefícios e sua relação com os cargos."
       >
         <div className="control-callout" role="note">
@@ -311,6 +322,7 @@ export function ControlContent({ snapshot }: { snapshot: ControlSnapshot }) {
       <Section
         id="colecoes"
         title="Coleções"
+        icon="collection"
         description="Consulta de coleções e conjuntos. Conclusão e recompensas ainda não implementadas."
       >
         {snapshot.collections.length === 0 ? (

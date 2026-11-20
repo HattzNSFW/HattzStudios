@@ -60,6 +60,34 @@
   --hattz-motion-normal: 220ms;
   --hattz-motion-slow: 360ms;
   --hattz-motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ------------------------------------------------------------------ */
+  /* Atalhos derivados — mesma paleta, vocabulário único para os apps.  */
+  /* Valores são referências aos tokens acima (não criam nova verdade). */
+  /* ------------------------------------------------------------------ */
+  --hattz-accent: var(--hattz-color-purple-soft-500);
+  --hattz-accent-soft: var(--hattz-color-purple-soft-300);
+  --hattz-accent-deep: var(--hattz-color-purple-soft-700);
+  --hattz-text-primary: var(--hattz-color-silver-100);
+  --hattz-text-secondary: var(--hattz-color-silver-300);
+  --hattz-text-muted: var(--hattz-color-silver-500);
+  --hattz-text-faint: var(--hattz-color-silver-700);
+  --hattz-stroke: var(--hattz-glass-border);
+  --hattz-stroke-strong: var(--hattz-glass-border-strong);
+  --hattz-surface-elevated: var(--hattz-glass-surface-strong);
+  --hattz-space-1: 0.25rem;
+  --hattz-space-2: 0.5rem;
+  --hattz-space-3: 0.75rem;
+  --hattz-space-4: 1rem;
+  --hattz-space-5: 1.5rem;
+  --hattz-space-6: 2rem;
+  --hattz-elevation-1: var(--hattz-glass-shadow-soft);
+  --hattz-elevation-2: var(--hattz-glass-shadow);
+  --hattz-elevation-3: var(--hattz-glass-shadow-lifted);
+  --hattz-ambient:
+    radial-gradient(circle at 12% -10%, rgba(124, 92, 255, 0.16), transparent 42%),
+    radial-gradient(circle at 92% 8%, rgba(199, 184, 255, 0.08), transparent 38%),
+    radial-gradient(circle at 50% 110%, rgba(15, 17, 22, 0.9), transparent 55%);
 }
 
 /* ------------------------------------------------------------------ */
@@ -72,6 +100,7 @@
     --hattz-glass-surface: rgba(15, 17, 22, 0.9);
     --hattz-glass-surface-strong: rgba(12, 13, 18, 0.95);
     --hattz-glass-background: var(--hattz-glass-surface);
+    --hattz-surface-elevated: var(--hattz-glass-surface-strong);
   }
 }
 
@@ -85,10 +114,135 @@
   border-radius: var(--hattz-radius-lg);
 }
 
+/* Marca Hättz reutilizável — SVG embutido, sem asset externo. */
+.hattz-wordmark {
+  display: inline-block;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+  vertical-align: -0.25rem;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23c7b8ff'/%3E%3Cstop offset='1' stop-color='%237c5cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1' y='1' width='30' height='30' rx='9' fill='%2312141a' stroke='%23c7ccd6' stroke-opacity='.28'/%3E%3Cpath d='M9 8v16h3.2v-6.1h7.6V24H23V8h-3.2v6.1h-7.6V8z' fill='url(%23g)'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 4px 10px rgba(124, 92, 255, 0.28));
+}
+
+.hattz-wordmark--sm {
+  width: 1.1rem;
+  height: 1.1rem;
+  vertical-align: -0.18rem;
+}
+
+.hattz-wordmark--lg {
+  width: 2.25rem;
+  height: 2.25rem;
+  vertical-align: -0.6rem;
+}
+
+/* Base para ícones decorativos (aria-hidden). */
+.hattz-icon {
+  display: inline-block;
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  vertical-align: -0.18rem;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.86;
+}
+
+/* Ícones lineares compartilhados (decorativos — usar com aria-hidden="true"). */
+.hattz-icon--overview {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7' rx='2'/%3E%3Crect x='14' y='3' width='7' height='7' rx='2'/%3E%3Crect x='3' y='14' width='7' height='7' rx='2'/%3E%3Crect x='14' y='14' width='7' height='7' rx='2'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--profile {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='3.5'/%3E%3Cpath d='M4.5 20c1.1-3.6 4-5.5 7.5-5.5s6.4 1.9 7.5 5.5'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--sections {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h10'/%3E%3Ccircle cx='18' cy='18' r='1.5'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--theme {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18h1.2a2 2 0 0 0 1.4-3.4 2 2 0 0 1 1.4-3.4H19a2 2 0 0 0 2-2A9.2 9.2 0 0 0 12 3Z'/%3E%3Ccircle cx='7.5' cy='11.5' r='1'/%3E%3Ccircle cx='10' cy='7.5' r='1'/%3E%3Ccircle cx='15' cy='8' r='1'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--publish {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 16V4m0 0L8 8m4-4 4 4'/%3E%3Cpath d='M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--database {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5.5' rx='7.5' ry='2.5'/%3E%3Cpath d='M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--badge {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 5 6v6c0 4.4 2.9 7.8 7 9 4.1-1.2 7-4.6 7-9V6l-7-3Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--frame {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='4' width='16' height='16' rx='3'/%3E%3Crect x='8' y='8' width='8' height='8' rx='2'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--role {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 8.7l5.4-.8L12 3Z'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--benefit {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 10h16v3a2 2 0 0 1-2 2h-5v5h-2v-5H6a2 2 0 0 1-2-2v-3Z'/%3E%3Cpath d='M12 10V5m-2.5 1.5a2.5 2.5 0 0 1 5 0'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--collection {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3 8 4.5-8 4.5-8-4.5L12 3Z'/%3E%3Cpath d='m4 12 8 4.5 8-4.5M4 16.5 12 21l8-4.5'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--shield {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 5 6v6c0 4.4 2.9 7.8 7 9 4.1-1.2 7-4.6 7-9V6l-7-3Z'/%3E%3Cpath d='M9.5 12.2 11.3 14l3.4-3.6'/%3E%3C/svg%3E");
+}
+
+.hattz-icon--lock {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7ccd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10' rx='2.5'/%3E%3Cpath d='M8 10.5V7.8a4 4 0 0 1 8 0v2.7'/%3E%3Cpath d='M12 14.2v2.6'/%3E%3C/svg%3E");
+}
+
+.hattz-eyebrow {
+  margin: 0;
+  color: var(--hattz-accent-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.hattz-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hattz-space-1);
+  padding: 0.28rem 0.62rem;
+  border: 1px solid var(--hattz-stroke);
+  border-radius: var(--hattz-radius-pill);
+  background: var(--hattz-glass-surface-soft);
+  color: var(--hattz-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.hattz-chip--accent {
+  border-color: rgba(167, 139, 250, 0.36);
+  background: rgba(124, 92, 255, 0.12);
+  color: var(--hattz-accent-soft);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --hattz-motion-fast: 0ms;
     --hattz-motion-normal: 0ms;
     --hattz-motion-slow: 0ms;
+  }
+
+  .hattz-wordmark {
+    filter: none;
   }
 }

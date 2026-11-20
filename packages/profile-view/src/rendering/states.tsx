@@ -3,7 +3,12 @@ import type { ReactNode } from 'react';
 function StateShell({ children }: { children: ReactNode }) {
   return (
     <div className="share-state">
-      <div className="share-state__card hattz-liquid-glass">{children}</div>
+      <div className="share-state__card hattz-liquid-glass">
+        <div className="share-state__brand">
+          <span className="hattz-wordmark hattz-wordmark--lg" aria-hidden="true" />
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

@@ -21,12 +21,12 @@ import type { SelectedBlock } from './types';
 
 type StudioTab = 'perfil' | 'secoes' | 'tema' | 'publicacao' | 'dados';
 
-const TABS: readonly { id: StudioTab; label: string }[] = [
-  { id: 'perfil', label: 'Perfil' },
-  { id: 'secoes', label: 'Seções' },
-  { id: 'tema', label: 'Tema' },
-  { id: 'publicacao', label: 'Publicação' },
-  { id: 'dados', label: 'Dados' },
+const TABS: readonly { id: StudioTab; label: string; icon: string }[] = [
+  { id: 'perfil', label: 'Perfil', icon: 'profile' },
+  { id: 'secoes', label: 'Seções', icon: 'sections' },
+  { id: 'tema', label: 'Tema', icon: 'theme' },
+  { id: 'publicacao', label: 'Publicação', icon: 'publish' },
+  { id: 'dados', label: 'Dados', icon: 'database' },
 ];
 
 export function Studio() {
@@ -92,6 +92,16 @@ export function Studio() {
 
   const draft = editor.draft;
 
+  const publishedProfiles = editor.profiles.filter(
+    (profile) => (profile.lastPublishedVersion ?? 0) > 0,
+  ).length;
+  const overview = [
+    { label: 'Perfis locais', value: editor.profiles.length, icon: 'profile' },
+    { label: 'Publicados localmente', value: publishedProfiles, icon: 'publish' },
+    { label: 'Rascunhos', value: editor.profiles.length - publishedProfiles, icon: 'sections' },
+    { label: 'Mídias do perfil', value: media.assets.length, icon: 'collection' },
+  ];
+
   const selectedBlock = useMemo(() => {
     if (tab !== 'secoes' || !selected || !draft) return null;
     const section = draft.sections.find((entry) => entry.id === selected.sectionId);
@@ -144,12 +154,15 @@ export function Studio() {
                 id={`studio-tab-${entry.id}`}
                 role="tab"
                 aria-selected={tab === entry.id}
-                aria-controls={`studio-panel-${entry.id}`}
+                aria-controls={
+                  tab === entry.id && draft !== null ? `studio-panel-${entry.id}` : undefined
+                }
                 tabIndex={tab === entry.id ? 0 : -1}
                 className={`studio-tab${tab === entry.id ? ' is-active' : ''}`}
                 onClick={() => setTab(entry.id)}
                 onKeyDown={(event) => selectTabByKeyboard(event, index)}
               >
+                <span className={`hattz-icon hattz-icon--${entry.icon}`} aria-hidden="true" />
                 {entry.label}
               </button>
             ))}
@@ -163,6 +176,18 @@ export function Studio() {
             onReload={() => void editor.reloadActive()}
           />
         </div>
+
+        <section className="studio-overview hattz-liquid-glass" aria-label="Visão geral do Studio">
+          <dl className="studio-overview__grid">
+            {overview.map((item) => (
+              <div className="studio-overview__item" key={item.label}>
+                <span className={`hattz-icon hattz-icon--${item.icon}`} aria-hidden="true" />
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
         {uploadError ? (
           <p className="studio-banner-error" role="alert">
