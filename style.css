@@ -174,6 +174,67 @@ button {
   overflow-wrap: anywhere;
 }
 
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 4px 9px;
+  border: 1px solid rgba(190, 170, 230, .28);
+  border-radius: 999px;
+  background: rgba(14, 12, 20, .46);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: #d8caf5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 6px 18px rgba(0,0,0,.22);
+}
+.connection-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+.connection-status[data-state="online"] { color: #a8e6c4; }
+.connection-status[data-state="syncing"] { color: #d9c089; }
+.connection-status[data-state="offline"],
+.connection-status[data-state="error"] { color: #f3a9b8; }
+.connection-status[data-state="degraded"] { color: #e7bd83; }
+
+.collections-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.hattz-collection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 11px;
+  border: 1px solid rgba(190, 170, 230, .28);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(35,28,52,.72), rgba(17,15,25,.62));
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  color: #f2ecff;
+  cursor: default;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 22px rgba(0,0,0,.24);
+}
+.hattz-collection-chip > span:first-child { color: #cbb3ff; font-size: 15px; }
+.hattz-collection-chip strong,
+.hattz-collection-chip small { display: block; }
+.hattz-collection-chip strong { font-size: 11px; letter-spacing: .04em; }
+.hattz-collection-chip small { color: #bdb3c9; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+
 .banner-actions {
   position: absolute;
   z-index: 2;

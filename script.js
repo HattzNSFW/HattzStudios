@@ -26,6 +26,27 @@ function getShareApiBase() {
   return String(configured).trim().replace(/\/+$/, "");
 }
 
+function setupCoreStatus() {
+  const element = $("connectionStatus");
+  const labels = {
+    idle: "Pronto",
+    online: "Sincronizado",
+    offline: "Sem conexão",
+    syncing: "Sincronizando…",
+    degraded: "Serviço instável",
+    error: "Falha na sincronização"
+  };
+  window.HATTZ_CORE?.subscribeConnection?.((state) => {
+    if (!element) return;
+    element.dataset.state = state.state;
+    element.textContent = state.state === "syncing" && state.detail
+      ? labels.syncing
+      : (labels[state.state] || labels.idle);
+    element.title = state.detail || labels[state.state] || labels.idle;
+    element.hidden = state.state === "idle";
+  });
+}
+
 function normalizePublicCode(value) {
   return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^HTZ/, "");
 }
@@ -1091,17 +1112,44 @@ function applyStudioSettings() {
   });
 }
 
+function renderCompletedCollections(collections = []) {
+  const root = $("collectionsStrip");
+  if (!root) return;
+  root.querySelectorAll("[data-collection]").forEach(node => node.remove());
+  if (!collections.length) { root.hidden = true; return; }
+  const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
+  for (const collection of collections) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hattz-collection-chip";
+    button.dataset.collection = collection.id;
+    button.setAttribute("aria-label", `Coleção concluída: ${collection.name || collection.id}`);
+    const rewardText = collection.reward?.title
+      ? `Recompensa: ${collection.reward.title}`
+      : "Conjunto concluído";
+    button.innerHTML = `<span aria-hidden="true">✦</span><span><strong>${escape(collection.name || collection.id)}</strong><small>${escape(rewardText)}</small></span>`;
+    root.append(button);
+  }
+  root.hidden = false;
+}
+
 async function loadProfileEntitlements() {
   const profileCode = IS_PUBLIC_VIEW
     ? SHARED_PROFILE_CODE
     : (localStorage.getItem(SHARE_PUBLIC_CODE_KEY) || "");
   if (!profileCode) return;
   const api = getShareApiBase();
-  if (!api) return;
+  if (!api) {
+    window.HATTZ_CORE?.setConnectionState?.("offline", "API não configurada.");
+    return;
+  }
+  const normalizedCode = normalizePublicCode(profileCode) || profileCode;
   try {
-    const response = await fetch(`${api}/api/profiles/${encodeURIComponent(normalizePublicCode(profileCode))}/entitlements`, { cache: "no-store" });
-    if (!response.ok) return;
+    window.HATTZ_CORE?.setConnectionState?.("syncing", `Benefícios de ${normalizedCode}`);
+    const response = await fetch(`${api}/api/profiles/${encodeURIComponent(normalizedCode)}/entitlements`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
     const data = await response.json();
+    const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
     const verifiedBadge = $("verifiedBadge");
     verifiedBadge.hidden = data.vip !== true;
     const roleChip = $("profileRole");
@@ -1121,22 +1169,28 @@ async function loadProfileEntitlements() {
     }
     if (data.profileTheme) applyColors(data.profileTheme);
     window.HATTZ_REMOTE_FRAMES = Object.fromEntries((data.frames || []).map(frame => { let asset={}; try { asset=JSON.parse(frame.asset_json||"{}"); } catch {} return [frame.id,asset]; }));
+    window.HATTZ_REMOTE_BENEFITS = data.benefits || {};
+    window.HATTZ_REMOTE_COLLECTIONS = data.collections || [];
     if (profile.moldura && window.HATTZ_REMOTE_FRAMES[profile.moldura]?.imageData) renderFrame();
+    renderCompletedCollections(window.HATTZ_REMOTE_COLLECTIONS);
     const badges = $("badges");
+    badges.querySelectorAll("[data-remote-entitlement]").forEach(node => node.remove());
     for (const role of (data.roles || []).slice(1)) {
       const chip = document.createElement("span");
       chip.className = "badge hattz-role-badge";
+      chip.dataset.remoteEntitlement = "role";
       chip.textContent = role.label;
       chip.title = role.description || role.label;
       if (role.color && /^#[0-9a-f]{6}$/i.test(role.color)) chip.style.setProperty("--role-accent", role.color);
       badges.append(chip);
     }
-    const rarityNames = { basic: "Básica", premium: "Premium", elite: "Elite", common: "Comum", uncommon: "Incomum", rare: "Rara", epic: "Épica", legendary: "Lendária", mythic: "Mítica", celestial: "Celestial", transcendent: "Transcendente" };
-    const rarityLevels = { 1: "Comum", 2: "Incomum", 3: "Rara", 4: "Épica", 5: "Lendária", 6: "Mítica", 7: "Celestial", 8: "Transcendente" };
+    const rarityNames = { basic: "Comum", premium: "Épica", elite: "Lendária", common: "Comum", rare: "Rara", epic: "Épica", legendary: "Lendária", limited: "Limitada" };
+    const rarityLevels = { 1: "Comum", 2: "Rara", 3: "Épica", 4: "Lendária", 5: "Limitada" };
     for (const item of (data.badges || [])) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = `hattz-collectible rarity-${["basic","premium","elite"].includes(item.rarity) ? item.rarity : "basic"}`;
+      chip.dataset.remoteEntitlement = "badge";
       const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";
       chip.setAttribute("aria-label", `${item.name}. Raridade ${rarityLabel}. ${item.description || ""}`);
       const img = document.createElement("img");
@@ -1157,7 +1211,11 @@ async function loadProfileEntitlements() {
       chip.setAttribute("aria-expanded", "false");
       badges.append(chip);
     }
-  } catch (error) { console.warn("Não foi possível carregar os benefícios públicos do perfil."); }
+    window.HATTZ_CORE?.setConnectionState?.("online");
+  } catch (error) {
+    window.HATTZ_CORE?.setConnectionState?.(error.status >= 500 ? "degraded" : "offline", error.message);
+    window.HATTZ_CORE?.reportError?.(error, "share:entitlements");
+  }
 }
 
 function renderProfile() {
@@ -3174,9 +3232,12 @@ async function exportProfileBackup() {
       media[key] = file ? await blobToDataURL(file) : null;
     }
 
+    const coreBackup = window.HATTZ_CORE?.createBackup?.(ACTIVE_PROFILE_ID) || {};
     const backup = {
-      app: "Kl Personal Space",
-      version: 1,
+      ...coreBackup,
+      app: "Hättz",
+      kind: "hattz-profile-backup",
+      version: 2,
       exportedAt: new Date().toISOString(),
       profile,
       media,
@@ -3209,7 +3270,8 @@ async function importProfileBackup(event) {
 
   try {
     const backup = JSON.parse(await file.text());
-    if (!backup || backup.app !== "Kl Personal Space" || !backup.profile || typeof backup.profile !== "object") {
+    if (window.HATTZ_CORE?.validateBackup) window.HATTZ_CORE.validateBackup(backup);
+    else if (!backup || !backup.profile || typeof backup.profile !== "object") {
       throw new Error("Arquivo de backup inválido.");
     }
 
@@ -3351,6 +3413,7 @@ async function shareApiRequest(path, options = {}, ownerToken = "") {
 
   const headers = new Headers(options.headers || {});
   if (ownerToken) headers.set("Authorization", `Bearer ${ownerToken}`);
+  if (window.HATTZ_CORE?.request) return window.HATTZ_CORE.request(path, { ...options, headers });
   const response = await fetch(`${apiBase}${path}`, { ...options, headers });
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json") ? await response.json().catch(() => ({})) : {};
@@ -3776,6 +3839,7 @@ function setupEvents() {
 }
 
 async function init() {
+  setupCoreStatus();
   if (IS_PUBLIC_VIEW) {
     activateReadOnlyView();
     try {
