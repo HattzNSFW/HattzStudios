@@ -1,5 +1,9 @@
 import Dexie, { type Table } from 'dexie';
 import type { CollectionProgressStatus, GrantSourceType } from '@hattz/core';
+import type { MediaAssetKind } from '@hattz/contracts';
+
+export { MEDIA_ASSET_KINDS, isMediaAssetKind } from '@hattz/contracts';
+export type { MediaAssetKind } from '@hattz/contracts';
 
 /**
  * Esquema local-first compartilhado (`hattz_studio`).
@@ -142,8 +146,6 @@ export interface UserCollectionProgressRecord {
   updatedAt: number;
   isDemo: boolean;
 }
-
-export type MediaAssetKind = 'avatar' | 'banner' | 'image' | 'audio' | 'cover';
 
 /** Ativo de mídia local (v2): binário enviado pelo usuário, guardado no IndexedDB (offline-first). */
 export interface MediaAssetRecord {

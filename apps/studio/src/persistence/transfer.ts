@@ -28,13 +28,30 @@ import {
 } from './db';
 import { getStudioDb } from './db';
 import { ensureStudioDbReady } from './migrations';
+import { isMediaAssetKind } from '@hattz/contracts';
 
 export const DRAFT_FORMAT = 'hattz-studio-draft';
 export const DRAFT_FORMAT_VERSION = 1;
 export const BACKUP_FORMAT = 'hattz-studio-backup';
 export const BACKUP_FORMAT_VERSION = 1;
 
-const MEDIA_KINDS = new Set<MediaAssetKind>(['avatar', 'banner', 'image', 'audio', 'cover']);
+const FORBIDDEN_BACKUP_OFFICIAL_KEYS = [
+  'officialCode',
+  'official_code',
+  'isOfficial',
+  'is_official',
+  'officialIdentity',
+  'externalOfficialCode',
+] as const;
+
+function assertNoOfficialIdentityFields(record: Record<string, unknown>, field: string): void {
+  const found = FORBIDDEN_BACKUP_OFFICIAL_KEYS.find((key) => key in record);
+  if (found) {
+    throw new TransferFormatError(
+      `Campo de identidade oficial não é aceito em backup: ${field}.${found}`,
+    );
+  }
+}
 
 /**
  * Limites TÉCNICOS de segurança para importação/restauração (proteção contra esgotamento de
@@ -170,7 +187,7 @@ function fromTransport(asset: MediaAssetTransport): MediaAssetRecord {
     !asset ||
     typeof asset.assetId !== 'string' ||
     typeof asset.profileTechnicalId !== 'string' ||
-    !MEDIA_KINDS.has(asset.kind)
+    !isMediaAssetKind(asset.kind)
   ) {
     throw new TransferFormatError('Ativo de mídia inválido no arquivo importado.');
   }
@@ -324,6 +341,7 @@ function assertBackupIntegrity(input: {
   input.profiles.forEach((item, index) => {
     const field = `profiles[${index}]`;
     const record = requireRecordBackup(item, field);
+    assertNoOfficialIdentityFields(record, field);
     const technicalId = requireStringBackup(record.technicalId, `${field}.technicalId`);
     if (profileIds.has(technicalId)) {
       throw new TransferFormatError(`technicalId duplicado no backup: ${field}.`);

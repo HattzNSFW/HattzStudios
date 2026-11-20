@@ -9,7 +9,7 @@
 - **Commits preservados:** `196c2a3`, `202b478`, `5aa24a0`, `2ab007c`, `902da77` (histórico integral preservado; sem rebase/reset/amend/squash). O baseline `902da77` preserva todas as entregas 1–4 e B4.1/B4.2; o trabalho da validação final foi feito em commits locais adicionais (sem push) — ver `docs/RELATORIO-FINAL-22-ITENS-2026-11-19.md`.
 - **HEAD de baseline:** `902da779267555611f55967c4856c29e4046619e`. O hash dos commits finais locais consta no relatório final; **nenhum push, deploy ou publicação remota**.
 
-**Significado desta classificação:** modelagem, implementação local, hardening, contratos, persistência inicial, documentação e testes automatizados previstos para a Fase 2A foram concluídos, e as migrations `0001`–`0014` foram **efetivamente aplicadas e exercitadas** em instâncias PostgreSQL locais isoladas e descartáveis (ver seções "Validação de runtime" e "Auditoria corretiva integral").
+**Significado desta classificação:** modelagem, implementação local, hardening, contratos, persistência inicial, documentação e testes automatizados previstos para a Fase 2A foram concluídos, e as migrations `0001`–`0017` foram **efetivamente aplicadas e exercitadas** em instâncias PostgreSQL locais isoladas e descartáveis (ver seções "Validação de runtime", "Auditoria corretiva integral" e "Fase corretiva pós-auditoria").
 
 **Esta classificação NÃO significa:**
 
@@ -22,14 +22,14 @@
 
 ## Restrições respeitadas
 
-- Banco modelado para **Supabase (PostgreSQL) inteiramente novo**; migrations `0001`–`0014`. **Sem criação/conexão de projeto Supabase, sem credenciais reais, sem execução remota de migrations, sem acesso/modificação de bancos antigos, sem deploy/publicação/push, sem autenticação administrativa, sem Fase 2B, sem operações destrutivas.**
+- Banco modelado para **Supabase (PostgreSQL) inteiramente novo**; migrations `0001`–`0017`. **Sem criação/conexão de projeto Supabase, sem credenciais reais, sem execução remota de migrations, sem acesso/modificação de bancos antigos, sem deploy/publicação/push, sem autenticação administrativa, sem Fase 2B, sem operações destrutivas.**
 - A validação de runtime ocorreu **somente** em instâncias PostgreSQL locais, novas e descartáveis (`hattz_phase2b_validation_6`, `hattz_final_validation_20261119` e `hattz_phase2b_validation_7_audit_20261119`/`_8_`/`_9_`), criadas para este fim. Os bancos `hattz_phase2b_validation`, `_2`, `_3`, `_4` e `_5` foram **preservados**; o banco descartável de pré-checagem foi removido.
 - Sem enfraquecimento de RLS, grants ou validações. **Nenhum `SECURITY DEFINER` ou bypass de RLS foi introduzido** (ADR-003 respeitado).
 - Share limitado a interfaces/conteúdo publicado-público-ativo conforme modelo.
 
 ## Concluído (evidências locais)
 
-- Modelagem do banco e migrations `0001`–`0014` (versionadas, sem execução remota).
+- Modelagem do banco e migrations `0001`–`0017` (versionadas, sem execução remota).
 - Separação entre dados locais (Studio/IndexedDB), públicos (Share), administrativos e de auditoria (domínios isolados).
 - Políticas RLS, grants mínimos e restrições de acesso (`ENABLE/FORCE RLS`, revogações, policies restritivas por linha/coluna).
 - Views públicas com projeções explícitas (`v_share_published_profiles`, `v_share_public_media`, `security_invoker=true`, `security_barrier=true`) como interface canônica do Share.
@@ -63,6 +63,43 @@ Banco descartável `hattz_phase2b_validation_6`; owner `hattz_pg_admin`. Migrati
 - **Concorrência:** **27 execuções (9 cenários × 3)** com duas transações sobrepostas — 6 cenários originais (estado × visibilidade) + `INSERT`/`DELETE` de snapshot + mudança de `publication_id`; overlap comprovado por traço e por `pg_stat_activity`; **todas consistentes** (flag final = predicado).
 
 **Limites desta validação:** a instância é PostgreSQL 17.12 local. Os papéis `anon`/`authenticated`/`service_role` são **stand-ins locais**; **não** são equivalentes ao Supabase Auth/JWT/PostgREST/Storage. A semântica específica do Supabase (RLS via JWT, PostgREST, Storage policies) permanece pendente de ambiente autorizado.
+
+## Fase corretiva pós-auditoria (2026-11-19/20)
+
+Base obrigatória preservada: `377b96d84e60a2ed5d31168460746d7eaad358b1` (`main`), com ponto de
+recuperação local `recovery/pre-fase-corretiva-377b96d`. Nenhum `reset`/`rebase`/`amend`/`squash`,
+nenhum remote, nenhum push/deploy e nenhuma alteração de banco antigo.
+
+- **Migrations aditivas:** `0009` e `0014` restaurados byte a byte ao conteúdo do parent
+  `f1cc87ac94334e675399568290bdaa20ac492690`. A versão endurecida de
+  `public.validate_publishable_snapshot_content(jsonb)` — idêntica à do commit-base, inclusive
+  `ws_pattern` Unicode e `sv/trunc(schemaVersion)` — passou a viver somente na nova `0015`. Os
+  **75 casos** de paridade SQL↔TS permanecem intactos.
+- **Validação em dois bancos descartáveis distintos:** banco novo com `0001`–`0017` (**45 passos /
+  0 falhas**, incluindo 27 execuções de concorrência); banco de upgrade com `0001`–`0014` originais
+  e depois `0015`–`0017` (**25 passos / 0 falhas**), comparando o validador antes/depois e provando
+  que os dados preexistentes permanecem intactos. Reaplicação idempotente de `0012`–`0017` aprovada.
+- **Identidade externa oficial:** `MT7QTEVMZY` e `YGZNK6TMG8` vivem em
+  `hattz_admin.official_code_registry` + `public.profiles.official_code` — distintos de
+  `technical_id`, UUID, slug, role e conteúdo. Únicos, validados (`^[A-Z0-9]{10}$`), Persistentes e
+  **pendentes de associação**: não havia evidência de perfis correspondentes, então nenhum UUID foi
+  inventado. A associação inicial é pendência de provisionamento do Owner.
+- **Proteção estrita no banco (`0016`):** exclusão, alteração de `official_code`, desvinculação,
+  transferência e reatribuição são negadas por triggers `BEFORE` com `search_path` fixo e sem
+  `SECURITY DEFINER`. Não existe autoridade administrativa confiável: a exceção está **fechada**
+  (fail-closed). Negações geram evidência durável via sequência não transacional e `RAISE WARNING`
+  no log do servidor; o `INSERT` em `audit_logs` é desfeito pelo `RAISE EXCEPTION` (documentado).
+- **Contrato canônico de mídia (`0017`):** exatamente os 11 valores em `packages/contracts`
+  (`MEDIA_ASSET_KINDS`/`MediaAssetKind`/`isMediaAssetKind`), CHECK SQL aditivo sem remapeamento,
+  validação runtime em Studio e Share e rejeição de valores desconhecidos e de campos de
+  oficialidade em backup/importação. Dados antigos (8 valores SQL + 5 locais) continuam legíveis.
+- **Gates npm:** `npm ci`, `npm ls --depth=0`, `typecheck`, `lint`, `format`, `test` (**283 testes**),
+  `build`, paridade `--verify` e ambos os `npm audit` aprovados (0 vulnerabilidades).
+
+**Pendências que não foram simuladas:** associação inicial dos dois códigos a perfis reais e
+procedimento administrativo confiável de exceção — ambos dependem de decisão/provisionamento do
+Owner. A classificação permanece **preparado para a próxima etapa de integração, não pronto para
+lançamento público**.
 
 ## Não validado em execução real
 
@@ -218,4 +255,4 @@ Comandos executados via `cmd /c npm ...` (todos com código de saída registrado
 
 **Relatórios históricos:** os documentos acima de 2026-11-17/18 permanecem preservados como registro histórico; o `docs/RELATORIO-FINAL-22-ITENS-2026-11-19.md` é a **fonte atual** de estado, evidências e classificação.
 
-**Aguardando avaliação e autorização explícita do Owner.** As Entregas 1 (Share funcional), 2 (Studio funcional), 3 (publicação local) e 4 (integração local) usam **fonte de dados e persistência locais** e **não** iniciam integração externa nem Fase 2B. A revisão conjunta incorporou as correções da cópia revisada do Owner (adotadas com testes de regressão), consolidou a identidade **Liquid Glass** e implementou o **player de música** (expandido + mini). A validação final anterior corrigiu as ressalvas da B4.2, implementou as correções locais autorizadas nos oito blocos, mantendo explícitas as pendências de integração real, corrigiu o slug publicado e o `robots.txt`, e reportou 249 testes, builds, auditorias, validação SQL/RLS local e inspeção em navegador. A auditoria independente posterior adicionou um teste de regressão de concorrência de mídia, executado e aprovado na auditoria corretiva integral (272 testes no total); a integração posterior elevou o total para **276 testes**. **Classificação: preparado para a próxima etapa de integração; não pronto para lançamento público.** Foram feitos commits **locais** (sem push); nenhum deploy, publicação ou operação remota foi realizada.
+**Aguardando avaliação e autorização explícita do Owner.** As Entregas 1 (Share funcional), 2 (Studio funcional), 3 (publicação local) e 4 (integração local) usam **fonte de dados e persistência locais** e **não** iniciam integração externa nem Fase 2B. A revisão conjunta incorporou as correções da cópia revisada do Owner (adotadas com testes de regressão), consolidou a identidade **Liquid Glass** e implementou o **player de música** (expandido + mini). A validação final anterior corrigiu as ressalvas da B4.2, implementou as correções locais autorizadas nos oito blocos, mantendo explícitas as pendências de integração real, corrigiu o slug publicado e o `robots.txt`, e reportou 249 testes, builds, auditorias, validação SQL/RLS local e inspeção em navegador. A auditoria independente posterior adicionou um teste de regressão de concorrência de mídia, executado e aprovado na auditoria corretiva integral (272 testes no total); a integração posterior elevou o total para **276 testes** e a fase corretiva pós-auditoria para **283 testes**, com migrations `0001`–`0017` validadas em banco novo e em upgrade real. **Classificação: preparado para a próxima etapa de integração; não pronto para lançamento público.** Foram feitos commits **locais** (sem push); nenhum deploy, publicação ou operação remota foi realizada.

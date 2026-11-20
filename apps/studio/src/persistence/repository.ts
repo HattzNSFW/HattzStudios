@@ -1,4 +1,5 @@
 import { createLocalId, isReservedPublicSlug } from '@hattz/shared-utils';
+import { isMediaAssetKind } from '@hattz/contracts';
 import {
   validatePublishableSnapshotContent,
   validateSlug,
@@ -246,6 +247,9 @@ export interface StoreMediaAssetInput {
 }
 
 export async function storeMediaAsset(input: StoreMediaAssetInput): Promise<MediaAssetRecord> {
+  if (!isMediaAssetKind(input.kind)) {
+    throw new Error(`Tipo de mídia desconhecido: ${String(input.kind)}.`);
+  }
   const db = getStudioDb();
   await ensureStudioDbReady(db);
   const record: MediaAssetRecord = {

@@ -1,4 +1,4 @@
-import type { PublishedProfileSnapshotContract } from '@hattz/contracts';
+import { isMediaAssetKind, type PublishedProfileSnapshotContract } from '@hattz/contracts';
 import {
   findPublishedPublicationBySlug,
   getStudioDb,
@@ -150,7 +150,14 @@ export class LocalPublicationSource implements ShareDataSource {
 
     for (const record of records) {
       // Uma referência adulterada não pode fazer o Share resolver mídia pertencente a outro perfil.
-      if (!record || record.profileTechnicalId !== ownerProfileTechnicalId) continue;
+      // `kind` também é validado em runtime: valores desconhecidos não são expostos pelo Share.
+      if (
+        !record ||
+        record.profileTechnicalId !== ownerProfileTechnicalId ||
+        !isMediaAssetKind(record.kind)
+      ) {
+        continue;
+      }
       const url = createObjectUrl(record.blob);
       if (url) {
         media.urls.set(record.assetId, url);

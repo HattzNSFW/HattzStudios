@@ -16,11 +16,19 @@
 truncate public.profile_public_snapshots, public.profile_publications, public.media_variants,
          public.media_assets, public.profile_slugs, public.profiles restart identity cascade;
 
+-- Simulação DBA em banco descartável: a flag legada is_official de Alice é semeada com as
+-- triggers de identidade oficial temporariamente desligadas (o mesmo padrão é usado em
+-- 35_corrective_guards.sql). O Scenario real permanece protegido: todas as tentativas seguintes
+-- rodam com as triggers ligadas e são verificadas como negadas/auditadas.
+alter table public.profiles disable trigger trg_official_identity_protection;
+
 insert into public.profiles (id, technical_id, display_name, status, is_official) values
  ('11111111-1111-1111-1111-111111111111', 'tech-alice', 'Alice Public', 'active', true),
  ('22222222-2222-2222-2222-222222222222', 'tech-bob', 'Bob Unpublished', 'active', false),
  ('33333333-3333-3333-3333-333333333333', 'tech-carol', 'Carol Draft', 'active', false),
  ('44444444-4444-4444-4444-444444444444', 'tech-dave', 'Dave NoSnapshot', 'active', false);
+
+alter table public.profiles enable trigger trg_official_identity_protection;
 
 -- Slugs: Alice current + retired; Bob/Carol/Dave current.
 insert into public.profile_slugs (profile_id, slug, is_current, retired_at) values

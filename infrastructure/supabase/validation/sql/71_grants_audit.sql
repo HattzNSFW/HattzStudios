@@ -140,7 +140,10 @@ begin
     'public.validate_publishable_snapshot_content(jsonb)',
     'public.enforce_publishable_snapshot()',
     'public.sync_publication_visibility()',
-    'public.sync_snapshot_parent_visibility()'
+    'public.sync_snapshot_parent_visibility()',
+    'public.enforce_official_identity_protection()',
+    'public.enforce_official_identity_registry()',
+    'public.enforce_official_registry_identity()'
   ] loop
     foreach r in array array['anon', 'authenticated', 'public'] loop
       if has_function_privilege(r, fn, 'EXECUTE') then

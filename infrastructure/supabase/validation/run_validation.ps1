@@ -1,6 +1,6 @@
 # run_validation.ps1 — local PostgreSQL validation orchestrator (hardened lifecycle).
 #
-# Applies migrations 0001..0014 in order (ON_ERROR_STOP=1) to a NEW disposable database, then runs
+# Applies migrations 0001..0017 in order (ON_ERROR_STOP=1) to a NEW disposable database, then runs
 # the in-repo validation harness. Every step's exit code is recorded; the script stops and exits
 # non-zero on the first unexpected result.
 #
@@ -212,7 +212,7 @@ $code = Run-PsqlFile $Database $preflight '00_preflight' $null
 Record '00_preflight' $code ''
 if ($code -ne 0) { Write-Output 'FATAL: preflight failed; stopping.'; Save-Results; exit 2 }
 
-# --- migrations 0001..0014 in order ------------------------------------------------------------
+# --- migrations 0001..0017 in order ------------------------------------------------------------
 $migrations = Get-ChildItem $MigrationsDir -Filter '*.sql' |
   Where-Object { $_.Name -match '^\d{4}_.*\.sql$' } | Sort-Object Name
 foreach ($m in $migrations) {
@@ -222,8 +222,8 @@ foreach ($m in $migrations) {
   if ($code -ne 0) { Write-Output 'FATAL: migration failed; stopping.'; Save-Results; exit 3 }
 }
 
-# --- 0012/0013/0014 idempotency: re-applying additive migrations must succeed as a no-op --------
-foreach ($m in $migrations | Where-Object { $_.Name -like '0012_*' -or $_.Name -like '0013_*' -or $_.Name -like '0014_*' }) {
+# --- 0012..0017 idempotency: re-applying additive migrations must succeed as a no-op ------------
+foreach ($m in $migrations | Where-Object { $_.Name -match '^001[2-7]_' }) {
   $base = "99_reapply_$($m.BaseName)"
   $code = Run-PsqlFile $Database $m.FullName $base $null
   Record $base $code ''
@@ -255,6 +255,7 @@ if ($code -ne 0) { Write-Output 'FATAL: 0011 failed to apply after cleanup'; Sav
 [void](Run-Step '30_validator_parity'     (Join-Path $SqlDir '30_validator_parity.sql') $null)
 [void](Run-Step '40_verify_0010_triggers' (Join-Path $SqlDir '40_verify_0010_triggers.sql') $null)
 [void](Run-Step '50_seed'                 (Join-Path $SqlDir '50_seed.sql') $null)
+[void](Run-Step '55_corrective_guards'    (Join-Path $SqlDir '35_corrective_guards.sql') $null)
 [void](Run-Step '60_matrix_transitions'   (Join-Path $SqlDir '60_matrix_transitions.sql') $null)
 
 # --- access matrix as anon and authenticated ---------------------------------------------------

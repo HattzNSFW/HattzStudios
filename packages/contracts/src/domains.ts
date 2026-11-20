@@ -41,9 +41,30 @@ export interface PublishedProfileSnapshotContract {
   content: Record<string, unknown>;
 }
 
+/** Contrato canônico e compartilhado de tipos de mídia (união aditiva, sem remapeamento). */
+export const MEDIA_ASSET_KINDS = [
+  'avatar',
+  'banner',
+  'image',
+  'audio',
+  'cover',
+  'frame',
+  'badge',
+  'background',
+  'card',
+  'widget',
+  'other',
+] as const;
+
+export type MediaAssetKind = (typeof MEDIA_ASSET_KINDS)[number];
+
+export function isMediaAssetKind(value: unknown): value is MediaAssetKind {
+  return typeof value === 'string' && (MEDIA_ASSET_KINDS as readonly string[]).includes(value);
+}
+
 export interface PublishedProfilePublicMediaContract {
   assetId: string;
-  kind: string;
+  kind: MediaAssetKind;
   mimeType: string;
   width?: number | null;
   height?: number | null;

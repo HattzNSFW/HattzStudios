@@ -79,7 +79,7 @@ begin
     from walk w
     where
       w.depth > max_depth
-      or (w.key is not null and w.key ~* '(password|credential|secret|token(?!s\y)|session|cookie|recovery|private|draft|admin|internal|audit|role[_]?assignment|permission[_]?override|sync[_]?operation|setting[_]?history|feature[_]?flag|notification|storage[_]?usage|assigned_by|revoked_by|failure_reason|manifest_ref|storage_path|storage_bucket|checksum|ip_hash|user_agent_hash|technical[_]?id|profile[_]?id|is[_]?official|owner)')
+      or (w.key is not null and w.key ~* '(password|credential|secret|token(?!s\y)|session|cookie|recovery|private|draft|admin|internal|audit|role[_]?assignment|permission[_]?override|sync[_]?operation|setting[_]?history|feature[_]?flag|notification|storage[_]?usage|assigned_by|revoked_by|failure_reason|manifest_ref|storage_path|storage_bucket|checksum|ip_hash|user_agent_hash)')
       or (jsonb_typeof(w.value) = 'object' and (select count(*) from jsonb_object_keys(case when jsonb_typeof(w.value) = 'object' then w.value else '{}'::jsonb end)) > max_object_keys)
       or (jsonb_typeof(w.value) = 'array' and jsonb_array_length(case when jsonb_typeof(w.value) = 'array' then w.value else '[]'::jsonb end) > max_array_elements)
       or (jsonb_typeof(w.value) = 'string' and length(w.value #>> '{}') > max_string_length)
