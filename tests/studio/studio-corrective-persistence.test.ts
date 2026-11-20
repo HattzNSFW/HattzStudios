@@ -14,7 +14,9 @@ import {
   createWorkingDraft,
   deleteMediaAsset,
   enqueuePendingSyncOperation,
+  getCurrentPublication,
   MediaAssetInUseError,
+  publishWorkingDraft,
 } from '../../apps/studio/src/persistence/repository';
 import {
   BACKUP_FORMAT,
@@ -182,6 +184,46 @@ describe('Studio — regressões corretivas de transferência e persistência', 
 
     await expect(deleteMediaAsset(asset.assetId)).rejects.toBeInstanceOf(MediaAssetInUseError);
     expect(await getStudioDb().mediaAssets.get(asset.assetId)).toBeDefined();
+  });
+
+  async function backupWithPublication() {
+    await seed('prof_backup_pub', 'Alice');
+    const publication = await publishWorkingDraft('prof_backup_pub', { slug: 'alice-publicada' });
+    const backup = JSON.parse(JSON.stringify(await exportBackup())) as {
+      publications: Array<Record<string, unknown>>;
+    } & Record<string, unknown>;
+    return { backup, publication };
+  }
+
+  it('restaura backup com publicação íntegra e preserva o slug publicado', async () => {
+    const { backup } = await backupWithPublication();
+
+    await restoreBackup(backup);
+
+    const current = await getCurrentPublication('prof_backup_pub');
+    expect(current?.slug).toBe('alice-publicada');
+    expect(current?.state).toBe('published');
+  });
+
+  it('rejeita backup com duas publicações ativas para o mesmo perfil', async () => {
+    const { backup, publication } = await backupWithPublication();
+    backup.publications.push({ ...publication, publicationId: 'pub_duplicada' });
+
+    await expect(restoreBackup(backup)).rejects.toBeInstanceOf(TransferFormatError);
+  });
+
+  it('rejeita backup com slug publicado reservado', async () => {
+    const { backup } = await backupWithPublication();
+    backup.publications[0]!.slug = 'studio';
+
+    await expect(restoreBackup(backup)).rejects.toBeInstanceOf(TransferFormatError);
+  });
+
+  it('rejeita backup com publicação órfã', async () => {
+    const { backup } = await backupWithPublication();
+    backup.publications[0]!.profileTechnicalId = 'prof_inexistente';
+
+    await expect(restoreBackup(backup)).rejects.toBeInstanceOf(TransferFormatError);
   });
 
   async function createAsset(profileTechnicalId: string) {

@@ -8,31 +8,64 @@ reais (`anon`, `authenticated`, `service_role`) — **sem** `SECURITY DEFINER`, 
 > **Escopo e limites.** Isto roda em **PostgreSQL 17.12 local**. Os papéis `anon`/`authenticated`/
 > `service_role` são **stand-ins locais** e **não** são equivalentes ao Supabase Auth/JWT/PostgREST/
 > Storage. O harness **prova** o modelo SQL/RLS/privileges em runtime local; **não** prova o
-> comportamento do Supabase real. Nada aqui toca bancos existentes, deploy, push ou credenciais.
+> comportamento do Supabase real. Nenhum banco preexistente é modificado sem `-Recreate`, confirmação
+> nominal e marcador de propriedade; bancos legados/de desenvolvimento nunca são alvo. Nada aqui faz
+> deploy, push ou grava credenciais.
 
 ## Pré-requisitos (ambiente do Owner)
 
 - PostgreSQL 17.x local, com um superusuário/owner (aqui `hattz_pg_admin`).
-- `psql`/`pg_ctl` acessíveis (caminhos usados por padrão neste repositório, ajustáveis por parâmetro):
-  - `C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\pgsql\pgsql\bin\psql.exe`
-- `PGPASSFILE` apontando para um `pgpass.conf` com a senha do owner
-  (`C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\run\pgpass.conf`).
+- `psql` acessível. Resolução, em ordem: parâmetro `-PsqlPath` → variável `HATTZ_PSQL_PATH` →
+  `C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\pgsql\pgsql\bin\psql.exe`.
+- `pgpass.conf` com a senha do owner. Resolução, em ordem: parâmetro `-PgPassFile` → variável
+  `PGPASSFILE` → `C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\run\pgpass.conf`. O conteúdo nunca é
+  lido pelo script nem gravado em logs; o caminho é passado aos processos filho por `PGPASSFILE`.
 - Windows PowerShell 5.1.
 
 ## Uso
 
 ```powershell
-# Cria/reinicia o banco descartável _6, aplica 0001..0014 e roda TODOS os passos.
-powershell -ExecutionPolicy Bypass -File infrastructure/supabase/validation/run_validation.ps1 -Recreate
+# Cria o banco descartável padrão, aplica 0001..0014 e roda TODOS os passos.
+powershell -ExecutionPolicy Bypass -File infrastructure/supabase/validation/run_validation.ps1
+
+# Nome exclusivo (recomendado para execuções paralelas):
+powershell -ExecutionPolicy Bypass -File infrastructure/supabase/validation/run_validation.ps1 `
+  -Database hattz_validation_disposable_minha_rodada_20261119
 ```
 
-Parâmetros principais: `-Database` (padrão `hattz_phase2b_validation_6`), `-PgHost`, `-Port`, `-User`,
-`-LogDir`, `-Runs` (padrão 3), `-Delay` (padrão `2.0`), `-Recreate`.
+Parâmetros principais: `-Database` (padrão `hattz_validation_disposable_20261119`), `-PgHost`,
+`-Port`, `-User`, `-LogDir` (padrão `%LOCALAPPDATA%\Hattz-2.0-postgres\logs\validation_disposable_20261119`),
+`-Runs` (padrão 3), `-Delay` (padrão `2.0`), `-PsqlPath`, `-PgPassFile`, `-Recreate` e
+`-ConfirmDropDatabase`.
+
+### Contrato de segurança do ciclo de vida do banco
+
+1. **Nome aceito:** somente identificadores PostgreSQL simples, minúsculos, com o prefixo obrigatório
+   `hattz_validation_disposable_` e no máximo **63 caracteres**. A validação ocorre **antes** de
+   qualquer interpolação em SQL ou envio de comando. Qualquer outro nome — inclusive bancos legados
+   `hattz_phase2b_validation*` — é recusado com **exit 64**.
+2. **Banco existente sem `-Recreate`:** aborta com **exit 65** **antes** de criar diretório de logs,
+   arquivos temporários ou enviar DDL/DML. Nada é modificado.
+3. **`-Recreate`:** exige, cumulativamente, prefixo válido, `-ConfirmDropDatabase` com o nome **exato**
+   do banco, arquivo `database-ownership.json` no `-LogDir` e comentário `HATTZ_VALIDATION_DISPOSABLE|<runId>|...`
+   no banco, com o mesmo `runId`. Qualquer divergência aborta com **exit 66** sem apagar nada.
+4. **Propriedade:** cada criação grava o marcador `database-ownership.json` (nome, `runId`, prefixo,
+   timestamp, host/porta/usuário — **sem senha**) e o comentário correspondente no banco. Um banco
+   criado fora desse fluxo, ou em outro `-LogDir`, **não** pode ser apagado pelo script.
+5. **Nunca** reutiliza automaticamente bancos antigos ou de desenvolvimento. O padrão é sempre criar
+   um banco novo; `-Recreate` é a única via de exclusão e exige prova de propriedade.
+6. **Logs:** ficam em `-LogDir` (`results.csv`, `*.out.log`/`*.err.log`, artefatos `90_conc_*`). A
+   senha nunca aparece: o `psql` recebe apenas o caminho do `PGPASSFILE` por ambiente.
+
+> **Nota operacional:** `-Recreate` não autoriza apagar bancos que não tenham sido criados
+> especificamente por este fluxo validado. Para uma execução nova, use outro `-Database` com o
+> prefixo obrigatório; não apague bancos anteriores para "testar" o script.
 
 - **Exit code `0`** = todas as migrations aplicadas e **todos** os passos do harness passaram.
-- **Exit code não-zero** = parada no primeiro resultado inesperado; evidências preservadas em `-LogDir`
-  (`results.csv`, `*.out.log`/`*.err.log` por passo, e artefatos `90_conc_*`).
-- Os bancos `hattz_phase2b_validation`, `_2`, `_3`, `_4` e `_5` **nunca** são tocados.
+- **Exit codes `2`/`3`** = falha de configuração/harness; **`4`** = `psql`/`PGPASSFILE` ausente;
+  **`64`/`65`/`66`** = recusa de segurança do ciclo de vida do banco.
+- Evidências de qualquer falha permanecem em `-LogDir` (quando a falha ocorre depois da criação do
+  diretório). Abortos de segurança não criam `-LogDir`.
 
 ## Estrutura
 
@@ -41,7 +74,7 @@ validation/
   run_validation.ps1            # orquestrador: lifecycle do DB + migrations + todos os passos
   concurrency/90_concurrency.ps1# driver de concorrência (9 cenários x N execuções, ordem alternada)
   workers/81..85_*.sql          # workers transacionais que emitem traço (begin/end) por app
-  parity/build_parity.mjs       # gerador da fixture única de paridade SQL<->TS (71 casos, --verify)
+  parity/build_parity.mjs       # gerador da fixture única de paridade SQL<->TS (75 casos, --verify)
   sql/00_preflight.sql          # pré-condições do ambiente
   sql/20_verify_0011.sql        # §3 estrutura + NOT NULL + FK composta + rejeições (hard-fail)
   sql/21_0011_precheck_setup.sql / 22_..._after_failure.sql  # banco legado divergente
@@ -65,7 +98,7 @@ validation/
 | §2 concorrência sem falso-positivo | `concurrency/90_concurrency.ps1`: checa **cada** exit code, stdout/stderr separados, overlap comprovado (traço + `pg_stat_activity`), estado final de `profile_publications.state` **e** `profile_public_snapshots.visibility` comparado aos alvos, flag comparado a alvo **e** ao predicado recomputado; 9 cenários (6 originais + INSERT/DELETE/mudança de `publication_id`), ordens alternadas.                                                                     |
 | §3 `0011`                          | `sql/20_verify_0011.sql` (NOT NULL, FK composta `(publication_id, profile_id, version)` → `(id, profile_id, version)`, só `foreign_key_violation` conta como rejeição esperada), `sql/21/22` (pré-checagem em banco legado divergente), `sql/23` (idempotência por definição).                                                                                                                                                                                         |
 | §4 triggers `0010`                 | `sql/80_trusted_writer_privileges.sql`: privilégios mínimos + controles negativos provam que BEFORE precisa de `SELECT` em snapshots (só quando `state → 'published'`) e AFTER precisa de `SELECT+UPDATE` em publicações; nenhum bypass silencioso. `sql/82_trusted_writer_grants.sql`: prova os grants **aplicados** pela `0012` (mínimo presente, sem over-grant, todos os caminhos de escrita, cada grant necessário, papéis públicos sem escrita, ACL preservada). |
-| §5 validador `0009`/`0014`         | `parity/build_parity.mjs` → `tests/fixtures/publishable-snapshot-parity.json` + `sql/30_validator_parity.sql`; mesmo conjunto de 71 casos exercita TS e SQL (inclui trim Unicode e `schemaVersion: 1.0`).                                                                                                                                                                                                                                                              |
+| §5 validador `0009`/`0014`         | `parity/build_parity.mjs` → `tests/fixtures/publishable-snapshot-parity.json` + `sql/30_validator_parity.sql`; mesmo conjunto de 75 casos exercita TS e SQL (inclui trim Unicode, `schemaVersion: 1.0` e rejeição de chaves internas de identidade/propriedade).                                                                                                                                                                                                       |
 | §6 grants/RLS/views                | `sql/70_access_matrix.sql` (executa como `anon` e `authenticated` de verdade) + `sql/71_grants_audit.sql` (catálogo: tabela/coluna/schema/função/view, `security_invoker`/`security_barrier`, projeções).                                                                                                                                                                                                                                                              |
 | §7 slug                            | `sql/72_slug_integrity.sql` (regra 1 — um slug atual por perfil — HARD, índice `0013`; unicidade global HARD; histórico/`reserved`/normalização como decisão do Owner).                                                                                                                                                                                                                                                                                                |
 | §9 migrations/PG                   | `run_validation.ps1` aplica `0001`→`0014` em ordem com `ON_ERROR_STOP=1` (incl. reaplicação idempotente de `0012`/`0013`/`0014`) e falha duro em qualquer erro.                                                                                                                                                                                                                                                                                                        |

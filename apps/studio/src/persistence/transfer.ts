@@ -215,6 +215,262 @@ function assertPublishable(content: Record<string, unknown>): void {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Integridade do backup (mesmas regras do fluxo normal de escrita)    */
+/* ------------------------------------------------------------------ */
+
+const BACKUP_PROFILE_VISIBILITIES = new Set<LocalProfileRecord['visibility']>([
+  'private',
+  'unpublished',
+  'public_intent',
+]);
+const BACKUP_SNAPSHOT_SOURCES = new Set<DraftSnapshotRecord['source']>([
+  'manual',
+  'autosave',
+  'migration',
+]);
+const BACKUP_PUBLICATION_STATES = new Set<LocalPublicationRecord['state']>([
+  'published',
+  'unpublished',
+]);
+const BACKUP_SYNC_STATES = new Set<PendingSyncOperationRecord['state']>([
+  'pendente',
+  'falhou',
+  'conflito',
+  'sincronizando',
+]);
+
+function requireRecordBackup(value: unknown, field: string): Record<string, unknown> {
+  if (!isRecord(value)) {
+    throw new TransferFormatError(`Registro inválido no backup: ${field}.`);
+  }
+  return value;
+}
+
+function requireStringBackup(value: unknown, field: string, allowEmpty = false): string {
+  if (typeof value !== 'string' || (!allowEmpty && value.trim().length === 0)) {
+    throw new TransferFormatError(`Campo "${field}" inválido no backup.`);
+  }
+  return value;
+}
+
+function requireFiniteBackup(value: unknown, field: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new TransferFormatError(`Campo "${field}" inválido no backup.`);
+  }
+  return value;
+}
+
+function requireIntegerBackup(value: unknown, field: string, min = 0): number {
+  const number = requireFiniteBackup(value, field);
+  if (!Number.isSafeInteger(number) || number < min) {
+    throw new TransferFormatError(`Campo "${field}" inválido no backup.`);
+  }
+  return number;
+}
+
+function requireNullableIntegerBackup(value: unknown, field: string): number | null {
+  if (value === null) return null;
+  return requireIntegerBackup(value, field, 1);
+}
+
+function requireNullableFiniteBackup(value: unknown, field: string): number | null {
+  if (value === null) return null;
+  return requireFiniteBackup(value, field);
+}
+
+function requireBooleanBackup(value: unknown, field: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw new TransferFormatError(`Campo "${field}" inválido no backup.`);
+  }
+  return value;
+}
+
+function requireEnumBackup<T extends string>(
+  value: unknown,
+  allowed: ReadonlySet<T>,
+  field: string,
+): T {
+  if (typeof value !== 'string' || !allowed.has(value as T)) {
+    throw new TransferFormatError(`Campo "${field}" inválido no backup.`);
+  }
+  return value as T;
+}
+
+function requirePublicationSlugBackup(value: unknown, field: string): string {
+  const slug = requireStringBackup(value, field).trim().toLowerCase();
+  const result = validateSlug(slug);
+  if (!result.ok || !result.value || isReservedPublicSlug(result.value)) {
+    throw new TransferFormatError(`Slug publicado inválido ou reservado no backup: ${field}.`);
+  }
+  return result.value;
+}
+
+/**
+ * Revalida o backup com as mesmas invariantes do fluxo normal: perfis de existência obrigatória,
+ * slug publicado válido/não reservado/único, no máximo uma publicação ativa por perfil, versões
+ * íntegras e referências de mídia/fila pertencentes a perfis existentes. Um arquivo corrompido ou
+ * manipulado não pode plantar estado que o Studio rejeitaria na escrita.
+ */
+function assertBackupIntegrity(input: {
+  profiles: readonly unknown[];
+  draftSnapshots: readonly unknown[];
+  workingDrafts: readonly unknown[];
+  publications: readonly unknown[];
+  mediaAssets: readonly MediaAssetTransport[];
+  pendingSyncOps: readonly unknown[];
+}): void {
+  const profileIds = new Set<string>();
+  input.profiles.forEach((item, index) => {
+    const field = `profiles[${index}]`;
+    const record = requireRecordBackup(item, field);
+    const technicalId = requireStringBackup(record.technicalId, `${field}.technicalId`);
+    if (profileIds.has(technicalId)) {
+      throw new TransferFormatError(`technicalId duplicado no backup: ${field}.`);
+    }
+    profileIds.add(technicalId);
+    requireStringBackup(record.publicSlugDraft, `${field}.publicSlugDraft`);
+    requireStringBackup(record.displayName, `${field}.displayName`);
+    requireEnumBackup(record.visibility, BACKUP_PROFILE_VISIBILITIES, `${field}.visibility`);
+    requireIntegerBackup(record.schemaVersion, `${field}.schemaVersion`, 1);
+    requireIntegerBackup(record.contentVersion, `${field}.contentVersion`, 1);
+    requireFiniteBackup(record.createdAt, `${field}.createdAt`);
+    requireFiniteBackup(record.updatedAt, `${field}.updatedAt`);
+    requireNullableIntegerBackup(record.lastPublishedVersion, `${field}.lastPublishedVersion`);
+    requireBooleanBackup(record.isDeleted, `${field}.isDeleted`);
+  });
+
+  const snapshotIds = new Set<string>();
+  input.draftSnapshots.forEach((item, index) => {
+    const field = `draftSnapshots[${index}]`;
+    const record = requireRecordBackup(item, field);
+    const id = requireStringBackup(record.id, `${field}.id`);
+    if (snapshotIds.has(id)) throw new TransferFormatError(`Snapshot duplicado no backup: ${id}.`);
+    snapshotIds.add(id);
+    const profileId = requireStringBackup(record.profileTechnicalId, `${field}.profileTechnicalId`);
+    if (!profileIds.has(profileId))
+      throw new TransferFormatError(`Snapshot órfão no backup: ${field}.`);
+    requireIntegerBackup(record.version, `${field}.version`, 1);
+    requireStringBackup(record.label, `${field}.label`, true);
+    requireContent(record.content);
+    requireFiniteBackup(record.createdAt, `${field}.createdAt`);
+    requireEnumBackup(record.source, BACKUP_SNAPSHOT_SOURCES, `${field}.source`);
+  });
+
+  const workingProfileIds = new Set<string>();
+  input.workingDrafts.forEach((item, index) => {
+    const field = `workingDrafts[${index}]`;
+    const record = requireRecordBackup(item, field);
+    const profileId = requireStringBackup(record.profileTechnicalId, `${field}.profileTechnicalId`);
+    if (!profileIds.has(profileId)) {
+      throw new TransferFormatError(`Rascunho de trabalho órfão no backup: ${field}.`);
+    }
+    if (workingProfileIds.has(profileId)) {
+      throw new TransferFormatError(`Mais de um rascunho de trabalho para ${profileId} no backup.`);
+    }
+    workingProfileIds.add(profileId);
+    requireContent(record.content);
+    requireIntegerBackup(record.revision, `${field}.revision`, 1);
+    requireFiniteBackup(record.createdAt, `${field}.createdAt`);
+    requireFiniteBackup(record.updatedAt, `${field}.updatedAt`);
+  });
+
+  const publicationIds = new Set<string>();
+  const versionsByProfile = new Map<string, Set<number>>();
+  const publishedByProfile = new Set<string>();
+  const publishedSlugOwners = new Map<string, string>();
+  input.publications.forEach((item, index) => {
+    const field = `publications[${index}]`;
+    const record = requireRecordBackup(item, field);
+    const id = requireStringBackup(record.publicationId, `${field}.publicationId`);
+    if (publicationIds.has(id)) {
+      throw new TransferFormatError(`Publicação duplicada no backup: ${id}.`);
+    }
+    publicationIds.add(id);
+    const profileId = requireStringBackup(record.profileTechnicalId, `${field}.profileTechnicalId`);
+    if (!profileIds.has(profileId)) {
+      throw new TransferFormatError(`Publicação órfã no backup: ${field}.`);
+    }
+    const version = requireIntegerBackup(record.version, `${field}.version`, 1);
+    let versions = versionsByProfile.get(profileId);
+    if (!versions) {
+      versions = new Set<number>();
+      versionsByProfile.set(profileId, versions);
+    }
+    if (versions.has(version)) {
+      throw new TransferFormatError(`Versão de publicação duplicada no backup: ${field}.`);
+    }
+    versions.add(version);
+
+    const slug = requirePublicationSlugBackup(record.slug, `${field}.slug`);
+    const state = requireEnumBackup(record.state, BACKUP_PUBLICATION_STATES, `${field}.state`);
+    assertPublishable(requireContent(record.content));
+    requireFiniteBackup(record.publishedAt, `${field}.publishedAt`);
+    if (state === 'published') {
+      if (publishedByProfile.has(profileId)) {
+        throw new TransferFormatError(`Mais de uma publicação ativa para ${profileId} no backup.`);
+      }
+      publishedByProfile.add(profileId);
+      if (record.unpublishedAt !== null) {
+        throw new TransferFormatError(
+          `Publicação ativa com data de despublicação no backup: ${field}.`,
+        );
+      }
+      const owner = publishedSlugOwners.get(slug);
+      if (owner && owner !== profileId) {
+        throw new TransferFormatError(
+          `Slug publicado disputado por dois perfis no backup: ${slug}.`,
+        );
+      }
+      publishedSlugOwners.set(slug, profileId);
+    } else {
+      requireNullableFiniteBackup(record.unpublishedAt, `${field}.unpublishedAt`);
+    }
+    requireFiniteBackup(record.createdAt, `${field}.createdAt`);
+  });
+
+  const mediaIds = new Set<string>();
+  input.mediaAssets.forEach((asset, index) => {
+    const field = `mediaAssets[${index}]`;
+    if (mediaIds.has(asset.assetId)) {
+      throw new TransferFormatError(`Ativo de mídia duplicado no backup: ${field}.`);
+    }
+    mediaIds.add(asset.assetId);
+    if (!profileIds.has(asset.profileTechnicalId)) {
+      throw new TransferFormatError(`Ativo de mídia órfão no backup: ${field}.`);
+    }
+  });
+
+  const operationIds = new Set<string>();
+  input.pendingSyncOps.forEach((item, index) => {
+    const field = `pendingSyncOps[${index}]`;
+    const record = requireRecordBackup(item, field);
+    const operationId = requireStringBackup(record.operationId, `${field}.operationId`);
+    if (operationIds.has(operationId)) {
+      throw new TransferFormatError(`Operação de fila duplicada no backup: ${field}.`);
+    }
+    operationIds.add(operationId);
+    if (record.profileTechnicalId !== null) {
+      const profileId = requireStringBackup(
+        record.profileTechnicalId,
+        `${field}.profileTechnicalId`,
+      );
+      if (!profileIds.has(profileId)) {
+        throw new TransferFormatError(`Operação de fila órfã no backup: ${field}.`);
+      }
+    }
+    requireStringBackup(record.type, `${field}.type`);
+    requireEnumBackup(record.state, BACKUP_SYNC_STATES, `${field}.state`);
+    requireRecordBackup(record.payload, `${field}.payload`);
+    requireNullableIntegerBackup(record.baseVersion, `${field}.baseVersion`);
+    requireIntegerBackup(record.attemptCount, `${field}.attemptCount`, 0);
+    if (record.lastError !== null)
+      requireStringBackup(record.lastError, `${field}.lastError`, true);
+    requireFiniteBackup(record.createdAt, `${field}.createdAt`);
+    requireFiniteBackup(record.updatedAt, `${field}.updatedAt`);
+  });
+}
+
 /** Slugs inválidos, reservados ou ausentes são rejeitados — nunca inventados nem normalizados. */
 function requireImportableSlug(value: unknown): string {
   if (typeof value !== 'string' || !validateSlug(value).ok || isReservedPublicSlug(value)) {
@@ -492,6 +748,14 @@ function parseBackup(payload: unknown): StudioBackup {
   }
   for (const publication of publications) assertPublishable(publication.content);
   for (const asset of mediaAssets) fromTransport(asset);
+  assertBackupIntegrity({
+    profiles,
+    draftSnapshots,
+    workingDrafts,
+    publications,
+    mediaAssets,
+    pendingSyncOps,
+  });
 
   return {
     format: BACKUP_FORMAT,

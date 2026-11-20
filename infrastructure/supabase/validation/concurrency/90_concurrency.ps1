@@ -23,12 +23,29 @@ param(
   [string]$LogDir      = 'C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\logs\phase2b_validation_6',
   [int]   $Runs        = 3,
   [string]$Delay       = '2.0',
-  [int]   $TimeoutSec  = 60
+  [int]   $TimeoutSec  = 60,
+  [string]$PsqlPath    = '',
+  [string]$PgPassFile  = ''
 )
 
 $ErrorActionPreference = 'Continue'
-$env:PGPASSFILE = 'C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\run\pgpass.conf'
-$psql = 'C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\pgsql\pgsql\bin\psql.exe'
+if (-not $PsqlPath) {
+  if ($env:HATTZ_PSQL_PATH) { $PsqlPath = $env:HATTZ_PSQL_PATH }
+  else { $PsqlPath = 'C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\pgsql\pgsql\bin\psql.exe' }
+}
+if (-not $PgPassFile) {
+  if ($env:PGPASSFILE) { $PgPassFile = $env:PGPASSFILE }
+  else { $PgPassFile = 'C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\run\pgpass.conf' }
+}
+if (-not (Test-Path -LiteralPath $PsqlPath -PathType Leaf)) {
+  Write-Output "FATAL: psql não encontrado: $PsqlPath"; exit 4
+}
+if (-not (Test-Path -LiteralPath $PgPassFile -PathType Leaf)) {
+  Write-Output 'FATAL: arquivo PGPASSFILE não encontrado.'; exit 4
+}
+# Credenciais ficam somente neste arquivo; seu conteúdo nunca é gravado em logs.
+$env:PGPASSFILE = $PgPassFile
+$psql = $PsqlPath
 $WorkersDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'workers'
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
 

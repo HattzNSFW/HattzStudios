@@ -80,6 +80,11 @@ const FORBIDDEN_KEY_PATTERNS = [
   /checksum/i,
   /ip_hash/i,
   /user_agent_hash/i,
+  // Identificadores internos/propriedade nunca pertencem ao conteúdo publicável.
+  /technical[_]?id/i,
+  /profile[_]?id/i,
+  /is[_]?official/i,
+  /owner/i,
 ];
 
 const ALLOWED_ROOT_KEYS = new Set([

@@ -140,6 +140,11 @@ const cases = [
   },
   { id: 'token_rejected', expect: false, content: base({ theme: { token: 'x' } }) },
   { id: 'token_nested_rejected', expect: false, content: withProps({ token: 'x' }) },
+  // Internal ownership identifiers must never reach a public snapshot.
+  { id: 'forbidden_technical_id', expect: false, content: withProps({ technicalId: 'prof_1' }) },
+  { id: 'forbidden_profile_id', expect: false, content: base({ theme: { profile_id: 'p1' } }) },
+  { id: 'forbidden_is_official', expect: false, content: base({ effects: { isOfficial: true } }) },
+  { id: 'forbidden_owner', expect: false, content: withProps({ owner: 'x' }) },
 
   // --- ids ---
   {
