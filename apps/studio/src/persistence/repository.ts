@@ -23,13 +23,8 @@ export interface CreateLocalProfileInput {
   publicSlugDraft: string;
 }
 
-export async function createLocalDraftProfile(
-  input: CreateLocalProfileInput,
-): Promise<LocalProfileRecord> {
-  const db = getStudioDb();
-  await ensureStudioDbReady(db);
-  const now = Date.now();
-  const record: LocalProfileRecord = {
+function buildLocalProfileRecord(input: CreateLocalProfileInput, now: number): LocalProfileRecord {
+  return {
     technicalId: input.technicalId,
     displayName: input.displayName,
     publicSlugDraft: input.publicSlugDraft,
@@ -41,6 +36,14 @@ export async function createLocalDraftProfile(
     lastPublishedVersion: null,
     isDeleted: false,
   };
+}
+
+export async function createLocalDraftProfile(
+  input: CreateLocalProfileInput,
+): Promise<LocalProfileRecord> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const record = buildLocalProfileRecord(input, Date.now());
   // `add` (not `put`): the technical id is permanent, so a collision must fail explicitly
   // instead of silently resetting an existing profile's version/creation metadata.
   try {
@@ -156,20 +159,27 @@ export class StaleDraftError extends Error {
   }
 }
 
-export async function createWorkingDraft(
+function buildWorkingDraftRecord(
   profileTechnicalId: string,
   content: Record<string, unknown>,
-): Promise<WorkingDraftRecord> {
-  const db = getStudioDb();
-  await ensureStudioDbReady(db);
-  const now = Date.now();
-  const record: WorkingDraftRecord = {
+  now: number,
+): WorkingDraftRecord {
+  return {
     profileTechnicalId,
     content,
     revision: 1,
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export async function createWorkingDraft(
+  profileTechnicalId: string,
+  content: Record<string, unknown>,
+): Promise<WorkingDraftRecord> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const record = buildWorkingDraftRecord(profileTechnicalId, content, Date.now());
   try {
     await db.workingDrafts.add(record);
   } catch (error) {
@@ -178,6 +188,57 @@ export async function createWorkingDraft(
     });
   }
   return record;
+}
+
+/** Detecta somente colisão de chave primária (ConstraintError do IndexedDB/Dexie). */
+function isDuplicateKeyError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const candidate = error as { name?: unknown; inner?: { name?: unknown } };
+  return (
+    candidate.name === 'ConstraintError' ||
+    candidate.inner?.name === 'ConstraintError' ||
+    (typeof candidate.name === 'string' && /constraint/i.test(candidate.name))
+  );
+}
+
+/**
+ * Cria o perfil e o primeiro rascunho em UMA transação read-write.
+ *
+ * As duas escritas precisam ser atômicas: se `workingDrafts.add` falhar, o IndexedDB aborta também
+ * o `localProfiles.add`, não restando perfil órfão (sem rascunho) para aparecer na barra lateral.
+ * `ensureStudioDbReady` fica FORA da transação porque grava em `studioMeta`, que não faz parte do
+ * escopo declarado abaixo.
+ */
+export async function createLocalProfileWithDraft(
+  input: CreateLocalProfileInput,
+  content: Record<string, unknown>,
+): Promise<{ profile: LocalProfileRecord; draft: WorkingDraftRecord }> {
+  const db = getStudioDb();
+  await ensureStudioDbReady(db);
+  const now = Date.now();
+  const profile = buildLocalProfileRecord(input, now);
+  const draft = buildWorkingDraftRecord(input.technicalId, content, now);
+  return db.transaction('rw', db.localProfiles, db.workingDrafts, async () => {
+    try {
+      await db.localProfiles.add(profile);
+    } catch (error) {
+      // Somente duplicidade recebe mensagem amigável; qualquer outra falha (e.g. erro de
+      // armazenamento) precisa chegar ao chamador com sua mensagem original intacta.
+      if (!isDuplicateKeyError(error)) throw error;
+      throw new Error(`Perfil local já existe para o technicalId "${input.technicalId}".`, {
+        cause: error,
+      });
+    }
+    try {
+      await db.workingDrafts.add(draft);
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error;
+      throw new Error(`Rascunho de trabalho já existe para "${input.technicalId}".`, {
+        cause: error,
+      });
+    }
+    return { profile, draft };
+  });
 }
 
 export async function getWorkingDraft(

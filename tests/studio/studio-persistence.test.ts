@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   STUDIO_DB_NAME,
   StudioDatabase,
@@ -11,6 +11,7 @@ import {
 import {
   StaleDraftError,
   createLocalDraftProfile,
+  createLocalProfileWithDraft,
   createWorkingDraft,
   getLocalProfile,
   getMediaAsset,
@@ -109,6 +110,98 @@ describe('Studio working-draft persistence (autosave + optimistic concurrency)',
     await expect(createWorkingDraft('prof_dup_wd', {})).rejects.toThrow(/já existe/i);
     await expect(saveWorkingDraft('prof_missing', {}, 1)).rejects.toThrow(/não encontrado/i);
     await expect(getWorkingDraft('prof_missing')).resolves.toBeNull();
+  });
+
+  it('creates a profile and its first working draft atomically', async () => {
+    const db = getStudioDb();
+    dbs.push(db);
+    await ensureStudioDbReady(db);
+    const content = { profile: { displayName: 'Atômico' } };
+
+    const created = await createLocalProfileWithDraft(
+      { technicalId: 'prof_atomic', displayName: 'Atômico', publicSlugDraft: 'atomico' },
+      content,
+    );
+
+    expect(created.profile.contentVersion).toBe(1);
+    expect(created.draft.revision).toBe(1);
+    expect((await getLocalProfile('prof_atomic'))?.displayName).toBe('Atômico');
+    expect((await getWorkingDraft('prof_atomic'))?.content).toEqual(content);
+  });
+
+  it('rejects with the original error when the first working draft fails', async () => {
+    const db = getStudioDb();
+    dbs.push(db);
+    await ensureStudioDbReady(db);
+    const addDraft = vi
+      .spyOn(db.workingDrafts, 'add')
+      .mockRejectedValueOnce(new Error('falha no rascunho'));
+    try {
+      await expect(
+        createLocalProfileWithDraft(
+          { technicalId: 'prof_fail', displayName: 'Falha', publicSlugDraft: 'falha' },
+          {},
+        ),
+      ).rejects.toThrow(/falha no rascunho/);
+    } finally {
+      addDraft.mockRestore();
+    }
+  });
+
+  it('leaves no orphan profile when the first working draft fails', async () => {
+    const db = getStudioDb();
+    dbs.push(db);
+    await ensureStudioDbReady(db);
+    const addDraft = vi
+      .spyOn(db.workingDrafts, 'add')
+      .mockRejectedValueOnce(new Error('transiente'));
+    try {
+      await expect(
+        createLocalProfileWithDraft(
+          { technicalId: 'prof_orphan', displayName: 'Órfão', publicSlugDraft: 'orfao' },
+          {},
+        ),
+      ).rejects.toThrow(/transiente/);
+    } finally {
+      addDraft.mockRestore();
+    }
+
+    expect(await db.localProfiles.get('prof_orphan')).toBeUndefined();
+    expect(await db.workingDrafts.get('prof_orphan')).toBeUndefined();
+    expect((await listLocalProfiles()).map((profile) => profile.technicalId)).not.toContain(
+      'prof_orphan',
+    );
+  });
+
+  it('recovers with the same technical id after a storage failure', async () => {
+    const db = getStudioDb();
+    dbs.push(db);
+    await ensureStudioDbReady(db);
+    const input = {
+      technicalId: 'prof_recover',
+      displayName: 'Recuperado',
+      publicSlugDraft: 'recuperado',
+    };
+    const content = { profile: { displayName: 'Recuperado' } };
+    const addDraft = vi
+      .spyOn(db.workingDrafts, 'add')
+      .mockRejectedValueOnce(new Error('erro de armazenamento'));
+    try {
+      await expect(createLocalProfileWithDraft(input, content)).rejects.toThrow(
+        /erro de armazenamento/,
+      );
+    } finally {
+      addDraft.mockRestore();
+    }
+
+    const retried = await createLocalProfileWithDraft(input, content);
+    expect(retried.draft.revision).toBe(1);
+    expect((await getWorkingDraft(input.technicalId))?.content).toEqual(content);
+    expect(
+      (await db.localProfiles.toArray()).filter(
+        (profile) => profile.technicalId === input.technicalId,
+      ),
+    ).toHaveLength(1);
   });
 
   it('keeps the working draft after the database is closed and reopened (reload survives)', async () => {
