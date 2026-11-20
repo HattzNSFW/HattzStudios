@@ -101,6 +101,51 @@ procedimento administrativo confiável de exceção — ambos dependem de decis�
 Owner. A classificação permanece **preparado para a próxima etapa de integração, não pronto para
 lançamento público**.
 
+## Implementação corretiva limitada (2026-11-20 — etapas 1–3)
+
+Autorização restrita a três etapas, sobre o commit-base imutável
+`7cae200e5a4dbc1a094cf22d1f185053f30844e7`: (1) verificador de paridade de mídia, (2) manifesto de
+proveniência dos harnesses, (3) documentação técnica/de segurança. **Nenhuma migration foi criada
+ou editada** (`0009`, `0014` e `0017` preservados); nenhuma `0018`, `0019` ou `0020`; nenhuma
+conexão remota, deploy, push, container, banco ou serviço novo.
+
+- **Paridade de mídia:** `packages/contracts/src/domains.ts` (`MEDIA_ASSET_KINDS`) continua sendo a
+  única fonte canônica. `infrastructure/supabase/validation/parity/check_media_parity.mjs` compara
+  essa declaração com o CHECK de `ck_media_assets_kind_canonical` na `0017`, detectando ausentes,
+  extras, duplicados, ordem divergente, CHECK ausente/renomeado e expressões não literais; qualquer
+  divergência termina com **exit 1**. Gate: `npm run media:parity -- --verify`. A fixture duplicada
+  `CANONICAL_MEDIA` foi removida de `tests/studio/corrective-media-and-official.test.ts`, que agora
+  usa a constante canônica. Testes negativos em `tests/integrity/media-parity.test.ts` injetam cada
+  divergência em arquivos temporários sem tocar em `0017`.
+- **Proveniência:** `provenance/manifest.ps1` e `provenance/verify_manifest.ps1` registram
+  `commit_sha`, estado da árvore, versões de ferramentas/SO/PostgreSQL, comandos e exit codes,
+  `run_id`/timestamps, tamanho e SHA-256 de cada artefato, e gravam o hash do manifesto em arquivo
+  **externo** (`run-manifest.sha256`). O JSON não contém o próprio hash. Ambos os harnesses gravam o
+  manifesto em todo desfecho posterior à criação do `LogDir`, sem alterar os códigos de saída nem o
+  escopo de segurança existentes. Abortos pré-`LogDir` não produzem evidência.
+- **Alternativa A (decisão do Owner):** nenhum `GRANT` adicional ao `service_role`. A policy da
+  `0016` não concede privilégio de esquema/tabela e não existe `USAGE`/`SELECT` em
+  `hattz_admin.official_code_registry` no repositório. Escritas server-side futuras em
+  `public.profiles` podem falhar por falta de privilégio quando as triggers `SECURITY INVOKER`
+  da `0016` lerem o registry (fail-closed). Nenhum privilégio foi liberado nesta etapa.
+- **Códigos oficiais:** `MT7QTEVMZY` e `YGZNK6TMG8` permanecem `pending`, sem `profile_id` e sem
+  UUID inventado. Exceção administrativa permanece fechada; não existe autoridade confiável
+  implementada.
+- **Auditoria durável:** `WARNING`, sequência e `NOTIFY` não são registro durável — a exceção da
+  `0016` desfaz o `INSERT` em `audit_logs` e o `NOTIFY`; sobrevivem apenas o contador não
+  transacional e a mensagem de log. As alternativas (backend em conexão separada, fila+worker,
+  log do servidor com shipper) foram **documentadas, não implementadas**.
+- **Limites de segurança documentados:** RLS/FORCE RLS/revogações/triggers comuns protegem contra
+  usuários comuns, **não** contra o dono da tabela ou superuser. `TRUNCATE ... CASCADE` atinge o
+  registry pela FK; `DISABLE TRIGGER` e `session_replication_role = replica` desativam as proteções
+  existentes. Event triggers cobrem DDL (inclusive `DISABLE TRIGGER`, `OWNER TO`, `FORCE RLS` e
+  `GRANT/REVOKE` em tabelas/schemas), mas não DML, `TRUNCATE`, mudanças de GUC nem comandos sobre
+  objetos compartilhados (`CREATE/ALTER/DROP ROLE`, `GRANT` de role), que exigem pgAudit/log
+  externo. Nada disso foi instalado. O banco **não** protege contra superuser malicioso.
+- **Proveniência ≠ atestação:** o hash externo prova integridade de bytes, não autenticidade da
+  execução. Não há assinatura criptográfica, timestamp confiável nem testemunha externa; a evidência
+  é auto-relatada pelo runner local.
+
 ## Não validado em execução real
 
 - Projeto Supabase real (Auth/JWT/PostgREST/Storage) e semântica de RLS via token.

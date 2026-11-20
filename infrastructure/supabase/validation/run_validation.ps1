@@ -35,6 +35,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# --- proveniencia (somente leitura; nao altera o comportamento do harness) ----------------------
+. (Join-Path $PSScriptRoot 'provenance\manifest.ps1')
+$RepoRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
+$startedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+$boundInvocation = @{}
+foreach ($key in $PSBoundParameters.Keys) {
+  $boundInvocation[[string]$key] = [string]$PSBoundParameters[$key]
+}
+$serverVersion = ''
+
 # --- resolved configuration (parameters > environment > repository defaults) --------------------
 if (-not $PsqlPath) {
   if ($env:HATTZ_PSQL_PATH) { $PsqlPath = $env:HATTZ_PSQL_PATH }
@@ -179,6 +189,24 @@ function Run-Step([string]$baseName, [string]$file, [hashtable]$vars) {
 }
 function Save-Results { $script:results | Export-Csv -NoTypeInformation (Join-Path $LogDir 'results.csv') }
 
+# Grava o manifesto e sai com o codigo original do harness. Uma falha ao gravar evidencia
+# e reportada, mas NAO troca o codigo de seguranca/validacao decidido pelo fluxo existente.
+function Finish-Run([int]$exitCode) {
+  $finishedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+  try {
+    $manifest = Write-RunManifest `
+      -LogDir $LogDir -RepoRoot $RepoRoot -HarnessName 'run_validation.ps1' `
+      -RunId $runId -StartedAt $startedAt -FinishedAt $finishedAt `
+      -HarnessExitCode $exitCode -Results $script:results -Invocation $boundInvocation `
+      -WorkDirectory (Get-Location).Path -DatabaseName $Database -DatabaseHost $PgHost `
+      -DatabasePort $Port -DatabaseUser $User -PsqlPath $psql -PostgresqlServerVersion $serverVersion
+    Write-Output "[manifest] $($manifest.ManifestPath) (sha256=$($manifest.Sha256), artifacts=$($manifest.Artifacts))"
+  } catch {
+    Write-Output "FATAL: falha ao gravar manifesto de proveniencia: $($_.Exception.Message)"
+  }
+  exit $exitCode
+}
+
 $runId = [guid]::NewGuid().ToString('N')
 Write-Output "=== validation: db=$Database log=$LogDir recreate=$($Recreate.IsPresent) ==="
 
@@ -186,15 +214,15 @@ Write-Output "=== validation: db=$Database log=$LogDir recreate=$($Recreate.IsPr
 if ($exists -eq '1') {
   # Ownership was proven above. Drop is the ONLY destructive operation and is fully confirmed.
   $code = Run-Sql 'postgres' "drop database if exists ""$Database"" with (force)" '00_dropdb'
-  if ($code -ne 0) { Record '00_dropdb' $code 'drop failed'; Save-Results; exit 2 }
+  if ($code -ne 0) { Record '00_dropdb' $code 'drop failed'; Save-Results; Finish-Run 2 }
 }
 $code = Run-Sql 'postgres' "create database ""$Database""" '00_createdb'
 Record '00_createdb' $code ''
-if ($code -ne 0) { Write-Output 'FATAL: could not create database'; Save-Results; exit 2 }
+if ($code -ne 0) { Write-Output 'FATAL: could not create database'; Save-Results; Finish-Run 2 }
 
 $createdAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
 $code = Run-Sql 'postgres' "comment on database ""$Database"" is 'HATTZ_VALIDATION_DISPOSABLE|$runId|$createdAt'" '00_mark_owner'
-if ($code -ne 0) { Record '00_mark_owner' $code 'failed'; Save-Results; exit 2 }
+if ($code -ne 0) { Record '00_mark_owner' $code 'failed'; Save-Results; Finish-Run 2 }
 $markerObject = [pscustomobject]@{
   database  = $Database
   runId     = $runId
@@ -210,7 +238,9 @@ $markerObject | ConvertTo-Json | Set-Content -LiteralPath $markerPath -Encoding 
 $preflight = Join-Path $SqlDir '00_preflight.sql'
 $code = Run-PsqlFile $Database $preflight '00_preflight' $null
 Record '00_preflight' $code ''
-if ($code -ne 0) { Write-Output 'FATAL: preflight failed; stopping.'; Save-Results; exit 2 }
+if ($code -ne 0) { Write-Output 'FATAL: preflight failed; stopping.'; Save-Results; Finish-Run 2 }
+# Leitura unica e somente-leitura da versao do servidor, pela mesma via Qv ja usada no harness.
+try { $serverVersion = (Qv $Database 'select version()') } catch { $serverVersion = '' }
 
 # --- migrations 0001..0017 in order ------------------------------------------------------------
 $migrations = Get-ChildItem $MigrationsDir -Filter '*.sql' |
@@ -219,7 +249,7 @@ foreach ($m in $migrations) {
   $base = "10_migration_$($m.BaseName)"
   $code = Run-PsqlFile $Database $m.FullName $base $null
   Record $base $code ''
-  if ($code -ne 0) { Write-Output 'FATAL: migration failed; stopping.'; Save-Results; exit 3 }
+  if ($code -ne 0) { Write-Output 'FATAL: migration failed; stopping.'; Save-Results; Finish-Run 3 }
 }
 
 # --- 0012..0017 idempotency: re-applying additive migrations must succeed as a no-op ------------
@@ -227,12 +257,12 @@ foreach ($m in $migrations | Where-Object { $_.Name -match '^001[2-7]_' }) {
   $base = "99_reapply_$($m.BaseName)"
   $code = Run-PsqlFile $Database $m.FullName $base $null
   Record $base $code ''
-  if ($code -ne 0) { Write-Output 'FATAL: idempotent re-apply failed.'; Save-Results; exit 3 }
+  if ($code -ne 0) { Write-Output 'FATAL: idempotent re-apply failed.'; Save-Results; Finish-Run 3 }
 }
 
 # --- 0011 verification + precheck/idempotency sequence -----------------------------------------
 $code = Run-Step '20_verify_0011' (Join-Path $SqlDir '20_verify_0011.sql') $null
-if ($code -ne 0) { Write-Output 'FATAL: 20_verify_0011 failed'; Save-Results; exit 3 }
+if ($code -ne 0) { Write-Output 'FATAL: 20_verify_0011 failed'; Save-Results; Finish-Run 3 }
 
 [void](Run-Step '23_0011_idempotency_before' (Join-Path $SqlDir '23_0011_idempotency.sql') $null)
 [void](Run-Step '21_0011_precheck_setup'      (Join-Path $SqlDir '21_0011_precheck_setup.sql') $null)
@@ -241,13 +271,13 @@ $m0011 = ($migrations | Where-Object { $_.Name -like '0011_*' }).FullName
 $code = Run-PsqlFile $Database $m0011 '99_precheck_apply_0011_expect_fail' $null
 $script:results += [pscustomobject]@{ Step = '99_precheck_apply_0011 (expect non-zero)'; ExitCode = $code; Ok = ($code -ne 0); Note = 'inconsistent DB must be rejected' }
 Write-Output ("[{0}] 99_precheck_apply_0011 (expect non-zero) (exit={1})" -f $(if ($code -ne 0) { 'OK  ' } else { 'FAIL' }), $code)
-if ($code -eq 0) { Write-Output 'FATAL: 0011 accepted an inconsistent database (expected a hard failure)'; Save-Results; exit 3 }
+if ($code -eq 0) { Write-Output 'FATAL: 0011 accepted an inconsistent database (expected a hard failure)'; Save-Results; Finish-Run 3 }
 
 [void](Run-Step '22_0011_precheck_after_failure' (Join-Path $SqlDir '22_0011_precheck_after_failure.sql') $null)
 
 $code = Run-PsqlFile $Database $m0011 '99_precheck_apply_0011_after_cleanup' $null
 Record '99_precheck_apply_0011 (after cleanup)' $code ''
-if ($code -ne 0) { Write-Output 'FATAL: 0011 failed to apply after cleanup'; Save-Results; exit 3 }
+if ($code -ne 0) { Write-Output 'FATAL: 0011 failed to apply after cleanup'; Save-Results; Finish-Run 3 }
 
 [void](Run-Step '23_0011_idempotency_after' (Join-Path $SqlDir '23_0011_idempotency.sql') $null)
 
@@ -285,6 +315,6 @@ $failed = @($script:results | Where-Object { -not $_.Ok })
 Write-Output "=== $($script:results.Count) steps, $($failed.Count) failed ==="
 foreach ($f in $failed) { Write-Output "  FAILED: $($f.Step) exit=$($f.ExitCode)" }
 
-if ($failed.Count -gt 0) { exit 1 }
+if ($failed.Count -gt 0) { Finish-Run 1 }
 Write-Output '=== ALL VALIDATION STEPS PASSED ==='
-exit 0
+Finish-Run 0

@@ -20,20 +20,6 @@ import {
 } from '../../apps/studio/src/persistence/transfer';
 import { createEmptyDraft, slugForPreview, toSnapshotRecord } from '../../apps/studio/src/editor';
 
-const CANONICAL_MEDIA = [
-  'avatar',
-  'banner',
-  'image',
-  'audio',
-  'cover',
-  'frame',
-  'badge',
-  'background',
-  'card',
-  'widget',
-  'other',
-] as const;
-
 describe('Fase corretiva — contrato de mídia e blindagem de oficialidade', () => {
   const dbs: StudioDatabase[] = [];
 
@@ -58,7 +44,9 @@ describe('Fase corretiva — contrato de mídia e blindagem de oficialidade', ()
   }
 
   it('expõe exatamente os 11 valores canônicos no pacote compartilhado', () => {
-    expect([...MEDIA_ASSET_KINDS]).toEqual([...CANONICAL_MEDIA]);
+    // A lista de valores e a paridade com o CHECK SQL são verificadas por
+    // tests/integrity/media-parity.test.ts contra a fonte canônica.
+    expect(MEDIA_ASSET_KINDS).toHaveLength(11);
     for (const kind of MEDIA_ASSET_KINDS) expect(isMediaAssetKind(kind)).toBe(true);
     expect(isMediaAssetKind('unknown')).toBe(false);
     expect(isMediaAssetKind(123)).toBe(false);
@@ -66,7 +54,7 @@ describe('Fase corretiva — contrato de mídia e blindagem de oficialidade', ()
 
   it('aceita os 11 valores na persistência local', async () => {
     await seed('prof_all_kinds');
-    for (const kind of CANONICAL_MEDIA) {
+    for (const kind of MEDIA_ASSET_KINDS) {
       await storeMediaAsset({
         profileTechnicalId: 'prof_all_kinds',
         kind,
@@ -74,7 +62,7 @@ describe('Fase corretiva — contrato de mídia e blindagem de oficialidade', ()
       });
     }
     const assets = await listMediaAssets('prof_all_kinds');
-    expect(assets.map((asset) => asset.kind).sort()).toEqual([...CANONICAL_MEDIA].sort());
+    expect(assets.map((asset) => asset.kind).sort()).toEqual([...MEDIA_ASSET_KINDS].sort());
   });
 
   it('rejeita kind desconhecido em runtime, não apenas por tipo', async () => {

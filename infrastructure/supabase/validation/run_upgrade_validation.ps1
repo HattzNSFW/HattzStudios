@@ -19,6 +19,17 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# --- proveniencia (somente leitura; nao altera o comportamento do harness) ----------------------
+. (Join-Path $PSScriptRoot 'provenance\manifest.ps1')
+$RepoRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
+$startedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+$boundInvocation = @{}
+foreach ($key in $PSBoundParameters.Keys) {
+  $boundInvocation[[string]$key] = [string]$PSBoundParameters[$key]
+}
+$runId = [guid]::NewGuid().ToString('N')
+$serverVersion = ''
+
 if (-not $PsqlPath) {
   if ($env:HATTZ_PSQL_PATH) { $PsqlPath = $env:HATTZ_PSQL_PATH }
   else { $PsqlPath = 'C:\Users\Noir\AppData\Local\Hattz-2.0-postgres\pgsql\pgsql\bin\psql.exe' }
@@ -111,6 +122,24 @@ function Save-Results {
   $script:results | Export-Csv -NoTypeInformation (Join-Path $LogDir 'results.csv')
 }
 
+# Grava o manifesto e sai com o codigo original do harness. Uma falha ao gravar evidencia
+# e reportada, mas NAO troca o codigo de seguranca/validacao decidido pelo fluxo existente.
+function Finish-Run([int]$exitCode) {
+  $finishedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+  try {
+    $manifest = Write-RunManifest `
+      -LogDir $LogDir -RepoRoot $RepoRoot -HarnessName 'run_upgrade_validation.ps1' `
+      -RunId $runId -StartedAt $startedAt -FinishedAt $finishedAt `
+      -HarnessExitCode $exitCode -Results $script:results -Invocation $boundInvocation `
+      -WorkDirectory (Get-Location).Path -DatabaseName $Database -DatabaseHost $PgHost `
+      -DatabasePort $Port -DatabaseUser $User -PsqlPath $PsqlPath -PostgresqlServerVersion $serverVersion
+    Write-Output "[manifest] $($manifest.ManifestPath) (sha256=$($manifest.Sha256), artifacts=$($manifest.Artifacts))"
+  } catch {
+    Write-Output "FATAL: falha ao gravar manifesto de proveniencia: $($_.Exception.Message)"
+  }
+  exit $exitCode
+}
+
 $migrations = Get-ChildItem $MigrationsDir -Filter '*.sql' |
   Where-Object { $_.Name -match '^\d{4}_.*\.sql$' } | Sort-Object Name
 
@@ -118,46 +147,47 @@ Write-Output "=== upgrade validation: db=$Database log=$LogDir ==="
 
 $code = Run-Sql 'postgres' "create database ""$Database""" '00_createdb'
 Record '00_createdb' $code ''
-if ($code -ne 0) { Save-Results; exit 2 }
+if ($code -ne 0) { Save-Results; Finish-Run 2 }
 
-$runId = [guid]::NewGuid().ToString('N')
 $createdAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
 $code = Run-Sql 'postgres' "comment on database ""$Database"" is 'HATTZ_VALIDATION_DISPOSABLE_UPGRADE|$runId|$createdAt'" '00_mark_owner'
-if ($code -ne 0) { Record '00_mark_owner' $code ''; Save-Results; exit 2 }
+if ($code -ne 0) { Record '00_mark_owner' $code ''; Save-Results; Finish-Run 2 }
 
 $code = Run-Step '00_preflight' (Join-Path $SqlDir '00_preflight.sql')
-if ($code -ne 0) { Save-Results; exit 2 }
+if ($code -ne 0) { Save-Results; Finish-Run 2 }
+# Leitura unica e somente-leitura da versao do servidor, pela mesma via Qv ja usada no harness.
+try { $serverVersion = (Qv $Database 'select version()') } catch { $serverVersion = '' }
 
 foreach ($m in $migrations | Where-Object { [int]$_.BaseName.Substring(0,4) -le 14 }) {
   $code = Run-PsqlFile $Database $m.FullName "10_base_$($m.BaseName)"
   Record "10_base_$($m.BaseName)" $code ''
-  if ($code -ne 0) { Write-Output 'FATAL: base migration failed'; Save-Results; exit 3 }
+  if ($code -ne 0) { Write-Output 'FATAL: base migration failed'; Save-Results; Finish-Run 3 }
 }
 
 $code = Run-Step '31_upgrade_before' (Join-Path $SqlDir '31_upgrade_before.sql')
-if ($code -ne 0) { Write-Output 'FATAL: capture before-upgrade failed'; Save-Results; exit 3 }
+if ($code -ne 0) { Write-Output 'FATAL: capture before-upgrade failed'; Save-Results; Finish-Run 3 }
 
 foreach ($m in $migrations | Where-Object { [int]$_.BaseName.Substring(0,4) -ge 15 }) {
   $code = Run-PsqlFile $Database $m.FullName "15_additive_$($m.BaseName)"
   Record "15_additive_$($m.BaseName)" $code ''
-  if ($code -ne 0) { Write-Output 'FATAL: additive migration failed'; Save-Results; exit 3 }
+  if ($code -ne 0) { Write-Output 'FATAL: additive migration failed'; Save-Results; Finish-Run 3 }
 }
 
 $code = Run-Step '36_upgrade_after' (Join-Path $SqlDir '36_upgrade_after.sql')
-if ($code -ne 0) { Write-Output 'FATAL: upgrade comparison failed'; Save-Results; exit 3 }
+if ($code -ne 0) { Write-Output 'FATAL: upgrade comparison failed'; Save-Results; Finish-Run 3 }
 
 foreach ($m in $migrations | Where-Object { [int]$_.BaseName.Substring(0,4) -ge 15 }) {
   $code = Run-PsqlFile $Database $m.FullName "99_reapply_$($m.BaseName)"
   Record "99_reapply_$($m.BaseName)" $code ''
-  if ($code -ne 0) { Write-Output 'FATAL: additive re-apply failed'; Save-Results; exit 3 }
+  if ($code -ne 0) { Write-Output 'FATAL: additive re-apply failed'; Save-Results; Finish-Run 3 }
 }
 
 $code = Run-Step '35_corrective_guards' (Join-Path $SqlDir '35_corrective_guards.sql')
-if ($code -ne 0) { Write-Output 'FATAL: corrective guards failed'; Save-Results; exit 3 }
+if ($code -ne 0) { Write-Output 'FATAL: corrective guards failed'; Save-Results; Finish-Run 3 }
 
 Save-Results
 $failed = @($script:results | Where-Object { -not $_.Ok })
 Write-Output "=== $($script:results.Count) steps, $($failed.Count) failed ==="
-if ($failed.Count -gt 0) { exit 1 }
+if ($failed.Count -gt 0) { Finish-Run 1 }
 Write-Output '=== UPGRADE VALIDATION PASSED ==='
-exit 0
+Finish-Run 0

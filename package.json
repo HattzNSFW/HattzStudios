@@ -25,7 +25,8 @@
     "format": "prettier . --check",
     "format:write": "prettier . --write",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "media:parity": "node infrastructure/supabase/validation/parity/check_media_parity.mjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",
