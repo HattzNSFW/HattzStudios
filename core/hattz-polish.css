@@ -262,10 +262,334 @@ body.capture-mode .hattz-reveal { opacity: 1 !important; translate: none !import
   .capture-exit-button { width: 44px; height: 44px; border-radius: 14px; }
 }
 
+/* ---------------------------------------------------------------------------
+   Terceira passada — menus com pegada de moodboard Pinterest.
+   Sidebars, abas e painéis de personalização viram “boards”: cantos amplos,
+   sombra difusa, pílulas suaves e um marcador de pin. Não mexe em dados,
+   ícones do Control, insígnias em emoji nem no conteúdo do perfil.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --hattz-board-radius: 24px;
+  --hattz-board-shadow: 0 18px 44px rgba(0, 0, 0, .3), 0 2px 8px rgba(0, 0, 0, .16);
+  --hattz-board-inset: inset 0 1px 0 rgba(var(--lg-border), var(--lg-highlight-alpha));
+  --hattz-board-serif: "Playfair Display", Georgia, serif;
+}
+
+/* Boards laterais: mais respiro, menos ruído. */
+.studio-sidebar,
+body .sidebar {
+  border-radius: 28px !important;
+  padding: 18px 14px !important;
+  box-shadow: var(--hattz-board-shadow), var(--hattz-board-inset) !important;
+}
+
+.studio-sidebar > .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 10px 14px;
+  color: rgba(var(--lg-tint), .72) !important;
+  font: 700 9px Manrope, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.studio-sidebar > .eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--lg-tint));
+  box-shadow: 0 0 10px rgba(var(--lg-tint), .75);
+}
+
+@media (min-width: 701px) {
+  body .sidebar > .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px 12px;
+    color: rgba(var(--lg-tint), .72) !important;
+    font-size: 9px;
+    letter-spacing: .18em;
+  }
+  body .sidebar > .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgb(var(--lg-tint));
+    box-shadow: 0 0 10px rgba(var(--lg-tint), .75);
+  }
+}
+
+/* Itens de menu viram pílulas com um pin discreto no estado ativo. */
+.studio-nav,
+body .nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  margin: 4px 0 !important;
+  padding: 10px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, .02) !important;
+  color: #aaa2b7 !important;
+  font: 600 12px/1.2 Manrope, sans-serif !important;
+  letter-spacing: .005em;
+  text-align: left;
+  overflow: hidden;
+}
+
+.studio-nav > .ui-icon,
+body .nav-item > span > .ui-icon {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .045);
+  color: #a892c7;
+}
+body .nav-item > span {
+  flex: 0 0 30px;
+  width: 30px !important;
+  height: 30px;
+  display: grid;
+  place-items: center;
+}
+
+.studio-nav:hover,
+body .nav-item:hover {
+  color: #fff !important;
+  background: rgba(var(--lg-tint), .075) !important;
+  border-color: rgba(var(--lg-tint), .2) !important;
+  transform: translateX(3px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .2);
+}
+body .studio-sidebar .studio-nav.active,
+body .sidebar .nav-item.active {
+  color: #fff !important;
+  border-color: rgba(var(--lg-tint), .32) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(110deg, rgba(var(--lg-tint), .24), rgba(var(--lg-tint-2), .07)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .26), var(--hattz-board-inset) !important;
+}
+
+.studio-nav::after,
+body .nav-item::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: rgb(var(--lg-tint));
+  opacity: 0;
+  transform: scale(.55);
+  box-shadow: 0 0 12px rgba(var(--lg-tint), .8);
+  transition: opacity .2s var(--hattz-ease), transform .2s var(--hattz-ease);
+}
+.studio-nav.active::after,
+body .nav-item.active::after { opacity: 1; transform: scale(1); }
+
+.studio-nav.active > .ui-icon,
+body .sidebar .nav-item.active > span > .ui-icon {
+  background: rgba(var(--lg-tint), .16);
+  border-color: rgba(var(--lg-tint), .34);
+  color: #f4eaff;
+  box-shadow: 0 0 16px rgba(var(--lg-tint), .2);
+}
+.sidebar-foot { border-top-color: rgba(var(--lg-border), var(--lg-border-alpha)) !important; }
+
+@media (max-width: 700px) {
+  body .sidebar { padding: 8px !important; border-radius: 20px !important; }
+  body .nav-item {
+    width: auto;
+    min-height: 38px;
+    margin: 0 3px !important;
+    padding: 9px 11px !important;
+    border-radius: 13px !important;
+    font-size: 10px !important;
+    white-space: nowrap;
+  }
+  body .nav-item > span { display: none !important; }
+}
+
+/* Share — modal de personalização com cara de caderno de referências. */
+body .modal-backdrop {
+  background: rgba(5, 4, 8, .78) !important;
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+}
+body .editor-modal {
+  border-color: rgba(var(--lg-border), calc(var(--lg-border-alpha) + .04)) !important;
+  border-radius: 28px !important;
+  background: linear-gradient(160deg, rgba(30, 26, 41, .97), rgba(12, 11, 18, .99)) !important;
+  box-shadow: 0 40px 110px rgba(0, 0, 0, .62), var(--hattz-board-inset) !important;
+}
+body .modal-header h2 { font-family: var(--hattz-board-serif); letter-spacing: -.02em; }
+body .close-button {
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, .045) !important;
+}
+body .editor-tabs {
+  gap: 8px !important;
+  padding: 10px 18px !important;
+  background: rgba(255, 255, 255, .018);
+  border-bottom-color: rgba(var(--lg-border), var(--lg-border-alpha)) !important;
+}
+body .editor-tabs .tab-button {
+  position: relative;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+  min-height: 40px;
+  padding: 9px 12px !important;
+  border: 1px solid transparent !important;
+  border-bottom: 0 !important;
+  border-radius: 13px !important;
+  background: rgba(255, 255, 255, .03) !important;
+  color: #9d94ab !important;
+  font: 700 11px Manrope, sans-serif !important;
+  letter-spacing: .01em;
+}
+body .editor-tabs .tab-button:hover {
+  color: #fff !important;
+  background: rgba(var(--lg-tint), .08) !important;
+}
+body .editor-tabs .tab-button.active {
+  color: #fff !important;
+  border-color: rgba(var(--lg-tint), .3) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(120deg, rgba(var(--lg-tint), .24), rgba(var(--lg-tint-2), .08)) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .22), var(--hattz-board-inset) !important;
+}
+body .editor-tabs .tab-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: rgb(var(--lg-tint));
+  opacity: 0;
+  transform: scale(.5);
+  box-shadow: 0 0 9px rgba(var(--lg-tint), .85);
+  transition: opacity .2s var(--hattz-ease), transform .2s var(--hattz-ease);
+}
+body .editor-tabs .tab-button.active::after { opacity: 1; transform: scale(1); }
+
+body .theme-grid { gap: 12px !important; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important; }
+body .theme-option {
+  padding: 9px !important;
+  border-color: rgba(var(--lg-border), calc(var(--lg-border-alpha) + .03)) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(150deg, rgba(255, 255, 255, .055), rgba(var(--lg-surface), .26)) !important;
+  color: #bdb5c8 !important;
+  font: 700 10px Manrope, sans-serif !important;
+}
+body .theme-option:hover,
+body .theme-option.active {
+  color: #fff !important;
+  border-color: rgba(var(--lg-tint), .42) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .3), var(--hattz-board-inset) !important;
+  transform: translateY(-3px);
+}
+body .theme-swatch {
+  height: 54px !important;
+  border-radius: 13px !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .2), 0 8px 18px rgba(0, 0, 0, .28);
+}
+body .theme-option.active .theme-swatch { outline: 1px solid rgba(var(--lg-tint), .75); outline-offset: 2px; }
+
+.editor-section-title h3 { font-family: var(--hattz-board-serif); letter-spacing: -.02em; }
+body .modal-body > .tab-panel > .field-group { padding: 16px !important; border-radius: 18px !important; }
+body .modal-body .text-input { border-radius: 13px !important; }
+.badge-library { gap: 8px !important; }
+.badge-library > * {
+  padding: 6px 10px !important;
+  border: 1px solid rgba(var(--lg-tint), .18) !important;
+  border-radius: 999px !important;
+  background: rgba(var(--lg-tint), .07) !important;
+}
+body .modal-footer {
+  padding: 14px 20px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(10, 9, 15, .92)) !important;
+  border-top-color: rgba(var(--lg-border), var(--lg-border-alpha)) !important;
+}
+body .share-modal { border-radius: 28px !important; }
+body .share-modal-header { border-bottom-color: rgba(var(--lg-border), var(--lg-border-alpha)) !important; }
+.share-eyebrow { color: rgba(var(--lg-tint), .78) !important; letter-spacing: .18em !important; }
+
+/* Painel flutuante do Liquid Glass acompanha o mesmo vocabulário visual. */
+body .hatz-lg-toggle {
+  border-radius: 14px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .4), var(--hattz-board-inset) !important;
+}
+body .hatz-lg-panel {
+  padding: 18px !important;
+  border-color: rgba(var(--lg-tint), .18) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .015) 45%, rgba(var(--lg-surface), .42)),
+    rgba(13, 12, 20, .9) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .55), var(--hattz-board-inset) !important;
+}
+body .hatz-lg-head { border-bottom-color: rgba(var(--lg-border), var(--lg-border-alpha)) !important; }
+body .hatz-lg-mark {
+  border-radius: 10px !important;
+  background: linear-gradient(145deg, rgba(var(--lg-tint), .26), rgba(var(--lg-tint-2), .08)) !important;
+}
+body .hatz-lg-section { color: rgba(var(--lg-tint), .72) !important; letter-spacing: .16em !important; }
+body .hatz-lg-section:after { background: rgba(var(--lg-tint), .16) !important; }
+body .hatz-lg-presets { gap: 10px !important; }
+body .hatz-lg-swatch {
+  height: 32px !important;
+  border-radius: 12px !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .22), 0 7px 16px rgba(0, 0, 0, .3);
+}
+body .hatz-lg-color {
+  border-color: rgba(var(--lg-border), calc(var(--lg-border-alpha) + .02)) !important;
+  border-radius: 13px !important;
+  background: rgba(255, 255, 255, .035) !important;
+}
+body .hatz-lg-primary,
+body .hatz-lg-ghost,
+body .hatz-lg-mini button { border-radius: 12px !important; }
+
+/* Studio/Control — títulos editoriais e cartões com acabamento de board. */
+body .editor-card h2,
+body .page-heading h1 { font-family: var(--hattz-board-serif); letter-spacing: -.03em; }
+body .frame-option,
+body .catalog-item,
+body .collection-card {
+  border-color: rgba(var(--lg-border), calc(var(--lg-border-alpha) + .03)) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(var(--lg-surface), .22)) !important;
+}
+body .frame-option:hover,
+body .catalog-item:hover,
+body .collection-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(var(--lg-tint), .42) !important;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, .34);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .skeleton::after, .hattz-light::before, .hattz-breathe::after,
   :where(.primary-button, .primary, .save-button, .share-publish-button)::after { animation: none !important; transition: none !important; opacity: 0 !important; }
   .hattz-reveal { opacity: 1 !important; translate: none !important; transition: none !important; }
-  :where(button, .primary, .secondary, .quiet-button, .studio-nav, .nav-item) { transition: none; }
+  :where(button, .primary, .secondary, .quiet-button, .studio-nav, .nav-item,
+         .tab-button, .theme-option, .frame-option, .catalog-item, .collection-card,
+         .hatz-lg-toggle, .hatz-lg-swatch, .hatz-lg-color) { transition: none !important; }
+  .studio-nav::after, .nav-item::after, .editor-tabs .tab-button::after { transition: none !important; }
 }
