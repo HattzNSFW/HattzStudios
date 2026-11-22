@@ -408,7 +408,7 @@
       $("maintenanceBackgroundType").value = result.backgroundType;
       $("maintenanceBackgroundUrl").value = result.backgroundUrl;
       updateMaintenancePreview(result.backgroundUrl, result.backgroundType);
-      notify("Fundo enviado ao Supabase Storage. Salve a configuração para aplicar.");
+      notify("Fundo enviado. Salve a configuração para aplicar.");
     } catch (error) { notify(error.message); }
     finally { button.disabled = false; button.textContent = "Enviar fundo"; }
   }
