@@ -87,9 +87,12 @@
   function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 
   function detectScope() {
+    // Usa só o nome do arquivo: o caminho /HattzStudios/ contém "studio"
+    // e faria o Share ser detectado como Studio no GitHub Pages.
     var path = (window.location.pathname || "").toLowerCase();
-    if (path.indexOf("control") >= 0) return "control";
-    if (path.indexOf("studio") >= 0) return "studio";
+    var file = path.split("/").pop() || "";
+    if (file.indexOf("control") >= 0) return "control";
+    if (file.indexOf("studio") >= 0) return "studio";
     return "share";
   }
   var scope = detectScope();
@@ -210,6 +213,8 @@
     ".blocks-chip,.live-chip,.status-pill,.studio-nav.active,.nav-item.active,.metric{",
     "  border-color:rgba(var(--lg-tint),.24)!important;",
     "  background:linear-gradient(105deg,rgba(var(--lg-tint),.18),rgba(var(--lg-tint-2),.06))!important}",
+    ".glass,.studio-top,.studio-sidebar,.editor-card,.sidebar,.login-card,.chart-panel,.metric{",
+    "  border-radius:var(--lg-radius)!important}",
     "input[type=range]{accent-color:rgb(var(--lg-tint))!important}",
     ".ui-icon,.icon-button svg{filter:drop-shadow(0 1px 4px rgba(var(--lg-tint-2),var(--lg-glow-alpha)))!important}",
     "@media(prefers-reduced-motion:reduce){.hatz-lg-toggle,.hatz-lg-panel{transition:none!important}}"
