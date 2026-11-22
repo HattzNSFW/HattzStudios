@@ -44,29 +44,43 @@
   window.HattzEmoji = { badge: badgeEmoji };
 
   var defaults = {
-    tint: "203, 170, 255",
-    tint2: "140, 124, 255",
-    cyan: "140, 228, 255",
-    surface: "24, 22, 35",
+    tint: "183, 178, 255",
+    tint2: "112, 126, 255",
+    cyan: "132, 226, 255",
+    surface: "24, 25, 38",
     border: "255, 255, 255",
-    bgBase: "7, 7, 13",
-    bgA: "112, 78, 180",
-    bgB: "70, 95, 195",
-    bgC: "132, 72, 180",
-    alpha: 0.56,
-    borderAlpha: 0.105,
-    highlight: 0.15,
-    sheen: 0.15,
-    glow: 0.34,
-    shadow: 0.42,
-    blur: 30,
-    saturate: 165,
-    radius: 26,
-    speed: 0.22
+    bgBase: "6, 7, 14",
+    bgA: "88, 78, 176",
+    bgB: "36, 94, 190",
+    bgC: "124, 74, 184",
+    alpha: 0.54,
+    borderAlpha: 0.14,
+    highlight: 0.22,
+    sheen: 0.13,
+    glow: 0.26,
+    shadow: 0.48,
+    blur: 34,
+    saturate: 180,
+    radius: 28,
+    speed: 0.26
+  };
+
+  /* Tema anterior: usado apenas para migrar quem nunca personalizou nada.
+     Quem ajustou qualquer cor ou slider mantém a própria configuração. */
+  var previousDefaults = {
+    tint: "203, 170, 255", tint2: "140, 124, 255", cyan: "140, 228, 255",
+    surface: "24, 22, 35", border: "255, 255, 255", bgBase: "7, 7, 13",
+    bgA: "112, 78, 180", bgB: "70, 95, 195", bgC: "132, 72, 180",
+    alpha: 0.56, borderAlpha: 0.105, highlight: 0.15, sheen: 0.15,
+    glow: 0.34, shadow: 0.42, blur: 30, saturate: 165, radius: 26, speed: 0.22
+  };
+
+  var presetLabels = {
+    padrao: "Padrão", ciano: "Ciano", rose: "Rosa", esmeralda: "Esmeralda"
   };
 
   var presets = {
-    violeta: {},
+    padrao: {},
     ciano: {
       tint: "140, 228, 255", tint2: "105, 150, 255", cyan: "168, 255, 240",
       bgA: "38, 122, 170", bgB: "52, 82, 190", bgC: "70, 150, 180"
@@ -166,12 +180,23 @@
     return store;
   }
 
+  function upgradeUntouched(raw) {
+    if (!raw || typeof raw !== "object") return raw;
+    var next = {};
+    Object.keys(raw).forEach(function (key) {
+      var wasDefault = key in previousDefaults &&
+        String(raw[key]) === String(previousDefaults[key]);
+      next[key] = wasDefault ? defaults[key] : raw[key];
+    });
+    return next;
+  }
+
   function loadStore() {
     var store = emptyStore();
     var raw = null;
     try { raw = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (error) { raw = null; }
     if (raw && typeof raw === "object") {
-      SCOPES.forEach(function (name) { store[name] = sanitize(raw[name]); });
+      SCOPES.forEach(function (name) { store[name] = sanitize(upgradeUntouched(raw[name])); });
       return store;
     }
     // Migra o tema único da versão anterior para os três escopos.
@@ -306,7 +331,7 @@
     "@media(max-width:520px){.hatz-lg-toggle{right:12px;bottom:12px}.hatz-lg-panel{right:12px;bottom:66px;max-height:calc(100vh - 90px)}}"
   ].join("\n");
 
-  var panel, code, toggle, currentPreset = "violeta";
+  var panel, code, toggle, currentPreset = "padrao";
 
   function updateFill(input) {
     var min = Number(input.min), max = Number(input.max);
@@ -385,9 +410,10 @@
         var preset = presets[name];
         var first = preset.tint || defaults.tint;
         var second = preset.tint2 || defaults.tint2;
-        return '<button type="button" class="hatz-lg-preset" data-lg-preset="' + name + '" data-active="' + (name === currentPreset) + '" title="' + name + '">' +
+        var label = presetLabels[name] || name;
+        return '<button type="button" class="hatz-lg-preset" data-lg-preset="' + name + '" data-active="' + (name === currentPreset) + '" title="' + label + '">' +
           '<span class="hatz-lg-swatch" style="background:linear-gradient(135deg,rgb(' + first + '),rgb(' + second + '))"></span>' +
-          name[0].toUpperCase() + name.slice(1) + '</button>';
+          label + '</button>';
       }).join(""),
       '</div><div class="hatz-lg-section">Superfície e efeitos</div>'
     ];
@@ -440,7 +466,7 @@
         return;
       }
       var action = event.target.dataset && event.target.dataset.lgAction;
-      if (action === "reset") { currentPreset = "violeta"; state = clone(defaults); commit(); }
+      if (action === "reset") { currentPreset = "padrao"; state = clone(defaults); commit(); }
       if (action === "all") {
         SCOPES.forEach(function (name) { store[name] = clone(state); });
         save();

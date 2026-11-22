@@ -35,26 +35,26 @@
   --hattz-motion-normal: .28s ease;
 
   /* Liquid Glass — valores personalizáveis pelo painel Hättz (Share, Studio e Control). */
-  --lg-tint: 203, 170, 255;
-  --lg-tint-2: 140, 124, 255;
-  --lg-cyan: 140, 228, 255;
-  --lg-surface: 24, 22, 35;
-  --lg-surface-strong: 34, 30, 49;
-  --lg-bg-base: 7, 7, 13;
-  --lg-bg-a: 112, 78, 180;
-  --lg-bg-b: 70, 95, 195;
-  --lg-bg-c: 132, 72, 180;
+  --lg-tint: 183, 178, 255;
+  --lg-tint-2: 112, 126, 255;
+  --lg-cyan: 132, 226, 255;
+  --lg-surface: 24, 25, 38;
+  --lg-surface-strong: 36, 38, 56;
+  --lg-bg-base: 6, 7, 14;
+  --lg-bg-a: 88, 78, 176;
+  --lg-bg-b: 36, 94, 190;
+  --lg-bg-c: 124, 74, 184;
   --lg-border: 255, 255, 255;
-  --lg-alpha: .56;
-  --lg-border-alpha: .105;
-  --lg-highlight-alpha: .15;
-  --lg-sheen-alpha: .15;
-  --lg-glow-alpha: .34;
-  --lg-shadow-alpha: .42;
-  --lg-blur: 30px;
-  --lg-saturate: 165%;
-  --lg-radius: 26px;
-  --lg-speed: .22s;
+  --lg-alpha: .54;
+  --lg-border-alpha: .14;
+  --lg-highlight-alpha: .22;
+  --lg-sheen-alpha: .13;
+  --lg-glow-alpha: .26;
+  --lg-shadow-alpha: .48;
+  --lg-blur: 34px;
+  --lg-saturate: 180%;
+  --lg-radius: 28px;
+  --lg-speed: .26s;
 
   --hattz-premium-bg: rgb(var(--lg-bg-base));
   --hattz-premium-surface: rgba(var(--lg-surface), var(--lg-alpha));

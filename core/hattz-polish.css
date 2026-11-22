@@ -30,6 +30,16 @@ body.capture-mode .theme-swatch,
 body.capture-mode .hatz-lg-swatch,
 body.capture-mode .frame-preview { transform: none !important; transition: none !important; }
 
+/* Padrão "dark liquid glass": aurora índigo/azulada atrás do vidro do perfil.
+   Mantém o gradiente escuro original como base, sem apagar a mídia do usuário. */
+body .card-background-overlay {
+  background:
+    radial-gradient(ellipse 74% 46% at 8% -8%, rgba(var(--lg-bg-a), .26), transparent 64%),
+    radial-gradient(ellipse 58% 44% at 96% 6%, rgba(var(--lg-bg-b), .18), transparent 62%),
+    radial-gradient(ellipse 60% 42% at 78% 100%, rgba(var(--lg-bg-c), .14), transparent 66%),
+    linear-gradient(180deg, #0b091080, #0b0910b8 42%, #0b0910d9);
+}
+
 ::selection { background: rgba(var(--lg-tint), .3); color: #fff; }
 
 /* Foco visível e consistente em teclado. */
