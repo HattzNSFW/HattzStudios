@@ -81,10 +81,14 @@
     if (show) toast("Personalização salva neste perfil.");
   }
 
-  document.querySelectorAll(".studio-nav").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".studio-nav[data-panel]").forEach(btn => btn.addEventListener("click", () => {
     document.querySelectorAll(".studio-nav").forEach(x => x.classList.toggle("active", x === btn));
     document.querySelectorAll(".studio-panel").forEach(x => x.classList.toggle("active", x.id === `panel-${btn.dataset.panel}`));
   }));
+  document.getElementById("openThemeCustomizer")?.addEventListener("click", () => {
+    if (window.HattzLiquidGlass?.isOpen?.()) window.HattzLiquidGlass.close();
+    else window.HattzLiquidGlass?.open?.();
+  });
   document.querySelectorAll("[data-glass]").forEach(input => input.addEventListener("input", () => {
     profile.studio.glass[input.dataset.glass] = Number(input.value);
     renderGlass(); save(false);

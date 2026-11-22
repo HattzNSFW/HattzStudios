@@ -593,6 +593,57 @@
     } catch (error) { $('roleAssignmentsList').innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`; }
   }
   const ROLE_THEME_FIELDS = { background: 'roleThemeBackground', gradient: 'roleThemeGradient', card: 'roleThemeCard', accent: 'roleThemeAccent', text: 'roleThemeText', border: 'roleThemeBorder' };
+  const SERVER_ROLE_PRESETS = {
+    booster: {
+      label: 'Booster', color: '#FF73FA', description: 'Impulsiona o servidor e desbloqueia benefícios de apoio.',
+      theme: { background: '#120b16', gradient: '#4a214f', card: '#1c1424', accent: '#ff9bf8', text: '#fdf3ff', border: '#5b2a61' }
+    },
+    veteran: {
+      label: 'Veterano', color: '#F0B232', description: 'Presente desde os primeiros dias da comunidade.',
+      theme: { background: '#120f09', gradient: '#4d3a17', card: '#1d1810', accent: '#f7c968', text: '#fff7e6', border: '#5b461f' }
+    },
+    contributor: {
+      label: 'Colaborador', color: '#5865F2', description: 'Contribui com ideias, código ou organização da comunidade.',
+      theme: { background: '#0b0a10', gradient: '#292333', card: '#14121b', accent: '#a78bfa', text: '#f4f0fa', border: '#302a3a' }
+    },
+    partner: {
+      label: 'Parceiro', color: '#FAA61A', description: 'Parceiro reconhecido do Hättz.',
+      theme: { background: '#130d08', gradient: '#52300f', card: '#1f1710', accent: '#ffc46b', text: '#fff4e6', border: '#63411d' }
+    }
+  };
+  const SERVER_BADGE_PRESETS = {
+    'server-booster': { name: 'Booster do Servidor', description: 'Apoio ativo ao servidor Hättz.', category: 'server', rarity: '4', icon: '💜' },
+    'early-supporter': { name: 'Apoiador Antigo', description: 'Esteve presente nos primeiros dias da comunidade.', category: 'server', rarity: '3', icon: '🏅' },
+    'creative-spark': { name: 'Faísca Criativa', description: 'Destaque em criações visuais da comunidade.', category: 'achievement', rarity: '3', icon: '✨' },
+    'community-pillar': { name: 'Pilar da Comunidade', description: 'Reconhecimento por ajudar outros perfis.', category: 'community', rarity: '5', icon: '🛡️' }
+  };
+  function applyRolePreset(id) {
+    const preset = SERVER_ROLE_PRESETS[id];
+    if (!preset) return;
+    resetRoleDefinition();
+    $('roleDefinitionId').value = id;
+    $('roleDefinitionLabel').value = preset.label;
+    $('roleDefinitionDescription').value = preset.description;
+    $('roleDefinitionColor').value = preset.color;
+    Object.entries(ROLE_THEME_FIELDS).forEach(([key, field]) => { $(field).value = preset.theme[key] || '#0b0a10'; });
+    $('roleDefinitionLabel').focus();
+    notify(`Modelo “${preset.label}” carregado.`);
+  }
+  function applyBadgePreset(id) {
+    const preset = SERVER_BADGE_PRESETS[id];
+    if (!preset) return;
+    $('catalogKind').value = 'badges';
+    $('catalogKind').dispatchEvent(new Event('change'));
+    $('catalogId').value = id;
+    $('catalogName').value = preset.name;
+    $('catalogDescription').value = preset.description;
+    $('catalogRarity').value = preset.rarity;
+    $('catalogCategory').value = preset.category;
+    $('catalogIcon').value = preset.icon;
+    $('catalogIsPublic').checked = true;
+    $('catalogName').focus();
+    notify(`Modelo “${preset.name}” carregado.`);
+  }
   function editRoleDefinition(role) {
     if (!role) return;
     $('roleDefinitionId').value = role.id;
@@ -879,6 +930,8 @@
   $("catalogKind").addEventListener("change", () => { const badges=$("catalogKind").value === "badges"; $("catalogBadgeFields").hidden = !badges; $("catalogFrameFields").hidden = badges; syncFrameAccessFields(); });
   $("catalogFrameAccess").addEventListener("change", syncFrameAccessFields);
   $("saveCatalogItem").addEventListener("click", saveCatalogItem);
+  document.querySelectorAll("[data-badge-preset]").forEach(button => button.addEventListener("click", () => applyBadgePreset(button.dataset.badgePreset)));
+  document.querySelectorAll("[data-role-preset]").forEach(button => button.addEventListener("click", () => applyRolePreset(button.dataset.rolePreset)));
   $("saveCollection").addEventListener("click", saveCollection);
   $("newCollection").addEventListener("click", resetCollectionForm);
   $("saveBenefit").addEventListener("click", saveBenefit);

@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a99">
-  <link rel="stylesheet" href="control.css?v=e7c4a99">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a99">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9a">
+  <link rel="stylesheet" href="control.css?v=e7c4a9a">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9a">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -89,6 +89,12 @@
             <div class="panel-grid">
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">STUDIO PERMISSIONS</p><h2>Cargos autorizados ao editor de tema</h2></div></div><p class="muted">Selecione um ou mais cargos. Apenas os perfis que possuírem pelo menos um deles poderão editar o próprio tema no Studio.</p><div id="studioAccessRoles" class="role-list"><p class="empty">Carregando cargos...</p></div><button id="saveStudioAccess" class="secondary" type="button">Salvar permissões do Studio</button></article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar ou atualizar item</h2></div></div>
+                <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
+                  <button type="button" class="quiet-button" data-badge-preset="server-booster">💜 Booster</button>
+                  <button type="button" class="quiet-button" data-badge-preset="early-supporter">🏅 Apoiador antigo</button>
+                  <button type="button" class="quiet-button" data-badge-preset="creative-spark">✨ Faísca criativa</button>
+                  <button type="button" class="quiet-button" data-badge-preset="community-pillar">🛡️ Pilar da comunidade</button>
+                </div><small>Preenchem o formulário; use “Salvar item” para publicar.</small></div>
                 <div class="field"><label for="catalogKind">Tipo</label><select id="catalogKind"><option value="badges">Insígnia</option><option value="frames">Moldura</option></select></div>
                 <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: early-supporter"></div>
                 <div class="field"><label for="catalogName">Nome</label><input id="catalogName" maxlength="64" placeholder="Nome exibido"></div>
@@ -141,6 +147,12 @@
             </div>
             <article class="panel glass role-design-panel">
               <div class="panel-heading"><div><p class="eyebrow">SPECIAL IDENTITIES</p><h2>Cargos especiais e temas exclusivos</h2><p class="muted">Crie cargos personalizados com identidade visual própria. Depois, conceda-os individualmente pelo código do perfil.</p></div></div>
+              <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
+                <button type="button" class="quiet-button" data-role-preset="booster">💜 Booster</button>
+                <button type="button" class="quiet-button" data-role-preset="veteran">🏅 Veterano</button>
+                <button type="button" class="quiet-button" data-role-preset="contributor">🛠️ Colaborador</button>
+                <button type="button" class="quiet-button" data-role-preset="partner">🤝 Parceiro</button>
+              </div><small>Preenchem o formulário; use “Salvar cargo especial” para publicar.</small></div>
               <div class="role-design-grid">
                 <div class="field"><label for="roleDefinitionId">ID único</label><input id="roleDefinitionId" maxlength="48" placeholder="ex.: celestial-artist"></div>
                 <div class="field"><label for="roleDefinitionLabel">Nome do cargo</label><input id="roleDefinitionLabel" maxlength="40" placeholder="Celestial Artist"></div>
@@ -221,6 +233,6 @@
   <script src="share-config.js"></script>
   <script src="core/hattz-core.js"></script>
   <script src="control.js"></script>
-  <script src="core/liquid-glass.js?v=e7c4a99"></script>
+  <script src="core/liquid-glass.js?v=e7c4a9a"></script>
 </body>
 </html>

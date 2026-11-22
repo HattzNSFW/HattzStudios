@@ -1008,6 +1008,62 @@ function renderBannerHeading() {
   heading.hidden = !visible || (!titleText && !subtitleText);
 }
 
+let remoteEntitlements = null;
+
+function roleGlyph(role) {
+  return window.HattzEmoji?.badge?.(role || {}) || "✦";
+}
+
+function renderServerRoles() {
+  const host = $("serverRoles");
+  if (!host) return;
+  host.innerHTML = "";
+  const roles = remoteEntitlements?.roles || [];
+  if (!roles.length) { host.hidden = true; return; }
+  host.hidden = false;
+  const shelf = document.createElement("div");
+  shelf.className = "hattz-server-shelf";
+  const label = document.createElement("span");
+  label.className = "hattz-shelf-label";
+  label.textContent = "CARGOS";
+  shelf.append(label);
+  for (const role of roles) {
+    const chip = document.createElement("span");
+    chip.className = "hattz-server-role";
+    if (role.color && /^#[0-9a-f]{6}$/i.test(role.color)) chip.style.setProperty("--role-accent", role.color);
+    const glyph = document.createElement("span");
+    glyph.className = "hattz-role-icon";
+    glyph.textContent = roleGlyph(role);
+    glyph.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.textContent = role.label || "Cargo";
+    chip.append(glyph, text);
+    chip.title = role.description || role.label || "Cargo";
+    shelf.append(chip);
+  }
+  host.append(shelf);
+}
+
+function paintRoleChip(element, label, role) {
+  const clean = String(label || "").trim();
+  element.innerHTML = "";
+  element.hidden = !clean;
+  if (!clean) return;
+  const icon = document.createElement("span");
+  icon.className = "hattz-role-icon";
+  icon.textContent = roleGlyph(role || { label: clean });
+  icon.setAttribute("aria-hidden", "true");
+  const name = document.createElement("span");
+  name.className = "hattz-role-name";
+  name.textContent = clean;
+  element.append(icon, name);
+  const color = role?.color;
+  if (/^#[0-9a-f]{6}$/i.test(String(color || ""))) element.style.setProperty("--role-accent", color);
+  else element.style.removeProperty("--role-accent");
+  element.title = role?.description || clean;
+  element.setAttribute("aria-label", element.title);
+}
+
 function renderIdentity() {
   renderBannerHeading();
   $("profileName").textContent = profile.nome || "";
@@ -1021,11 +1077,12 @@ function renderIdentity() {
   const blockedRole = /\b(admin|administrator|dev|developer|staff|moderator|owner|dono|founder|official|oficial|vip|premium)\b/i.test(String(profile.cargo || "").trim());
   const membershipRole = /\b(vip|premium)\b/i.test(String(profile.cargo || "").trim());
   const safeRole = officialProfile ? (membershipRole ? "Owner" : (String(profile.cargo || "").trim() || "Owner")) : (blockedRole ? "" : profile.cargo);
-  roleChip.textContent = safeRole || "";
-  roleChip.hidden = !safeRole;
+  const primaryRole = remoteEntitlements?.roles?.find((role) =>
+    String(role.label || "").trim().localeCompare(String(safeRole || "").trim(), undefined, { sensitivity: "base" }) === 0
+  );
+  paintRoleChip(roleChip, safeRole, primaryRole);
   roleChip.classList.toggle("owner-role", officialProfile || /^(owner|dono)$/i.test(safeRole));
-  roleChip.title = safeRole || "Identificação do perfil";
-  roleChip.setAttribute("aria-label", roleChip.title);
+  renderServerRoles();
   const verifiedBadge = $("verifiedBadge");
   const verifiedColor = /^#[0-9a-f]{6}$/i.test(profile.verificadoCor || "")
     ? profile.verificadoCor
@@ -1149,23 +1206,17 @@ async function loadProfileEntitlements() {
     const response = await fetch(`${api}/api/profiles/${encodeURIComponent(normalizedCode)}/entitlements`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
     const data = await response.json();
+    remoteEntitlements = data;
     const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
     const verifiedBadge = $("verifiedBadge");
     verifiedBadge.hidden = data.vip !== true;
     const roleChip = $("profileRole");
     if (roleChip && data.official !== true) {
       const assignedRoles = Array.isArray(data.roles) ? data.roles : [];
-      roleChip.textContent = assignedRoles[0]?.label || "";
-      roleChip.hidden = assignedRoles.length === 0;
+      paintRoleChip(roleChip, assignedRoles[0]?.label || "", assignedRoles[0]);
       roleChip.classList.toggle("owner-role", false);
-      roleChip.title = assignedRoles[0]?.description || assignedRoles[0]?.label || "";
       const themedRole = assignedRoles.find(role => role.theme && Object.values(role.theme).some(value => /^#[0-9a-f]{6}$/i.test(String(value || ""))));
       if (IS_PUBLIC_VIEW && themedRole?.theme) applyColors(themedRole.theme);
-      if (assignedRoles[0]?.color && /^#[0-9a-f]{6}$/i.test(assignedRoles[0].color)) {
-        roleChip.style.setProperty("--role-accent", assignedRoles[0].color);
-      } else {
-        roleChip.style.removeProperty("--role-accent");
-      }
     }
     if (data.profileTheme) applyColors(data.profileTheme);
     window.HATTZ_REMOTE_FRAMES = Object.fromEntries((data.frames || []).map(frame => { let asset={}; try { asset=JSON.parse(frame.asset_json||"{}"); } catch {} return [frame.id,asset]; }));
@@ -1175,34 +1226,35 @@ async function loadProfileEntitlements() {
     renderCompletedCollections(window.HATTZ_REMOTE_COLLECTIONS);
     const badges = $("badges");
     badges.querySelectorAll("[data-remote-entitlement]").forEach(node => node.remove());
-    for (const role of (data.roles || []).slice(1)) {
-      const chip = document.createElement("span");
-      chip.className = "badge hattz-role-badge";
-      chip.dataset.remoteEntitlement = "role";
-      chip.textContent = role.label;
-      chip.title = role.description || role.label;
-      if (role.color && /^#[0-9a-f]{6}$/i.test(role.color)) chip.style.setProperty("--role-accent", role.color);
-      badges.append(chip);
-    }
+    renderServerRoles();
     const rarityNames = { basic: "Comum", premium: "Épica", elite: "Lendária", common: "Comum", rare: "Rara", epic: "Épica", legendary: "Lendária", limited: "Limitada" };
     const rarityLevels = { 1: "Comum", 2: "Rara", 3: "Épica", 4: "Lendária", 5: "Limitada" };
+    const shelf = document.createElement("div");
+    shelf.className = "hattz-server-shelf hattz-badge-shelf";
+    shelf.dataset.remoteEntitlement = "badge";
+    const shelfLabel = document.createElement("span");
+    shelfLabel.className = "hattz-shelf-label";
+    shelfLabel.textContent = "INSÍGNIAS";
+    shelf.append(shelfLabel);
     for (const item of (data.badges || [])) {
+      const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = `hattz-collectible rarity-${["basic","premium","elite"].includes(item.rarity) ? item.rarity : "basic"}`;
       chip.dataset.remoteEntitlement = "badge";
-      const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";
+      if (item.color && /^#[0-9a-f]{6}$/i.test(item.color)) chip.style.setProperty("--badge-accent", item.color);
       chip.setAttribute("aria-label", `${item.name}. Raridade ${rarityLabel}. ${item.description || ""}`);
       const emoji = document.createElement("span");
       emoji.className = "hattz-badge-emoji";
-      emoji.textContent = window.HattzEmoji?.badge?.(item) || "✦";
+      emoji.textContent = roleGlyph(item);
       emoji.setAttribute("aria-hidden", "true");
       const detail = document.createElement("span");
       detail.className = "hattz-badge-detail";
       const name = document.createElement("strong"); name.textContent = item.name || "Insígnia";
       const rarity = document.createElement("small"); rarity.textContent = rarityLabel;
+      const category = document.createElement("span"); category.className = "hattz-badge-category"; category.textContent = item.category || "Comunidade";
       const description = document.createElement("span"); description.textContent = item.description || "Insígnia colecionável Hättz.";
-      detail.append(name, rarity, description); chip.append(emoji, detail);
+      detail.append(name, rarity, category, description); chip.append(emoji, detail);
       chip.addEventListener("click", () => {
         const open = chip.classList.toggle("is-open");
         chip.setAttribute("aria-expanded", String(open));
@@ -1210,8 +1262,9 @@ async function loadProfileEntitlements() {
       });
       chip.addEventListener("keydown", event => { if (event.key === "Escape") { chip.classList.remove("is-open"); chip.setAttribute("aria-expanded", "false"); } });
       chip.setAttribute("aria-expanded", "false");
-      badges.append(chip);
+      shelf.append(chip);
     }
+    if (shelf.children.length > 1) badges.append(shelf);
     window.HATTZ_CORE?.setConnectionState?.("online");
   } catch (error) {
     window.HATTZ_CORE?.setConnectionState?.(error.status >= 500 ? "degraded" : "offline", error.message);

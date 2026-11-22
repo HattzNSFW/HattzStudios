@@ -138,6 +138,10 @@ O backup do D1 e a aplicação das migrações no remoto foram executados nesta 
 
 `backend/migrations/0014_admin_credential.sql` cria a tabela `admin_credential` (salt, hash PBKDF2-SHA256 e `updated_at`). Quando `HATTZ_ADMIN_PASSWORD` não está definido, `adminLogin()` valida a senha contra esse registro; a rotação via `PUT /api/admin/credential` atualiza o hash e apaga `admin_sessions`. A migration foi **aplicada ao D1 remoto**, a credencial foi gravada e validada, e o secret `HATTZ_ADMIN_PASSWORD` foi removido. A sequência correta é backup → migration → gravação da credencial → remoção do secret; removê-lo antes da gravação deixaria o login indisponível.
 
+## Banco D1 — migração 0015 (cargos e insígnias estilo servidor)
+
+`backend/migrations/0015_discord_style_catalog.sql` semeia o catálogo com cargos comunitários (Membro, Apoiador, Colaborador, Designer, Artista, Booster, Veterano e Parceiro) e insígnias colecionáveis por categoria/raridade. É aditiva: usa `INSERT OR IGNORE`, não apaga perfis nem atribuições e pode ser editada ou desativada pelo Control. A migration foi aplicada ao D1 remoto após backup e validada por consulta direta e por `/api/catalog`.
+
 ## Testes locais executados
 
 ```bash
@@ -150,7 +154,7 @@ node --check backend/src/index.js
 node --check backend/tests/worker.test.js
 ```
 
-A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **96 testes, todos aprovados**. As 14 migrações estão presentes no pacote; a 0014 foi aplicada ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **109 testes, todos aprovados**. As 15 migrações estão presentes no pacote; a 0014 e a 0015 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
 
 ## Implantação e segurança
 

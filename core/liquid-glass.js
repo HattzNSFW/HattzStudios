@@ -11,6 +11,11 @@
 
   /* Insígnias em emoji: leve, nítido e sem o quadrado das imagens PNG. */
   var BADGE_EMOJI = [
+    [/booster|impulsionador/i, "💜"],
+    [/veteran|veterano|early|antigo/i, "🏅"],
+    [/supporter|apoiador|apoiante|partner|parceiro/i, "🤝"],
+    [/contributor|contribuidor|collab|colaborador/i, "🛠️"],
+    [/member|membro/i, "👤"],
     [/founder|owner|dono|creator|criador|nucleo|núcleo|crown/i, "👑"],
     [/vip|premium|elite|legend|lend|diamond|diamante/i, "💎"],
     [/admin|staff|moder|dev|official|oficial|shield|seguro/i, "🛡️"],
@@ -29,6 +34,8 @@
     if (icon && !/^data:image|^https?:|^assets\//i.test(icon) && /[^\x00-\x7F]/.test(icon)) return icon;
     var text = [item && item.id, item && item.name, item && item.label, item && item.category, icon]
       .filter(Boolean).join(" ");
+    var inline = text.match(/[\p{Extended_Pictographic}]/u);
+    if (inline) return inline[0];
     for (var index = 0; index < BADGE_EMOJI.length; index++) {
       if (BADGE_EMOJI[index][0].test(text)) return BADGE_EMOJI[index][1];
     }
@@ -338,29 +345,41 @@
     if (toggle) toggle.setAttribute("aria-expanded", "false");
   }
 
+  function openPanel() {
+    if (!panel || document.body.classList.contains("capture-mode")) return;
+    panel.hidden = false;
+    if (toggle) toggle.setAttribute("aria-expanded", "true");
+    render();
+  }
+
   function build() {
     var style = document.createElement("style");
     style.textContent = bridge + "\n" + ui;
     document.head.appendChild(style);
 
-    toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "hatz-lg-toggle";
-    toggle.setAttribute("aria-label", "Personalizar liquid glass de " + SCOPE_LABELS[scope]);
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.title = "Personalizar liquid glass — " + SCOPE_LABELS[scope];
-    toggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>';
-    document.body.appendChild(toggle);
+    /* O Studio já tem o Card Lab na barra lateral. Para não deixar dois
+       personalizadores flutuantes, o tema global abre dali por HattzLiquidGlass.open(). */
+    var panelTitle = scope === "studio" ? "Tema do Studio" : "Liquid Glass";
+    if (scope !== "studio") {
+      toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "hatz-lg-toggle";
+      toggle.setAttribute("aria-label", "Personalizar liquid glass de " + SCOPE_LABELS[scope]);
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.title = "Personalizar liquid glass — " + SCOPE_LABELS[scope];
+      toggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>';
+      document.body.appendChild(toggle);
+    }
 
     panel = document.createElement("aside");
-    panel.className = "hatz-lg-panel";
+    panel.className = "hatz-lg-panel" + (scope === "studio" ? " hatz-lg-panel--standalone" : "");
     panel.setAttribute("role", "dialog");
-    panel.setAttribute("aria-label", "Personalizar liquid glass de " + SCOPE_LABELS[scope]);
+    panel.setAttribute("aria-label", "Personalizar " + panelTitle + " de " + SCOPE_LABELS[scope]);
     panel.hidden = true;
 
     var html = [
       '<div class="hatz-lg-head"><div class="hatz-lg-title"><span class="hatz-lg-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg></span>',
-      '<div><strong>Liquid Glass</strong><span class="hatz-lg-scope">' + SCOPE_LABELS[scope] + '</span></div></div><button class="hatz-lg-close" type="button" aria-label="Fechar">×</button></div>',
+      '<div><strong>' + panelTitle + '</strong><span class="hatz-lg-scope">' + SCOPE_LABELS[scope] + '</span></div></div><button class="hatz-lg-close" type="button" aria-label="Fechar">×</button></div>',
       '<div class="hatz-lg-section">Presets</div><div class="hatz-lg-presets">',
       Object.keys(presets).map(function (name) {
         var preset = presets[name];
@@ -386,12 +405,9 @@
     document.body.appendChild(panel);
     code = panel.querySelector(".hatz-lg-code");
 
-    toggle.addEventListener("click", function () {
-      if (document.body.classList.contains("capture-mode")) return;
-      var open = panel.hidden;
-      panel.hidden = !open;
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-      if (open) render();
+    if (toggle) toggle.addEventListener("click", function () {
+      if (panel.hidden) openPanel();
+      else closePanel();
     });
     panel.querySelector(".hatz-lg-close").addEventListener("click", closePanel);
 
@@ -595,6 +611,9 @@
 
   window.HattzLiquidGlass = {
     scope: scope,
+    open: openPanel,
+    close: closePanel,
+    isOpen: function () { return Boolean(panel && !panel.hidden); },
     get: function (target) { return clone(target ? store[target] : state); },
     getStore: function () { return clone(store); },
     set: function (partial, target) {

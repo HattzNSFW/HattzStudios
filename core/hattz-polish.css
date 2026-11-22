@@ -662,6 +662,106 @@ body .frame-preview {
   background: linear-gradient(150deg, rgba(var(--lg-tint), .2), rgba(var(--lg-surface), .9)) !important;
 }
 
+/* Studio — uma única entrada para o tema global na barra lateral. */
+body .studio-nav-action {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  margin-top: 6px;
+  border: 1px dashed rgba(var(--lg-tint), .26) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(120deg, rgba(var(--lg-tint), .12), rgba(var(--lg-surface), .16)) !important;
+  color: rgba(var(--lg-tint), .92) !important;
+  font-size: 11px !important;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+body .studio-nav-action:hover {
+  border-style: solid !important;
+  border-color: rgba(var(--lg-tint), .54) !important;
+  background: linear-gradient(120deg, rgba(var(--lg-tint), .2), rgba(var(--lg-surface), .24)) !important;
+}
+body .hatz-lg-panel--standalone {
+  border-color: rgba(var(--lg-tint), .24) !important;
+  box-shadow: 0 34px 90px rgba(0, 0, 0, .6), var(--hattz-board-inset) !important;
+}
+body.capture-mode .studio-nav-action { display: none !important; }
+
+/* Cargos e insígnias — vocabulário de servidor sem mudar o contrato de dados. */
+.role-chip:has(.hattz-role-icon)::before { display: none !important; }
+.hattz-role-icon {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  font-size: 13px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .45));
+}
+.hattz-role-name { white-space: nowrap; }
+.server-roles { margin-top: 12px; }
+.hattz-server-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px 10px;
+  border: 1px solid rgba(var(--lg-border), calc(var(--lg-border-alpha) + .02));
+  border-radius: 15px;
+  background: linear-gradient(150deg, rgba(var(--lg-tint), .07), rgba(var(--lg-surface), .22));
+  box-shadow: var(--hattz-board-inset);
+}
+.hattz-shelf-label {
+  width: 100%;
+  margin-bottom: 2px;
+  color: rgba(var(--lg-tint), .8);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.hattz-server-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--role-accent, #a78bfa) 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--role-accent, #a78bfa) 13%, rgba(12, 10, 18, .86));
+  color: var(--role-accent, #e8dcff);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.hattz-badge-shelf { margin-top: 8px; }
+.hattz-badge-category {
+  color: rgba(var(--lg-tint), .78) !important;
+  font-size: 9px !important;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+body .hattz-collectible {
+  width: auto !important;
+  height: 40px !important;
+  padding: 0 12px 0 8px !important;
+  border-color: color-mix(in srgb, var(--badge-accent, #a78bfa) 38%, rgba(255, 255, 255, .12)) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .09), rgba(var(--lg-surface), .28)), rgba(14, 12, 20, .72) !important;
+  gap: 7px;
+  cursor: pointer;
+}
+body .hattz-collectible .hattz-badge-emoji {
+  width: 26px;
+  height: 26px;
+  font-size: 22px;
+}
+body .hattz-collectible.rarity-premium { border-color: color-mix(in srgb, var(--badge-accent, #8f78c7) 62%, transparent) !important; }
+body .hattz-collectible.rarity-elite {
+  border-color: color-mix(in srgb, var(--badge-accent, #d6b36c) 68%, transparent) !important;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--badge-accent, #d6b36c) 22%, transparent), inset 0 1px rgba(255, 255, 255, .2) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .skeleton::after, .hattz-light::before, .hattz-breathe::after,
