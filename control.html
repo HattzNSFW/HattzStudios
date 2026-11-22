@@ -22,8 +22,9 @@
         <p class="muted">Acesso restrito ao administrador principal.</p>
         <form id="loginForm">
           <label for="adminPassword">Chave administrativa</label>
-          <input id="adminPassword" type="password" autocomplete="current-password" minlength="24" required placeholder="Digite sua chave administrativa">
+          <input id="adminPassword" type="password" autocomplete="current-password" minlength="16" required placeholder="Digite sua chave administrativa">
           <button class="primary full" type="submit">Entrar no Control <span>↗</span></button>
+          <p id="loginError" class="login-error" role="alert" aria-live="assertive"></p>
         </form>
         <p class="login-note">A sessão é temporária e encerrada ao fechar esta aba.</p>
       </div>
@@ -45,16 +46,29 @@
           <button class="nav-item" data-view="maintenance"><span>◷</span> Manutenção</button>
           <button class="nav-item" data-view="ip"><span>⌁</span> IP Intelligence</button>
           <button class="nav-item" data-view="audit"><span>≋</span> Auditoria</button>
+          <button class="nav-item" data-view="security"><span>⌘</span> Segurança</button>
           <div class="sidebar-foot"><span class="live-dot"></span> Hättz Share API</div>
         </aside>
 
         <section class="content-area">
           <section class="view active" id="view-overview">
-            <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>Visão geral</h1><p class="muted">Estado atual da infraestrutura Hättz Share.</p></div><button id="refreshOverview" class="quiet-button">↻ Atualizar</button></div>
-            <div class="metric-grid" id="overviewMetrics"><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article></div>
+            <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>Visão geral</h1><p class="muted">Todos os sinais da infraestrutura Hättz Share em um só lugar.</p></div><button id="refreshOverview" class="quiet-button">↻ Atualizar</button></div>
+            <div class="metric-grid" id="overviewMetrics"><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article></div>
+            <div class="chart-grid">
+              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">CAPACIDADE</p><h2>Armazenamento</h2></div></div><div id="storageDonut" class="chart-canvas"></div><p class="chart-caption" id="storageDonutCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">PERFIS</p><h2>Estados e benefícios</h2></div></div><div id="profilesChart" class="chart-canvas"></div><p class="chart-caption" id="profilesChartCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">MÍDIAS</p><h2>Distribuição por tipo</h2></div></div><div id="mediaChart" class="chart-canvas"></div><p class="chart-caption" id="mediaChartCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel chart-panel-wide"><div class="panel-heading"><div><p class="eyebrow">ÚLTIMOS 14 DIAS</p><h2>Atividade da plataforma</h2></div></div><div id="activityChart" class="chart-canvas chart-canvas-wide"></div><p class="chart-caption" id="activityChartCaption">Consultando…</p></article>
+            </div>
             <div class="panel-grid">
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">SISTEMA</p><h2>Estado operacional</h2></div><span class="status-pill" id="apiStatus">Verificando</span></div><p class="muted" id="systemSummary">Consultando armazenamento e perfis...</p><div class="mini-progress"><span id="overviewStorageBar"></span></div><div class="panel-foot"><span>Uso total</span><strong id="overviewStorageText">—</strong></div></article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CONTROLE</p><h2>Manutenção</h2></div><span class="status-pill" id="maintenanceStatus">Desativada</span></div><p class="muted" id="maintenanceSummary">O acesso público está liberado.</p><button class="secondary" data-open-view="maintenance">Configurar manutenção <span>↗</span></button></article>
+            </div>
+            <div class="dashboard-tables">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CAPACIDADE</p><h2>Maiores consumidores</h2></div></div><div class="table-wrap"><table><thead><tr><th>Perfil</th><th>Mídias</th><th>Uso</th><th>Participação</th></tr></thead><tbody id="dashboardStorageTable"><tr><td colspan="4" class="empty">Consultando…</td></tr></tbody></table></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">ECOSSISTEMA</p><h2>Catálogo e concessões</h2></div></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Item</th><th>Raridade</th><th>Estado</th><th>Concedido</th></tr></thead><tbody id="dashboardCatalogTable"><tr><td colspan="5" class="empty">Consultando…</td></tr></tbody></table></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">SEGURANÇA</p><h2>Sessões e exposição</h2></div><button class="quiet-button" data-open-view="security">Gerenciar senha <span>↗</span></button></div><div class="table-wrap"><table><thead><tr><th>Indicador</th><th>Valor</th><th>Detalhe</th></tr></thead><tbody id="dashboardSecurityTable"><tr><td colspan="3" class="empty">Consultando…</td></tr></tbody></table></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">TENDÊNCIA</p><h2>Atividade diária</h2></div></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Auditoria</th><th>Logins</th><th>Falhas</th><th>IP</th></tr></thead><tbody id="dashboardActivityTable"><tr><td colspan="5" class="empty">Consultando…</td></tr></tbody></table></div></article>
             </div>
           </section>
 
@@ -186,9 +200,17 @@
             <div class="page-heading"><div><p class="eyebrow">SECURITY LOG</p><h1>Auditoria</h1><p class="muted">Histórico de ações administrativas e tentativas de acesso.</p></div><button id="reloadAudit" class="quiet-button">↻ Atualizar</button></div>
             <article class="panel glass">
               <div class="audit-toolbar"><p class="muted">Retenção automática de 90 dias. A limpeza manual remove os registros atuais, preservando o evento que documenta a própria limpeza.</p><button id="clearAudit" class="danger" type="button">Limpar auditoria</button></div>
-              <div id="auditList" class="audit-list"><p class="empty">Carregando eventos...</p></div>
+              <div class="table-wrap"><table><thead><tr><th>Data</th><th>Ação</th><th>Detalhes</th><th>Alvo</th></tr></thead><tbody id="auditTable"><tr><td colspan="4" class="empty">Carregando eventos...</td></tr></tbody></table></div>
             </article>
           </section>
+          <section class="view" id="view-security">
+            <div class="page-heading"><div><p class="eyebrow">ADMIN CREDENTIAL</p><h1>Segurança</h1><p class="muted">A senha do Control é verificada pela API e armazenada no banco (ou no secret do Worker, se ainda configurado).</p></div><button id="reloadCredential" class="quiet-button">↻ Atualizar</button></div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">STATUS ATUAL</p><h2>Origem da credencial</h2></div><span class="status-pill" id="credentialSource">Consultando</span></div><p class="muted" id="credentialSummary">Consultando configuração administrativa…</p><p class="warning-note" id="credentialWarning" hidden></p><dl class="credential-meta"><div><dt>Atualizada em</dt><dd id="credentialUpdated">—</dd></div><div><dt>Tamanho mínimo</dt><dd id="credentialMinLength">16 caracteres</dd></div><div><dt>Sessões ativas</dt><dd id="credentialSessions">—</dd></div></dl></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">ROTAÇÃO</p><h2>Trocar senha administrativa</h2></div></div><p class="muted">A troca revoga imediatamente todas as sessões do Control. No runtime local, a chave em <code>data/admin-key.txt</code> também é atualizada.</p><form id="credentialForm" class="credential-form"><div class="field"><label for="newAdminPassword">Nova senha</label><input id="newAdminPassword" type="password" minlength="16" maxlength="256" autocomplete="new-password" required placeholder="Mínimo de 16 caracteres"></div><div class="field"><label for="confirmAdminPassword">Confirmar nova senha</label><input id="confirmAdminPassword" type="password" minlength="16" maxlength="256" autocomplete="new-password" required placeholder="Repita a nova senha"></div><label class="check-row"><input id="credentialConfirmation" type="checkbox" required> Confirmo que desejo revogar as sessões atuais</label><button class="primary full" type="submit">Salvar nova senha <span>↗</span></button><p id="credentialError" class="login-error" role="alert" aria-live="assertive"></p></form></article>
+            </div>
+          </section>
+
         </section>
       </div>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>

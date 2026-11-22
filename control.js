@@ -42,6 +42,57 @@
     const date = new Date(Number(value));
     return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
   }
+  const CHART_COLORS = ["#b99af0", "#6fd3c7", "#f0b86b", "#ef8fa8", "#7aa7f5", "#c9b5f1"];
+  function escapeAttr(value) { return escapeHtml(value).replace(/`/g, "&#96;"); }
+  function percentOf(value, total) { return total > 0 ? Math.max(0, Math.min(100, Number(value) / Number(total) * 100)) : 0; }
+  function donutSvg(percent, center, sub) {
+    const radius = 62;
+    const circumference = 2 * Math.PI * radius;
+    const filled = circumference * percent / 100;
+    return `<div class="donut-wrap"><svg viewBox="0 0 180 180" role="img" aria-label="Uso de ${escapeAttr(sub)}"><circle cx="90" cy="90" r="${radius}" fill="none" stroke="rgba(205,185,235,.12)" stroke-width="16"/><circle cx="90" cy="90" r="${radius}" fill="none" stroke="#b99af0" stroke-width="16" stroke-linecap="round" stroke-dasharray="${filled.toFixed(2)} ${(circumference - filled).toFixed(2)}" transform="rotate(-90 90 90)"/><text x="90" y="88" text-anchor="middle" class="donut-center">${escapeHtml(center)}</text><text x="90" y="108" text-anchor="middle" class="donut-sub">${escapeHtml(sub).toUpperCase()}</text></svg></div>`;
+  }
+  function legendHtml(rows) {
+    return `<div class="chart-legend">${rows.map((row, index) => `<div class="chart-legend-row"><span class="chart-legend-dot" style="--legend-color:${CHART_COLORS[index % CHART_COLORS.length]}"></span><span>${escapeHtml(row.label)}</span><strong>${escapeHtml(row.value)}</strong></div>`).join("")}</div>`;
+  }
+  function barChartSvg(rows, color) {
+    if (!rows.length) return '<p class="empty">Sem dados para este gráfico.</p>';
+    const width = 420, rowHeight = 32, labelWidth = 116, barX = labelWidth + 8, barWidth = width - labelWidth - 62;
+    const max = Math.max(1, ...rows.map((row) => Number(row.value) || 0));
+    const height = Math.max(60, rows.length * rowHeight + 12);
+    const bars = rows.map((row, index) => {
+      const value = Number(row.value) || 0;
+      const bar = Math.max(2, barWidth * value / max);
+      const y = 16 + index * rowHeight;
+      return `<text x="${labelWidth}" y="${y + 4}" text-anchor="end" class="chart-bar-label">${escapeHtml(row.label)}</text><rect x="${barX}" y="${y - 9}" width="${bar.toFixed(1)}" height="14" rx="7" fill="${color}" opacity="${(0.92 - index * 0.1).toFixed(2)}"/><text x="${barX + bar + 8}" y="${y + 4}" class="chart-bar-value">${escapeHtml(row.display ?? row.value)}</text>`;
+    }).join("");
+    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfico de barras">${bars}</svg>`;
+  }
+  function lineChartSvg(days) {
+    if (!days.length) return '<p class="empty">Sem dados para este gráfico.</p>';
+    const width = 860, height = 210, left = 34, right = 14, top = 14, bottom = 30;
+    const innerW = width - left - right, innerH = height - top - bottom;
+    const max = Math.max(1, ...days.flatMap((day) => [day.audits, day.logins, day.failures, day.ipEvents]));
+    const x = (index) => left + (days.length === 1 ? innerW / 2 : innerW * index / (days.length - 1));
+    const y = (value) => top + innerH - innerH * (Number(value) || 0) / max;
+    const series = [
+      { key: "audits", label: "Auditoria", color: CHART_COLORS[0] },
+      { key: "logins", label: "Logins", color: CHART_COLORS[1] },
+      { key: "ipEvents", label: "Eventos IP", color: CHART_COLORS[2] },
+      { key: "failures", label: "Falhas", color: CHART_COLORS[3] }
+    ];
+    const grid = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+      const gy = top + innerH * ratio;
+      return `<line x1="${left}" y1="${gy}" x2="${width - right}" y2="${gy}" class="chart-grid-line"/><text x="0" y="${gy + 4}" class="chart-bar-label">${Math.round(max * (1 - ratio))}</text>`;
+    }).join("");
+    const paths = series.map((item) => {
+      const points = days.map((day, index) => `${x(index).toFixed(1)},${y(day[item.key]).toFixed(1)}`).join(" ");
+      return `<polyline points="${points}" fill="none" stroke="${item.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }).join("");
+    const areaPoints = `${left},${top + innerH} ${days.map((day, index) => `${x(index).toFixed(1)},${y(day.audits).toFixed(1)}`).join(" ")} ${x(days.length - 1).toFixed(1)},${top + innerH}`;
+    const labels = days.map((day, index) => (index % 2 === 0 || days.length <= 7)
+      ? `<text x="${x(index)}" y="${height - 8}" text-anchor="middle" class="chart-bar-label">${escapeHtml(day.label)}</text>` : "").join("");
+    return `<div style="display:grid;gap:10px;width:100%"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Atividade dos últimos 14 dias"><defs><linearGradient id="hattzAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b99af0" stop-opacity=".28"/><stop offset="100%" stop-color="#b99af0" stop-opacity="0"/></linearGradient></defs>${grid}<polygon points="${areaPoints}" fill="url(#hattzAreaGradient)"/>${paths}${labels}</svg>${legendHtml(series.map((item) => ({ label: item.label, value: days.reduce((sum, day) => sum + day[item.key], 0) })))}</div>`;
+  }
   function notify(message) {
     const el = $("toast");
     if (!el) return;
@@ -59,8 +110,13 @@
       const response = await fetch(`${API}${path}`, { ...options, headers, cache: "no-store" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        if (response.status === 401 && authenticated) logout(false);
-        throw new Error(data.error || `Falha HTTP ${response.status}`);
+        const message = data.error || `Falha HTTP ${response.status}`;
+        if (response.status === 401 && authenticated) {
+          const errorEl = $("loginError");
+          if (errorEl) errorEl.textContent = message;
+          logout(false);
+        }
+        throw new Error(message);
       }
       window.HATTZ_CORE?.setConnectionState?.("online");
       return data;
@@ -84,6 +140,7 @@
     event.preventDefault();
     const button = $("loginForm").querySelector("button");
     button.disabled = true;
+    $("loginError").textContent = "";
     try {
       const result = await api("/api/admin/auth/login", { method: "POST", body: JSON.stringify({ password: $("adminPassword").value }) }, false);
       token = result.token;
@@ -91,7 +148,7 @@
       $("adminPassword").value = "";
       showApp(true);
       notify("Acesso autorizado.");
-    } catch (error) { notify(error.message); }
+    } catch (error) { $("loginError").textContent = error.message; notify(error.message); }
     finally { button.disabled = false; }
   }
   function setView(name) {
@@ -103,25 +160,74 @@
     if (name === "maintenance") loadMaintenance();
     if (name === "ip") loadIp();
     if (name === "audit") loadAudit();
+    if (name === "security") loadCredential();
   }
   async function loadOverview() {
     try {
-      const [storage, maintenance] = await Promise.all([api("/api/admin/storage"), api("/api/admin/maintenance")]);
+      const data = await api("/api/admin/dashboard");
+      const storage = data.storage || {};
+      const profiles = data.profiles || {};
+      const media = data.media || {};
+      const ecosystem = data.ecosystem || {};
+      const activity = data.activity || { days: [], totals: {} };
+      const security = data.security || {};
+      const usage = Number(storage.usagePercent) || 0;
       $("apiStatus").textContent = "Operacional";
       $("apiStatus").classList.remove("warning");
       $("overviewMetrics").innerHTML = [
-        ["Perfis na nuvem", storage.profileCount, `de ${storage.maxProfiles} permitidos`],
-        ["Armazenamento usado", formatBytes(storage.totalBytes), `${storage.usagePercent.toFixed(1)}% da capacidade`],
+        ["Perfis na nuvem", profiles.total ?? "—", `de ${storage.maxProfiles ?? "—"} permitidos`],
+        ["Armazenamento usado", formatBytes(storage.totalBytes), `${usage.toFixed(1)}% da capacidade`],
         ["Espaço disponível", formatBytes(storage.remainingBytes), "capacidade global"],
-        ["Perfis adicionais", storage.estimatedAdditionalProfilesByStorage ?? "—", "estimativa pelo consumo médio"]
-      ].map(([label, value, hint]) => `<article class="metric glass"><span>${label}</span><strong>${value}</strong><small>${hint}</small></article>`).join("");
-      $("overviewStorageBar").style.width = `${storage.usagePercent}%`;
+        ["Mídias registradas", media.total ?? "—", `${(media.byType || []).length} tipos de mídia`],
+        ["Perfis VIP", profiles.vip ?? "—", "benefício ativo"],
+        ["Sessões administrativas", security.activeSessions ?? "—", "neste momento"]
+      ].map(([label, value, hint]) => `<article class="metric glass"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(hint)}</small></article>`).join("");
+      $("overviewStorageBar").style.width = `${Math.min(100, Math.max(0, usage))}%`;
       $("overviewStorageText").textContent = `${formatBytes(storage.totalBytes)} / ${formatBytes(storage.maxBytes)}`;
-      $("systemSummary").textContent = `${storage.profileCount} perfis cadastrados · ${storage.remainingProfilesByCount} vagas por limite de quantidade.`;
+      $("systemSummary").textContent = `${profiles.total ?? 0} perfis cadastrados · ${profiles.active ?? 0} ativos · ${storage.remainingProfilesByCount ?? "—"} vagas por quantidade.`;
+
+      $("storageDonut").innerHTML = donutSvg(usage, `${usage.toFixed(1)}%`, "em uso");
+      $("storageDonutCaption").textContent = `${formatBytes(storage.totalBytes)} de ${formatBytes(storage.maxBytes)} · ${formatBytes(storage.remainingBytes)} livres.`;
+
+      const statusRows = [...(profiles.byStatus || []), { label: "Com VIP", value: profiles.vip || 0 }];
+      $("profilesChart").innerHTML = barChartSvg(statusRows, CHART_COLORS[0]);
+      $("profilesChartCaption").textContent = `${profiles.active || 0} ativos · ${profiles.suspended || 0} suspensos · ${profiles.official || 0} oficiais protegidos.`;
+
+      const mediaRows = (media.byType || []).slice(0, 6).map((row) => ({ label: row.label, value: row.bytes, display: `${row.count} · ${formatBytes(row.bytes)}` }));
+      $("mediaChart").innerHTML = barChartSvg(mediaRows, CHART_COLORS[1]);
+      $("mediaChartCaption").textContent = `${media.total || 0} arquivos registrados no armazenamento ativo.`;
+
+      $("activityChart").innerHTML = lineChartSvg(activity.days || []);
+      const totals = activity.totals || {};
+      $("activityChartCaption").textContent = `${totals.audits || 0} ações de auditoria · ${totals.logins || 0} logins · ${totals.failures || 0} falhas · ${totals.ipEvents || 0} eventos de IP.`;
+
+      const largest = storage.largestProfiles || [];
+      $("dashboardStorageTable").innerHTML = largest.length ? largest.map((item) => {
+        const bytes = Number(item.storage_bytes || 0);
+        return `<tr><td><span class="code-cell">${escapeHtml(item.code)}</span></td><td>${escapeHtml(item.media_count ?? "—")}</td><td>${formatBytes(bytes)}</td><td>${percentOf(bytes, storage.totalBytes).toFixed(1)}%</td></tr>`;
+      }).join("") : '<tr><td colspan="4" class="empty">Sem mídias registradas.</td></tr>';
+
+      const catalog = (ecosystem.catalog || []).slice(0, 14);
+      $("dashboardCatalogTable").innerHTML = catalog.length ? catalog.map((item) => `<tr><td>${escapeHtml(item.kind)}</td><td><strong>${escapeHtml(item.name)}</strong><span class="sub-cell">${escapeHtml(item.id)}</span></td><td>${escapeHtml(item.rarity)}</td><td>${item.enabled ? "Ativo" : "Desativado"}</td><td>${Number(item.grants) || 0}</td></tr>`).join("") : '<tr><td colspan="5" class="empty">Nenhum item publicado.</td></tr>';
+
+      const maintenance = security.maintenance || {};
+      $("dashboardSecurityTable").innerHTML = [
+        ["Sessões ativas", security.activeSessions ?? "—", "sessões administrativas válidas"],
+        ["Tentativas bloqueadas", security.blockedLoginAttempts ?? 0, "limites de login em vigor"],
+        ["Eventos de IP", security.ipEvents ?? 0, "registros retidos para segurança"],
+        ["Manutenção", maintenance.enabled ? "Ativa" : "Desativada", `${maintenance.allowlist || 0} códigos liberados`]
+      ].map(([label, value, detail]) => `<tr><td>${escapeHtml(label)}</td><td><strong>${escapeHtml(value)}</strong></td><td>${escapeHtml(detail)}</td></tr>`).join("");
+
+      $("dashboardActivityTable").innerHTML = (activity.days || []).slice().reverse().map((day) => `<tr><td>${escapeHtml(day.date)}</td><td>${day.audits}</td><td>${day.logins}</td><td>${day.failures}</td><td>${day.ipEvents}</td></tr>`).join("") || '<tr><td colspan="5" class="empty">Sem atividade no período.</td></tr>';
+
       $("maintenanceStatus").textContent = maintenance.enabled ? "Ativa" : "Desativada";
-      $("maintenanceStatus").classList.toggle("warning", maintenance.enabled);
-      $("maintenanceSummary").textContent = maintenance.enabled ? `${maintenance.title}: ${maintenance.message}` : "O acesso público está liberado.";
-    } catch (error) { $("apiStatus").textContent = "Falha"; $("apiStatus").classList.add("warning"); notify(error.message); }
+      $("maintenanceStatus").classList.toggle("warning", Boolean(maintenance.enabled));
+      $("maintenanceSummary").textContent = maintenance.enabled ? "O bloqueio está ativo. Perfis oficiais e liberados continuam acessíveis." : "O acesso público está liberado.";
+    } catch (error) {
+      $("apiStatus").textContent = "Falha";
+      $("apiStatus").classList.add("warning");
+      notify(error.message);
+    }
   }
   async function loadProfiles() {
     const search = encodeURIComponent($("profileSearch").value.trim());
@@ -691,11 +797,53 @@
   async function loadAudit() {
     try {
       const data = await api("/api/admin/audit?limit=100");
-      $("auditList").innerHTML = data.events.length ? data.events.map((event) => {
-        let details = ""; try { details = JSON.stringify(JSON.parse(event.details_json || "{}")); } catch { details = event.details_json || ""; }
-        return `<div class="audit-item"><span class="audit-time">${formatDate(event.created_at)}</span><div><div class="audit-action">${escapeHtml(event.action)}</div><div class="audit-detail">${escapeHtml(details)}</div></div><span class="audit-target">${escapeHtml(event.target || event.actor)}</span></div>`;
-      }).join("") : '<p class="empty">Nenhum evento registrado.</p>';
-    } catch (error) { $("auditList").innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`; }
+      $("auditTable").innerHTML = data.events.length ? data.events.map((event) => {
+        let details = "";
+        try { details = event.details ? JSON.stringify(event.details) : JSON.stringify(JSON.parse(event.details_json || "{}")); }
+        catch { details = event.details_json || ""; }
+        const detailsText = details === "{}" ? "—" : details;
+        return `<tr><td>${formatDate(event.created_at)}</td><td><strong>${escapeHtml(event.action)}</strong></td><td>${escapeHtml(detailsText)}</td><td>${escapeHtml(event.target || event.actor || "—")}</td></tr>`;
+      }).join("") : '<tr><td colspan="4" class="empty">Nenhum evento registrado.</td></tr>';
+    } catch (error) { $("auditTable").innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(error.message)}</td></tr>`; }
+  }
+
+  async function loadCredential() {
+    try {
+      const [credential, overview] = await Promise.all([api("/api/admin/credential"), api("/api/admin/dashboard")]);
+      const labels = { local: "Runtime local", database: "Banco de dados (D1)", environment: "Secret do Worker", unconfigured: "Não configurada" };
+      $("credentialSource").textContent = labels[credential.source] || credential.source || "—";
+      $("credentialSource").classList.toggle("warning", credential.configured === false);
+      $("credentialSummary").textContent = credential.configured === false
+        ? "Defina uma nova senha para habilitar o acesso administrativo."
+        : "A API valida esta credencial antes de emitir uma sessão administrativa.";
+      $("credentialUpdated").textContent = credential.updatedAt ? formatDate(credential.updatedAt) : "—";
+      $("credentialMinLength").textContent = `${credential.minLength || 16} caracteres`;
+      $("credentialSessions").textContent = String(overview.security?.activeSessions ?? "—");
+      $("credentialWarning").hidden = !credential.warning;
+      $("credentialWarning").textContent = credential.warning || "";
+    } catch (error) { $("credentialSummary").textContent = error.message; }
+  }
+  async function saveCredential(event) {
+    event.preventDefault();
+    const password = $("newAdminPassword").value;
+    const errorEl = $("credentialError");
+    errorEl.textContent = "";
+    if (password.length < 16) { errorEl.textContent = "Use pelo menos 16 caracteres."; return; }
+    if (password !== $("confirmAdminPassword").value) { errorEl.textContent = "As senhas não coincidem."; return; }
+    if (!$("credentialConfirmation").checked) { errorEl.textContent = "Confirme a revogação das sessões atuais."; return; }
+    const button = $("credentialForm").querySelector("button[type=submit]");
+    button.disabled = true;
+    try {
+      const result = await api("/api/admin/credential", { method: "PUT", body: JSON.stringify({ password, confirmation: "TROCAR" }) });
+      $("newAdminPassword").value = "";
+      $("confirmAdminPassword").value = "";
+      $("credentialConfirmation").checked = false;
+      notify(result.warning || "Senha administrativa atualizada. Todas as sessões foram revogadas.");
+      logout(false);
+      $("loginError").textContent = result.warning || "Senha alterada. Entre novamente com a nova credencial.";
+      $("adminPassword").focus();
+    } catch (error) { errorEl.textContent = error.message; }
+    finally { button.disabled = false; }
   }
 
   async function clearAudit() {
@@ -790,6 +938,9 @@
   $("clearIpEvents").addEventListener("click", clearIpEvents);
   $("reloadAudit").addEventListener("click", loadAudit);
   $("clearAudit").addEventListener("click", clearAudit);
+
+  $("reloadCredential").addEventListener("click", loadCredential);
+  $("credentialForm").addEventListener("submit", saveCredential);
 
   setupStatus();
   syncFrameAccessFields();
