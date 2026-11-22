@@ -690,14 +690,21 @@ body.capture-mode .studio-nav-action { display: none !important; }
 /* Cargos e insígnias — vocabulário de servidor sem mudar o contrato de dados. */
 .role-chip:has(.hattz-role-icon)::before { display: none !important; }
 .hattz-role-icon {
-  display: inline-grid;
-  place-items: center;
-  min-width: 17px;
-  font-size: 13px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+  height: 1.2em;
+  font-size: 1em;
   line-height: 1;
+  overflow: visible;
+  /* A "tinta" do emoji fica um pouco abaixo da base do texto; subir 0.08em
+     deixa o centro visual do glifo igual ao centro da linha do rótulo. */
+  transform: translateY(-.08em);
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .45));
 }
-.hattz-role-name { white-space: nowrap; }
+.hattz-role-name { white-space: nowrap; line-height: 1.2; }
 .server-roles { margin-top: 12px; }
 .hattz-server-shelf {
   display: flex;
@@ -730,6 +737,7 @@ body.capture-mode .studio-nav-action { display: none !important; }
   color: var(--role-accent, #e8dcff);
   font-size: 10px;
   font-weight: 800;
+  line-height: 1.2;
   letter-spacing: .04em;
   white-space: nowrap;
 }
@@ -752,9 +760,29 @@ body .hattz-collectible {
   cursor: pointer;
 }
 body .hattz-collectible .hattz-badge-emoji {
-  width: 26px;
-  height: 26px;
-  font-size: 22px;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
+  line-height: 1;
+  overflow: visible;
+  transform: translateY(-.04em);
+}
+/* Emojis inline (catálogo/coleções do Studio) acompanham o tamanho do texto. */
+.hattz-badge-emoji-inline {
+  display: inline-block;
+  font-size: 1em;
+  line-height: 1;
+  vertical-align: -.08em;
+  overflow: visible;
+}
+/* O card de perfil tem overflow:hidden; abrir o detalhe para baixo evita
+   que a explicação da insígnia seja cortada no topo do card. */
+body .hattz-collectible .hattz-badge-detail {
+  top: calc(100% + 10px);
+  bottom: auto;
+  transform: translate(-50%, -5px);
 }
 body .hattz-collectible.rarity-premium { border-color: color-mix(in srgb, var(--badge-accent, #8f78c7) 62%, transparent) !important; }
 body .hattz-collectible.rarity-elite {
