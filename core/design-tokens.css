@@ -1,3 +1,5 @@
+/* Hättz Design System — tokens compartilhados entre Share e Control.
+   Componentes podem criar aliases locais, mas os valores-base vivem aqui. */
 :root {
   color-scheme: dark;
   --hattz-color-bg: #0b0a10;
@@ -28,4 +30,19 @@
   --hattz-shadow-panel: 0 22px 70px rgba(0, 0, 0, .28);
   --hattz-motion-fast: .18s ease;
   --hattz-motion-normal: .28s ease;
+
+  /* Camada "iPhone OS" — tokens novos, sem alterar os valores legados usados pelo Share. */
+  --hattz-premium-bg: #07070d;
+  --hattz-premium-surface: rgba(24, 22, 35, .56);
+  --hattz-premium-surface-strong: rgba(34, 30, 49, .72);
+  --hattz-premium-line: rgba(255, 255, 255, .105);
+  --hattz-premium-line-strong: rgba(214, 192, 255, .3);
+  --hattz-premium-accent: #cbaaff;
+  --hattz-premium-accent-2: #8f7cff;
+  --hattz-premium-cyan: #8ce4ff;
+  --hattz-premium-radius: 26px;
+  --hattz-premium-blur: 30px;
+  --hattz-premium-shadow: 0 26px 70px rgba(0, 0, 0, .42), 0 2px 12px rgba(0, 0, 0, .22);
+  --hattz-premium-inset: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 rgba(255, 255, 255, .035);
+  --hattz-premium-sheen: linear-gradient(135deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .025) 34%, rgba(255, 255, 255, 0) 62%);
 }

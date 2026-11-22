@@ -23,7 +23,7 @@
         <form id="loginForm">
           <label for="adminPassword">Chave administrativa</label>
           <input id="adminPassword" type="password" autocomplete="current-password" minlength="16" required placeholder="Digite sua chave administrativa">
-          <button class="primary full" type="submit">Entrar no Control <span>↗</span></button>
+          <button class="primary full" type="submit"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Entrar no Control <span><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></span></button>
           <p id="loginError" class="login-error" role="alert" aria-live="assertive"></p>
         </form>
         <p class="login-note">A sessão é temporária e encerrada ao fechar esta aba.</p>
@@ -33,26 +33,26 @@
     <section id="appView" hidden>
       <header class="topbar glass">
         <a class="brand" href="./control.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Control</b><small>ADMIN CONSOLE</small></span></a>
-        <div class="top-actions"><span id="controlConnectionStatus" class="status-pill" role="status" aria-live="polite" hidden> Pronto</span><span class="secure-label"><i></i> Sessão protegida</span><button id="logoutButton" class="quiet-button">Sair <span>↗</span></button></div>
+        <div class="top-actions"><span id="controlConnectionStatus" class="status-pill" role="status" aria-live="polite" hidden> Pronto</span><span class="secure-label"><i></i> Sessão protegida</span><button id="logoutButton" class="quiet-button">Sair <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
       </header>
 
       <div class="layout">
         <aside class="sidebar glass">
           <p class="eyebrow">WORKSPACE</p>
-          <button class="nav-item active" data-view="overview"><span>◫</span> Visão geral</button>
-          <button class="nav-item" data-view="profiles"><span>▤</span> Perfis na nuvem</button>
-          <button class="nav-item" data-view="ecosystem"><span>✧</span> Ecossistema</button>
-          <button class="nav-item" data-view="storage"><span>◩</span> Armazenamento</button>
-          <button class="nav-item" data-view="maintenance"><span>◷</span> Manutenção</button>
-          <button class="nav-item" data-view="ip"><span>⌁</span> IP Intelligence</button>
-          <button class="nav-item" data-view="audit"><span>≋</span> Auditoria</button>
-          <button class="nav-item" data-view="security"><span>⌘</span> Segurança</button>
+          <button class="nav-item active" data-view="overview"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span> Visão geral</button>
+          <button class="nav-item" data-view="profiles"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Perfis na nuvem</button>
+          <button class="nav-item" data-view="ecosystem"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M10.4 13.6 6.6 16M13.6 13.6l3.8 2.4"/></svg></span> Ecossistema</button>
+          <button class="nav-item" data-view="storage"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg></span> Armazenamento</button>
+          <button class="nav-item" data-view="maintenance"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 21l-3 0-3.5-3.5"/><path d="M14.7 6.3 17.7 3.3a2.1 2.1 0 0 1 3 3l-3 3"/><path d="M14.7 6.3 4 17l-1 4 4-1L18 8.3"/></svg></span> Manutenção</button>
+          <button class="nav-item" data-view="ip"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span> IP Intelligence</button>
+          <button class="nav-item" data-view="audit"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3V2h6v1M8 9h8M8 13h8M8 17h5"/></svg></span> Auditoria</button>
+          <button class="nav-item" data-view="security"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span> Segurança</button>
           <div class="sidebar-foot"><span class="live-dot"></span> Hättz Share API</div>
         </aside>
 
         <section class="content-area">
           <section class="view active" id="view-overview">
-            <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>Visão geral</h1><p class="muted">Todos os sinais da infraestrutura Hättz Share em um só lugar.</p></div><button id="refreshOverview" class="quiet-button">↻ Atualizar</button></div>
+            <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>Visão geral</h1><p class="muted">Todos os sinais da infraestrutura Hättz Share em um só lugar.</p></div><button id="refreshOverview" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
             <div class="metric-grid" id="overviewMetrics"><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article></div>
             <div class="chart-grid">
               <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">CAPACIDADE</p><h2>Armazenamento</h2></div></div><div id="storageDonut" class="chart-canvas"></div><p class="chart-caption" id="storageDonutCaption">Consultando…</p></article>
@@ -73,7 +73,7 @@
           </section>
 
           <section class="view" id="view-profiles">
-            <div class="page-heading"><div><p class="eyebrow">CLOUD DATABASE</p><h1>Perfis na nuvem</h1><p class="muted">Pesquise, restaure, suspenda, reative ou exclua perfis e suas mídias.</p></div><button id="reloadProfiles" class="quiet-button">↻ Atualizar</button></div>
+            <div class="page-heading"><div><p class="eyebrow">CLOUD DATABASE</p><h1>Perfis na nuvem</h1><p class="muted">Pesquise, restaure, suspenda, reative ou exclua perfis e suas mídias.</p></div><button id="reloadProfiles" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
             <div class="panel glass">
               <div class="toolbar"><input id="profileSearch" class="search-input" type="search" placeholder="Buscar por código ou conteúdo do perfil"><button id="searchProfiles" class="secondary">Buscar</button></div>
               <div class="selection-toolbar"><span id="selectionCount">Nenhum perfil selecionado</span><div><button id="suspendSelected" class="secondary" disabled>Suspender</button><button id="activateSelected" class="secondary" disabled>Reativar</button><button id="deleteSelected" class="danger" disabled>Excluir selecionados</button></div></div>
@@ -84,7 +84,7 @@
           </section>
 
           <section class="view" id="view-ecosystem">
-            <div class="page-heading"><div><p class="eyebrow">HÄTTZ ECOSYSTEM</p><h1>Ecossistema</h1><p class="muted">Crie cargos, insígnias e molduras do zero e escolha exatamente quais perfis recebem cada item.</p></div><button id="reloadEcosystem" class="quiet-button">↻ Atualizar</button></div>
+            <div class="page-heading"><div><p class="eyebrow">HÄTTZ ECOSYSTEM</p><h1>Ecossistema</h1><p class="muted">Crie cargos, insígnias e molduras do zero e escolha exatamente quais perfis recebem cada item.</p></div><button id="reloadEcosystem" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
             <div class="panel-grid">
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">STUDIO PERMISSIONS</p><h2>Cargos autorizados ao editor de tema</h2></div></div><p class="muted">Selecione um ou mais cargos. Apenas os perfis que possuírem pelo menos um deles poderão editar o próprio tema no Studio.</p><div id="studioAccessRoles" class="role-list"><p class="empty">Carregando cargos...</p></div><button id="saveStudioAccess" class="secondary" type="button">Salvar permissões do Studio</button></article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar ou atualizar item</h2></div></div>
