@@ -142,7 +142,7 @@ body{background:
   var(--hattz-premium-bg)!important}
 .shell:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.24;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:68px 68px;mask-image:linear-gradient(180deg,#000,transparent 70%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 70%)}
 .shell>*{position:relative;z-index:1}
-.ambient{filter:blur(125px);opacity:.2;mix-blend-mode:screen}.ambient-one{background:linear-gradient(135deg,rgb(var(--lg-tint)),rgb(var(--lg-tint-2)));width:430px;height:430px;top:-200px;left:-170px}.ambient-two{background:linear-gradient(135deg,rgb(var(--lg-tint-2)),rgb(var(--lg-tint));width:420px;height:420px;right:-200px;bottom:-190px}
+.ambient{filter:blur(125px);opacity:.2;mix-blend-mode:screen}.ambient-one{background:linear-gradient(135deg,rgb(var(--lg-tint)),rgb(var(--lg-tint-2)));width:430px;height:430px;top:-200px;left:-170px}.ambient-two{background:linear-gradient(135deg,rgb(var(--lg-tint-2)),rgb(var(--lg-tint)));width:420px;height:420px;right:-200px;bottom:-190px}
 
 .glass,.panel,.metric,.sidebar,.topbar,.login-card{position:relative;background:
   var(--hattz-premium-sheen),

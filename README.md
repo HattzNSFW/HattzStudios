@@ -95,9 +95,11 @@ A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) e
 
 ### Liquid Glass personalizável
 
-O liquid glass é global e pode ser ajustado em **Share, Studio e Control** pelo botão flutuante “Personalizar liquid glass” no canto inferior direito. O painel traz 10 sliders (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores, 4 presets (Violeta, Ciano, Rose e Esmeralda), reset e cópia/aplicação do tema em JSON.
+Cada tela tem **seu próprio tema**: Share, Studio e Control são independentes. Use o botão flutuante com ícone de ajustes no canto inferior direito; o selo no topo do painel mostra qual tela está sendo editada. O painel traz 10 sliders (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores, 4 presets (Violeta, Ciano, Rose e Esmeralda), reset, cópia/aplicação em JSON e **“Aplicar a todos”** para igualar as três telas quando desejado.
 
-As preferências são salvas em `localStorage` (`hattz_liquid_glass_v1`) e valem para todas as páginas da mesma origem; não precisam de login e não são enviadas ao servidor. A API `window.HattzLiquidGlass` expõe `get()`, `set(partial)`, `reset()` e `apply()` para integrações. Tudo passa pelos tokens `--lg-*` em `core/design-tokens.css` e também atualiza os aliases legados (`--hattz-color-accent`, `--hattz-glass-bg`, `--hattz-radius-lg` etc.), mantendo compatibilidade com o Share original.
+O botão e o painel desaparecem automaticamente no **modo captura** do Share (`body.capture-mode`). As preferências ficam em `localStorage` (`hattz_liquid_glass_v2`, com migração automática do tema único `v1`) e não são enviadas ao servidor nem exigem login. A API `window.HattzLiquidGlass` expõe `scope`, `get(scope?)`, `getStore()`, `set(partial, scope?)`, `reset(scope?)`, `apply()` e `applyToAll()`.
+
+Tudo passa pelos tokens `--lg-*` em `core/design-tokens.css`; o personalizador injeta uma ponte de tema em runtime que aplica esses tokens a superfícies, botões, campos e acentos das três aplicações, além de atualizar os aliases legados (`--hattz-color-accent`, `--hattz-glass-bg`, `--hattz-radius-lg` etc.) para manter compatibilidade com o Share original.
 
 ## Configuração do backend
 
