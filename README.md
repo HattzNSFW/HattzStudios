@@ -91,6 +91,8 @@ Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada (`0d5a61d`). Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+
 ## Configuração do backend
 
 Entre em `backend/`:
