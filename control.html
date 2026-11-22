@@ -8,8 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a94"">
-  <link rel="stylesheet" href="control.css?v=e7c4a94"">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a95">
+  <link rel="stylesheet" href="control.css?v=e7c4a95">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a95">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -94,7 +95,7 @@
                 <div class="field"><label for="catalogDescription">Descrição</label><textarea id="catalogDescription" maxlength="240" rows="2"></textarea></div>
                 <div class="field"><label for="catalogRarity">Raridade</label><select id="catalogRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select></div>
                 <div class="field" id="catalogBadgeFields"><label class="check-row"><input id="catalogIsPublic" type="checkbox"> Insígnia visível publicamente <small>(privada por padrão)</small></label><label for="catalogCategory">Categoria</label><input id="catalogCategory" maxlength="32" value="" placeholder="Categoria personalizada"><label for="catalogIcon">Ícone (emoji ou PNG)</label><input id="catalogIcon" maxlength="4" value="" placeholder="✦"><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o emoji.</small></div>
-                <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameAccess">Acesso</label><select id="catalogFrameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div><div class="field" id="catalogFrameRoleField" hidden><label for="catalogFrameRole">Cargo exigido</label><select id="catalogFrameRole"><option value="">Carregando cargos...</option></select></div><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
+                <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameAccess">Acesso</label><select id="catalogFrameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div><div class="field" id="catalogFrameRoleField" hidden><label for="catalogFrameRole">Cargo exigido</label><select id="catalogFrameRole"><option value=">Carregando cargos...</option></select></div><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
               </article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PROFILE BENEFITS</p><h2>Gerenciar benefícios</h2></div></div>
                 <div class="field"><label for="entitlementCode">Código do perfil</label><input id="entitlementCode" placeholder="HTZ-ABCDE-FGHIJ"></div>
@@ -105,7 +106,7 @@
                 <div class="field"><label for="grantFrameId">Moldura</label><select id="grantFrameId"></select><button id="grantFrame" class="secondary">Conceder moldura</button><button id="revokeFrame" class="quiet-button">Revogar moldura</button></div>
                 <div class="field role-manager">
                   <label for="grantRoleId">Cargo do perfil</label>
-                  <select id="grantRoleId"><option value="">Carregando cargos...</option></select>
+                  <select id="grantRoleId"><option value=">Carregando cargos...</option></select>
                   <label for="roleExpiry">Validade do cargo (opcional)</label>
                   <input id="roleExpiry" type="datetime-local">
                   <div class="inline-actions"><button id="grantRole" class="secondary" type="button">Conceder cargo</button><button id="revokeRole" class="quiet-button" type="button">Revogar cargo</button><button id="loadProfileRoles" class="quiet-button" type="button">Ver cargos</button></div>
@@ -135,7 +136,7 @@
                 <div class="field"><label for="benefitValue">Valor</label><input id="benefitValue" maxlength="120" placeholder="Ex.: 524288000 ou Fundador"></div>
                 <div class="inline-actions"><button id="saveBenefit" class="primary" type="button">Salvar benefício</button><button id="newBenefit" class="quiet-button" type="button">Novo benefício</button></div>
                 <div id="benefitList" class="audit-list"><p class="empty">Carregando benefícios...</p></div>
-                <div class="field"><label for="grantBenefitId">Conceder benefício direto</label><select id="grantBenefitId"><option value="">Carregando benefícios...</option></select><div class="inline-actions"><button id="grantBenefit" class="secondary" type="button">Conceder</button><button id="revokeBenefit" class="quiet-button" type="button">Revogar</button></div><small>Use o código do perfil informado em “Gerenciar benefícios”.</small></div>
+                <div class="field"><label for="grantBenefitId">Conceder benefício direto</label><select id="grantBenefitId"><option value=">Carregando benefícios...</option></select><div class="inline-actions"><button id="grantBenefit" class="secondary" type="button">Conceder</button><button id="revokeBenefit" class="quiet-button" type="button">Revogar</button></div><small>Use o código do perfil informado em “Gerenciar benefícios”.</small></div>
               </article>
             </div>
             <article class="panel glass role-design-panel">
@@ -219,6 +220,6 @@
   </main>
   <script src="share-config.js"></script>
   <script src="core/hattz-core.js"></script>
-  <script src="control.js"></script><script src="core/liquid-glass.js?v=e7c4a94""></script>
+  <script src="control.js"></script><script src="core/liquid-glass.js?v=e7c4a95"></script>
 </body>
 </html>

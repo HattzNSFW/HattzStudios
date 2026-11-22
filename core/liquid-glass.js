@@ -459,6 +459,29 @@
     if (document.body.classList.contains("capture-mode")) closePanel();
   }
 
+  /* Voltar ao topo: mesmo vidro do personalizador, sem aparecer na captura. */
+  function buildToTop() {
+    if (document.querySelector(".hatz-to-top")) return;
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "hatz-to-top";
+    button.setAttribute("aria-label", "Voltar ao topo");
+    button.title = "Voltar ao topo";
+    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
+    button.addEventListener("click", function () {
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    });
+    document.body.appendChild(button);
+    var update = function () {
+      var hidden = document.body.classList.contains("capture-mode") || window.scrollY < 360;
+      button.classList.toggle("is-visible", !hidden);
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    if (window.MutationObserver) new MutationObserver(update).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    update();
+  }
+
   function buttonFeedback(button, text) {
     var original = button.textContent;
     button.textContent = text;
@@ -486,6 +509,7 @@
   };
 
   apply(state);
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build);
-  else build();
+  function ready() { build(); buildToTop(); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready);
+  else ready();
 })();
