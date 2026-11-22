@@ -95,11 +95,13 @@ A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) e
 
 ### Liquid Glass personalizável
 
-Cada tela tem **seu próprio tema**: Share, Studio e Control são independentes. Use o botão flutuante com ícone de ajustes no canto inferior direito; o selo no topo do painel mostra qual tela está sendo editada. O painel traz 10 sliders (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores, 4 presets (Violeta, Ciano, Rose e Esmeralda), reset, cópia/aplicação em JSON e **“Aplicar a todos”** para igualar as três telas quando desejado.
+Cada tela tem **seu próprio tema**: Share, Studio e Control são independentes. Use o pequeno botão glass com ícone de ajustes no canto inferior direito; o selo no topo do painel mostra qual tela está sendo editada. O painel é um cartão de vidro escuro com 4 presets em swatches, 10 sliders com trilha preenchida (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores em swatches, JSON em “Código do tema”, reset e **“Aplicar a todos”** para igualar as três telas quando desejado.
 
 O botão e o painel desaparecem automaticamente no **modo captura** do Share (`body.capture-mode`). As preferências ficam em `localStorage` (`hattz_liquid_glass_v2`, com migração automática do tema único `v1`) e não são enviadas ao servidor nem exigem login. A API `window.HattzLiquidGlass` expõe `scope`, `get(scope?)`, `getStore()`, `set(partial, scope?)`, `reset(scope?)`, `apply()` e `applyToAll()`.
 
-Tudo passa pelos tokens `--lg-*` em `core/design-tokens.css`; o personalizador injeta uma ponte de tema em runtime que aplica esses tokens a superfícies, botões, campos e acentos das três aplicações, além de atualizar os aliases legados (`--hattz-color-accent`, `--hattz-glass-bg`, `--hattz-radius-lg` etc.) para manter compatibilidade com o Share original.
+Tudo passa pelos tokens `--lg-*` em `core/design-tokens.css`; o personalizador injeta uma ponte de tema em runtime que aplica um acabamento de vidro escuro (blur, saturação, brilho interno e sombra suave) a superfícies, botões, campos e acentos das três aplicações, sem quadrados duros nos itens ativos, além de atualizar os aliases legados (`--hattz-color-accent`, `--hattz-glass-bg`, `--hattz-radius-lg` etc.) para manter compatibilidade com o Share original.
+
+As insígnias são exibidas como **emoji** (chips circulares de vidro) no Share e no Studio. `window.HattzEmoji.badge(item)` escolhe o emoji pelo ícone/nome/id do catálogo, com fallback para `✦`; o Control mantém seus próprios ícones.
 
 ## Configuração do backend
 

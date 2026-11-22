@@ -9,6 +9,33 @@
   var SCOPES = ["share", "studio", "control"];
   var SCOPE_LABELS = { share: "SHARE", studio: "STUDIO", control: "CONTROL" };
 
+  /* Insígnias em emoji: leve, nítido e sem o quadrado das imagens PNG. */
+  var BADGE_EMOJI = [
+    [/founder|owner|dono|creator|criador|nucleo|núcleo|crown/i, "👑"],
+    [/vip|premium|elite|legend|lend|diamond|diamante/i, "💎"],
+    [/admin|staff|moder|dev|official|oficial|shield|seguro/i, "🛡️"],
+    [/genesis|astral|seraph|elysium|sapphire|resonance|sovereign|omniverse|phantom|serendipity/i, "🌌"],
+    [/pulse|connected|conectado|active|ativo|energy|energia/i, "⚡"],
+    [/music|song|som|audio|disco/i, "🎵"],
+    [/art|artist|desenho|paint/i, "🎨"],
+    [/star|estrela|shine/i, "⭐"],
+    [/fire|fogo|hot/i, "🔥"],
+    [/heart|cora|love|amor/i, "💜"],
+    [/gift|presente|reward|recompensa/i, "🎁"],
+    [/beta|teste|lab/i, "🧪"]
+  ];
+  function badgeEmoji(item) {
+    var icon = String((item && item.icon) || "").trim();
+    if (icon && !/^data:image|^https?:|^assets\//i.test(icon) && /[^\x00-\x7F]/.test(icon)) return icon;
+    var text = [item && item.id, item && item.name, item && item.label, item && item.category, icon]
+      .filter(Boolean).join(" ");
+    for (var index = 0; index < BADGE_EMOJI.length; index++) {
+      if (BADGE_EMOJI[index][0].test(text)) return BADGE_EMOJI[index][1];
+    }
+    return "✦";
+  }
+  window.HattzEmoji = { badge: badgeEmoji };
+
   var defaults = {
     tint: "203, 170, 255",
     tint2: "140, 124, 255",
@@ -183,97 +210,117 @@
      das três aplicações. Injetada em runtime para funcionar em qualquer build. */
   var bridge = [
     "body.capture-mode .hatz-lg-toggle,body.capture-mode .hatz-lg-panel{display:none!important}",
-    ".hatz-lg-scope{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(var(--lg-tint),.3)!important;background:rgba(var(--lg-tint),.1)!important;border-radius:99px;padding:4px 9px;color:rgb(var(--lg-tint))!important;font:800 8px Manrope,sans-serif;letter-spacing:.16em}",
-    ".hatz-lg-scope i{width:5px;height:5px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}",
-    /* Share: chrome do editor (não mexe no conteúdo do perfil) */
-    ".editor-card,.modal-content,.field-group,.content-section,.editor-tabs,.badge-library,.music-dock,.panel{",
-    "  background:linear-gradient(135deg,rgba(255,255,255,var(--lg-sheen-alpha)),rgba(255,255,255,calc(var(--lg-sheen-alpha)*.17)) 34%,rgba(255,255,255,0) 62%),",
-    "    linear-gradient(160deg,rgba(var(--lg-surface),calc(var(--lg-alpha) + .08)),rgba(var(--lg-bg-base),calc(var(--lg-alpha) + .04)))!important;",
-    "  border:1px solid rgba(var(--lg-border),var(--lg-border-alpha))!important;border-radius:var(--lg-radius)!important;",
-    "  box-shadow:0 26px 70px rgba(0,0,0,var(--lg-shadow-alpha)),inset 0 1px rgba(var(--lg-border),var(--lg-highlight-alpha))!important;",
+    /* Theme suave: realça o design existente em vez de repintar a interface. */
+    ".editor-card,.modal-content,.field-group,.content-section,.editor-tabs,.badge-library,.music-dock{",
+    "  background:linear-gradient(135deg,rgba(255,255,255,calc(var(--lg-sheen-alpha) * .95)),rgba(255,255,255,.015) 38%,",
+    "    rgba(var(--lg-tint),.035) 64%,rgba(var(--lg-surface),calc(var(--lg-alpha) * .38)))!important;",
+    "  border-color:rgba(var(--lg-border),calc(var(--lg-border-alpha) * .8))!important;",
+    "  box-shadow:inset 0 1px rgba(var(--lg-border),var(--lg-highlight-alpha)),0 18px 46px rgba(0,0,0,calc(var(--lg-shadow-alpha) * .55))!important;",
     "  backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate))!important;",
     "  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate))!important}",
     ".field input,.field select,.field textarea,.search-input,.field-group input[type=text]{",
-    "  background:rgba(var(--lg-surface),calc(var(--lg-alpha) + .2))!important;",
-    "  border:1px solid rgba(var(--lg-border),var(--lg-border-alpha))!important;",
-    "  border-radius:calc(var(--lg-radius) * .45)!important;color:rgb(244,240,250)!important}",
+    "  background:rgba(var(--lg-surface),calc(var(--lg-alpha) * .55))!important;",
+    "  border-color:rgba(var(--lg-border),var(--lg-border-alpha))!important;",
+    "  border-radius:min(13px,calc(var(--lg-radius) * .48))!important;color:rgb(244,240,250)!important}",
     ".field input:focus,.field select:focus,.field textarea:focus,.search-input:focus{",
-    "  border-color:rgba(var(--lg-tint),.6)!important;box-shadow:0 0 0 3px rgba(var(--lg-tint),.12)!important;outline:none}",
-    /* Acentos em todas as telas */
+    "  border-color:rgba(var(--lg-tint),.5)!important;box-shadow:0 0 0 3px rgba(var(--lg-tint),.1)!important;outline:none}",
     ".primary,button.primary,.add-button,.editor-tabs button.active,.studio-nav.active,.nav-item.active{",
-    "  background:linear-gradient(135deg,rgb(var(--lg-tint)),rgb(var(--lg-tint-2)))!important;",
-    "  border-color:rgba(var(--lg-tint),.32)!important;color:#fff!important;",
-    "  box-shadow:0 10px 26px rgba(var(--lg-tint-2),var(--lg-glow-alpha)),inset 0 1px rgba(255,255,255,.42)!important}",
-    ".eyebrow,.editor-section-title,.field-group>strong,.heading h1,.brand b,.brand-symbol,.blocks-chip,.live-chip,.status-pill{",
-    "  color:rgb(var(--lg-tint))!important}",
-    ".heading h1{background:none!important;-webkit-text-fill-color:rgb(var(--lg-tint))!important}",
+    "  background:linear-gradient(135deg,rgba(var(--lg-tint),.9),rgba(var(--lg-tint-2),.7))!important;",
+    "  border-color:rgba(var(--lg-tint),.26)!important;color:#fff!important;",
+    "  box-shadow:0 8px 24px rgba(var(--lg-tint-2),calc(var(--lg-glow-alpha) * .45)),inset 0 1px rgba(255,255,255,.26)!important}",
+    ".eyebrow,.brand-symbol,.hatz-lg-scope{color:rgb(var(--lg-tint))!important}",
     ".brand-symbol,.metric:before,.eyebrow:before{",
-    "  background:linear-gradient(145deg,rgb(var(--lg-tint)),rgb(var(--lg-tint-2)))!important;",
-    "  color:#fff!important;box-shadow:0 8px 22px rgba(var(--lg-tint-2),var(--lg-glow-alpha))!important}",
-    ".blocks-chip,.live-chip,.status-pill,.studio-nav.active,.nav-item.active,.metric{",
-    "  border-color:rgba(var(--lg-tint),.24)!important;",
-    "  background:linear-gradient(105deg,rgba(var(--lg-tint),.18),rgba(var(--lg-tint-2),.06))!important}",
-    ".glass,.studio-top,.studio-sidebar,.editor-card,.sidebar,.login-card,.chart-panel,.metric{",
-    "  border-radius:var(--lg-radius)!important}",
+    "  background:linear-gradient(145deg,rgba(var(--lg-tint),.9),rgba(var(--lg-tint-2),.75))!important;",
+    "  box-shadow:0 6px 18px rgba(var(--lg-tint-2),calc(var(--lg-glow-alpha) * .5))!important}",
+    ".blocks-chip,.live-chip,.status-pill,.studio-nav.active,.nav-item.active{",
+    "  border-color:rgba(var(--lg-tint),.2)!important;border-radius:999px!important}",
+    ".editor-tabs button.active{border-radius:999px!important}",
+    ".glass,.studio-top,.editor-card,.sidebar,.login-card,.chart-panel{",
+    "  border-radius:min(var(--lg-radius),32px)!important}",
     "input[type=range]{accent-color:rgb(var(--lg-tint))!important}",
-    ".ui-icon,.icon-button svg{filter:drop-shadow(0 1px 4px rgba(var(--lg-tint-2),var(--lg-glow-alpha)))!important}",
+    ".ui-icon,.icon-button svg{filter:drop-shadow(0 1px 3px rgba(var(--lg-tint-2),calc(var(--lg-glow-alpha) * .4)))!important}",
     "@media(prefers-reduced-motion:reduce){.hatz-lg-toggle,.hatz-lg-panel{transition:none!important}}"
   ].join("\n");
 
   var ui = [
-    ".hatz-lg-toggle{position:fixed;right:22px;bottom:22px;width:52px;height:52px;display:grid;place-items:center;border-radius:17px;",
-    "border:1px solid rgba(var(--lg-border),calc(var(--lg-border-alpha) + .12));",
-    "background:linear-gradient(145deg,rgba(var(--lg-tint),.92),rgba(var(--lg-tint-2),.68));color:#fff;cursor:pointer;z-index:9998;",
-    "box-shadow:0 14px 34px rgba(var(--lg-tint-2),var(--lg-glow-alpha)),inset 0 1px rgba(255,255,255,.5),inset 0 -1px rgba(0,0,0,.18);",
-    "backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate));-webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate));",
-    "transition:transform var(--lg-speed) ease,box-shadow var(--lg-speed) ease}",
-    ".hatz-lg-toggle:hover{transform:translateY(-3px);box-shadow:0 20px 46px rgba(var(--lg-tint-2),.55),inset 0 1px rgba(255,255,255,.6)}",
-    ".hatz-lg-toggle[aria-expanded=true]{transform:rotate(90deg)}",
-    ".hatz-lg-toggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 3px rgba(0,0,0,.28))}",
-    ".hatz-lg-panel{position:fixed;right:22px;bottom:86px;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 120px);overflow:auto;padding:20px;",
-    "border-radius:var(--lg-radius);border:1px solid rgba(var(--lg-border),var(--lg-border-alpha));",
-    "background:linear-gradient(135deg,rgba(255,255,255,var(--lg-sheen-alpha)),rgba(255,255,255,.02) 34%,rgba(255,255,255,0) 62%),",
-    "linear-gradient(160deg,rgba(var(--lg-surface),calc(var(--lg-alpha) + .18)),rgba(var(--lg-bg-base),calc(var(--lg-alpha) + .1)));",
-    "box-shadow:0 26px 70px rgba(0,0,0,var(--lg-shadow-alpha)),inset 0 1px rgba(var(--lg-border),var(--lg-highlight-alpha));",
-    "backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate));-webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate));",
-    "color:#f4f0fa;font:12px/1.5 var(--hattz-font-sans,'DM Sans',sans-serif);z-index:9999}",
+    ".hatz-lg-toggle{position:fixed;right:20px;bottom:20px;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;",
+    "border:1px solid rgba(255,255,255,.14);background:rgba(16,14,24,.62);color:rgba(var(--lg-tint),.95);cursor:pointer;z-index:9998;",
+    "box-shadow:0 8px 28px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.12);",
+    "backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);",
+    "transition:transform var(--lg-speed) ease,border-color var(--lg-speed) ease,background var(--lg-speed) ease}",
+    ".hatz-lg-toggle:hover{transform:translateY(-2px);border-color:rgba(var(--lg-tint),.42);background:rgba(var(--lg-surface),.72)}",
+    ".hatz-lg-toggle[aria-expanded=true]{color:#fff;border-color:rgba(var(--lg-tint),.55);background:linear-gradient(145deg,rgba(var(--lg-tint),.62),rgba(var(--lg-tint-2),.44))}",
+    ".hatz-lg-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}",
+    ".hatz-lg-panel{position:fixed;right:20px;bottom:74px;width:min(318px,calc(100vw - 28px));max-height:calc(100vh - 112px);overflow:auto;padding:18px;",
+    "border-radius:22px;border:1px solid rgba(255,255,255,.11);",
+    "background:linear-gradient(155deg,rgba(255,255,255,.075),rgba(255,255,255,.015) 42%,rgba(var(--lg-surface),.35)),rgba(13,12,20,.86);",
+    "box-shadow:0 26px 70px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.13),inset 0 -1px rgba(255,255,255,.03);",
+    "backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%);",
+    "color:#efe9f7;font:12px/1.45 'DM Sans',sans-serif;z-index:9999;scrollbar-width:thin;scrollbar-color:rgba(var(--lg-tint),.35) transparent}",
+    ".hatz-lg-panel::-webkit-scrollbar{width:6px}.hatz-lg-panel::-webkit-scrollbar-thumb{background:rgba(var(--lg-tint),.28);border-radius:9px}",
     ".hatz-lg-panel[hidden]{display:none!important}",
-    ".hatz-lg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}",
-    ".hatz-lg-head strong{display:block;font:800 16px Manrope,sans-serif;letter-spacing:-.03em}",
-    ".hatz-lg-head small{color:rgba(var(--lg-tint),.9);letter-spacing:.16em;font:700 8px Manrope,sans-serif;text-transform:uppercase}",
-    ".hatz-lg-close{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;width:28px;height:28px;cursor:pointer}",
-    ".hatz-lg-section{margin:16px 0 8px;font:800 9px Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--lg-tint),.85)}",
-    ".hatz-lg-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin:10px 0}",
-    ".hatz-lg-row label{color:#d7cee5;font-size:11px}",
-    ".hatz-lg-row output{color:#fff;font-weight:700;font-variant-numeric:tabular-nums;font-size:11px}",
-    ".hatz-lg-row input[type=range]{grid-column:1/-1;width:100%;accent-color:rgb(var(--lg-tint));cursor:pointer;filter:none}",
-    ".hatz-lg-colors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}",
-    ".hatz-lg-colors label{display:grid;gap:5px;color:#c9bfd8;font-size:10px;text-align:center}",
-    ".hatz-lg-colors input[type=color]{width:100%;height:32px;padding:2px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(0,0,0,.25);cursor:pointer}",
-    ".hatz-lg-presets{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}",
-    ".hatz-lg-presets button{border:1px solid rgba(var(--lg-tint),.28);background:rgba(var(--lg-tint),.1);color:#eadcff;border-radius:99px;padding:6px 11px;cursor:pointer;font-size:10px;font-weight:700}",
-    ".hatz-lg-presets button:hover{background:rgba(var(--lg-tint),.22)}",
-    ".hatz-lg-code{width:100%;min-height:58px;resize:vertical;margin-top:8px;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.3);color:#d9c7f7;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}",
-    ".hatz-lg-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}",
-    ".hatz-lg-actions button{flex:1 1 auto;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#fff;border-radius:10px;padding:9px 10px;cursor:pointer;font-size:10px;font-weight:700}",
-    ".hatz-lg-actions button:first-child{border-color:rgba(var(--lg-tint),.4);background:rgba(var(--lg-tint),.18)}",
-    ".hatz-lg-note{color:#9c92ad;font-size:10px;margin:10px 0 0}",
-    "@media(max-width:520px){.hatz-lg-toggle{right:12px;bottom:12px}.hatz-lg-panel{right:12px;bottom:76px;max-height:calc(100vh - 100px)}}"
+    ".hatz-lg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:13px}",
+    ".hatz-lg-title{display:flex;align-items:center;gap:10px}",
+    ".hatz-lg-mark{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;border:1px solid rgba(var(--lg-tint),.24);background:linear-gradient(145deg,rgba(var(--lg-tint),.24),rgba(var(--lg-tint-2),.1))}",
+    ".hatz-lg-mark svg{width:14px;height:14px;fill:none;stroke:rgb(var(--lg-tint));stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}",
+    ".hatz-lg-head strong{display:block;font:700 13px Manrope,sans-serif;letter-spacing:-.01em;color:#f6f1fb}",
+    ".hatz-lg-scope{display:block;font:700 8px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;opacity:.85;margin-top:1px}",
+    ".hatz-lg-close{width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:8px;background:rgba(255,255,255,.05);color:#9d94ab;font-size:17px;line-height:1;cursor:pointer}",
+    ".hatz-lg-close:hover{background:rgba(255,255,255,.11);color:#fff}",
+    ".hatz-lg-section{margin:15px 0 9px;display:flex;align-items:center;gap:9px;font:700 9px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8d849b}",
+    ".hatz-lg-section:after{content:'';height:1px;flex:1;background:rgba(255,255,255,.07)}",
+    ".hatz-lg-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}",
+    ".hatz-lg-preset{display:grid;justify-items:center;gap:5px;padding:0;border:0;background:none;color:#948ba2;cursor:pointer;font:600 9px 'DM Sans',sans-serif}",
+    ".hatz-lg-swatch{width:100%;height:27px;border-radius:9px;border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px rgba(255,255,255,.2);transition:outline-color var(--lg-speed) ease}",
+    ".hatz-lg-preset[data-active=true]{color:#fff}.hatz-lg-preset[data-active=true] .hatz-lg-swatch{outline:1px solid rgb(var(--lg-tint));outline-offset:2px}",
+    ".hatz-lg-row{margin:10px 0}",
+    ".hatz-lg-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}",
+    ".hatz-lg-row label{color:#cbc3d6;font-size:10.5px}",
+    ".hatz-lg-row output{color:rgba(var(--lg-tint),.95);font:700 10px ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}",
+    ".hatz-lg-row input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;margin:0;border-radius:99px;cursor:pointer;outline:none;",
+    "background:linear-gradient(90deg,rgb(var(--lg-tint)) var(--lg-fill,50%),rgba(255,255,255,.1) var(--lg-fill,50%))}",
+    ".hatz-lg-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#fff;border:2px solid rgb(var(--lg-tint));box-shadow:0 2px 8px rgba(0,0,0,.45)}",
+    ".hatz-lg-row input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid rgb(var(--lg-tint));box-shadow:0 2px 8px rgba(0,0,0,.45)}",
+    ".hatz-lg-colors{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}",
+    ".hatz-lg-color{display:grid;justify-items:center;gap:5px;padding:7px 3px 6px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:rgba(255,255,255,.025)}",
+    ".hatz-lg-color span{font-size:8.5px;line-height:1.1;color:#968da5;text-align:center}",
+    ".hatz-lg-color input[type=color]{-webkit-appearance:none;appearance:none;width:24px;height:24px;padding:0;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:transparent;cursor:pointer;overflow:hidden}",
+    ".hatz-lg-color input[type=color]::-webkit-color-swatch-wrapper{padding:0}.hatz-lg-color input[type=color]::-webkit-color-swatch{border:0;border-radius:7px}",
+    ".hatz-lg-adv{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}",
+    ".hatz-lg-adv summary{cursor:pointer;list-style:none;color:#8d849b;font:700 9px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
+    ".hatz-lg-adv summary::-webkit-details-marker{display:none}.hatz-lg-adv summary:before{content:'+ ';color:rgb(var(--lg-tint))}.hatz-lg-adv[open] summary:before{content:'− '}",
+    ".hatz-lg-code{width:100%;min-height:62px;resize:vertical;margin-top:9px;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.28);color:#d9c7f7;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}",
+    ".hatz-lg-mini{display:flex;gap:7px;margin-top:7px}.hatz-lg-mini button{flex:1;border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:7px;background:rgba(255,255,255,.05);color:#cfc6da;cursor:pointer;font:700 9px Manrope,sans-serif}",
+    ".hatz-lg-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:14px}",
+    ".hatz-lg-primary{border:1px solid rgba(var(--lg-tint),.3);border-radius:12px;padding:10px 12px;color:#fff;cursor:pointer;font:700 10px Manrope,sans-serif;background:linear-gradient(135deg,rgba(var(--lg-tint),.26),rgba(var(--lg-tint-2),.14))}",
+    ".hatz-lg-primary:hover{background:linear-gradient(135deg,rgba(var(--lg-tint),.38),rgba(var(--lg-tint-2),.22))}",
+    ".hatz-lg-ghost{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.04);color:#a99fb8;cursor:pointer;font:700 10px Manrope,sans-serif}",
+    ".hatz-lg-ghost:hover{background:rgba(255,255,255,.09);color:#fff}",
+    "@media(max-width:520px){.hatz-lg-toggle{right:12px;bottom:12px}.hatz-lg-panel{right:12px;bottom:66px;max-height:calc(100vh - 90px)}}"
   ].join("\n");
 
-  var panel, code, toggle;
+  var panel, code, toggle, currentPreset = "violeta";
+
+  function updateFill(input) {
+    var min = Number(input.min), max = Number(input.max);
+    var percent = max > min ? ((Number(input.value) - min) / (max - min)) * 100 : 50;
+    input.style.setProperty("--lg-fill", percent.toFixed(1) + "%");
+  }
 
   function render() {
     ranges.forEach(function (item) {
       var key = item[0], factor = item[6];
       var input = panel.querySelector('[data-lg-range="' + key + '"]');
       var output = panel.querySelector('[data-lg-out="' + key + '"]');
-      if (input) input.value = String(Math.round(state[key] * factor));
+      if (input) { input.value = String(Math.round(state[key] * factor)); updateFill(input); }
       if (output) output.textContent = Math.round(state[key] * factor) + item[5];
     });
     colors.forEach(function (item) {
       var input = panel.querySelector('[data-lg-color="' + item[0] + '"]');
       if (input) input.value = rgbToHex(state[item[0]]);
+    });
+    panel.querySelectorAll("[data-lg-preset]").forEach(function (button) {
+      button.dataset.active = String(button.dataset.lgPreset === currentPreset);
     });
     if (code) code.value = JSON.stringify(state);
   }
@@ -312,21 +359,29 @@
     panel.hidden = true;
 
     var html = [
-      '<div class="hatz-lg-head"><div><span class="hatz-lg-scope"><i></i>' + SCOPE_LABELS[scope] + '</span><strong>Liquid Glass</strong></div><button class="hatz-lg-close" type="button" aria-label="Fechar">×</button></div>',
+      '<div class="hatz-lg-head"><div class="hatz-lg-title"><span class="hatz-lg-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg></span>',
+      '<div><strong>Liquid Glass</strong><span class="hatz-lg-scope">' + SCOPE_LABELS[scope] + '</span></div></div><button class="hatz-lg-close" type="button" aria-label="Fechar">×</button></div>',
       '<div class="hatz-lg-section">Presets</div><div class="hatz-lg-presets">',
-      Object.keys(presets).map(function (name) { return '<button type="button" data-lg-preset="' + name + '">' + name[0].toUpperCase() + name.slice(1) + '</button>'; }).join(""),
+      Object.keys(presets).map(function (name) {
+        var preset = presets[name];
+        var first = preset.tint || defaults.tint;
+        var second = preset.tint2 || defaults.tint2;
+        return '<button type="button" class="hatz-lg-preset" data-lg-preset="' + name + '" data-active="' + (name === currentPreset) + '" title="' + name + '">' +
+          '<span class="hatz-lg-swatch" style="background:linear-gradient(135deg,rgb(' + first + '),rgb(' + second + '))"></span>' +
+          name[0].toUpperCase() + name.slice(1) + '</button>';
+      }).join(""),
       '</div><div class="hatz-lg-section">Superfície e efeitos</div>'
     ];
     ranges.forEach(function (item) {
-      html.push('<div class="hatz-lg-row"><label for="lg-' + item[0] + '">' + item[1] + '</label><output data-lg-out="' + item[0] + '"></output><input id="lg-' + item[0] + '" data-lg-range="' + item[0] + '" type="range" min="' + item[2] + '" max="' + item[3] + '" step="' + item[4] + '"></div>');
+      html.push('<div class="hatz-lg-row"><div class="hatz-lg-meta"><label for="lg-' + item[0] + '">' + item[1] + '</label><output data-lg-out="' + item[0] + '"></output></div><input id="lg-' + item[0] + '" data-lg-range="' + item[0] + '" type="range" min="' + item[2] + '" max="' + item[3] + '" step="' + item[4] + '"></div>');
     });
     html.push('<div class="hatz-lg-section">Cores</div><div class="hatz-lg-colors">');
     colors.forEach(function (item) {
-      html.push('<label>' + item[1] + '<input data-lg-color="' + item[0] + '" type="color"></label>');
+      html.push('<label class="hatz-lg-color"><input data-lg-color="' + item[0] + '" type="color"><span>' + item[1] + '</span></label>');
     });
-    html.push('</div><div class="hatz-lg-section">Código do tema</div><textarea class="hatz-lg-code" spellcheck="false" aria-label="Código JSON do tema"></textarea>');
-    html.push('<div class="hatz-lg-actions"><button type="button" data-lg-action="all">Aplicar a todos</button><button type="button" data-lg-action="reset">Resetar</button><button type="button" data-lg-action="copy">Copiar</button><button type="button" data-lg-action="paste">Aplicar código</button></div>');
-    html.push('<p class="hatz-lg-note">Este tema é exclusivo de ' + SCOPE_LABELS[scope] + '. Use “Aplicar a todos” para igualar Share, Studio e Control.</p>');
+    html.push('</div><details class="hatz-lg-adv"><summary>Código do tema</summary><textarea class="hatz-lg-code" spellcheck="false" aria-label="Código JSON do tema"></textarea>');
+    html.push('<div class="hatz-lg-mini"><button type="button" data-lg-action="copy">Copiar</button><button type="button" data-lg-action="paste">Aplicar código</button></div></details>');
+    html.push('<div class="hatz-lg-actions"><button type="button" class="hatz-lg-primary" data-lg-action="all">Aplicar a todos</button><button type="button" class="hatz-lg-ghost" data-lg-action="reset">Resetar</button></div>');
     panel.innerHTML = html.join("");
     document.body.appendChild(panel);
     code = panel.querySelector(".hatz-lg-code");
@@ -345,27 +400,31 @@
       if (target.dataset.lgRange) {
         var range = ranges.filter(function (item) { return item[0] === target.dataset.lgRange; })[0];
         state[range[0]] = Number(target.value) / range[6];
+        currentPreset = null;
+        updateFill(target);
         apply(state);
         var output = panel.querySelector('[data-lg-out="' + range[0] + '"]');
         if (output) output.textContent = Math.round(state[range[0]] * range[6]) + range[5];
+        panel.querySelectorAll("[data-lg-preset]").forEach(function (button) { button.dataset.active = "false"; });
         if (code) code.value = JSON.stringify(state);
         store[scope] = state;
         save();
       } else if (target.dataset.lgColor) {
         var rgb = hexToRgb(target.value);
-        if (rgb) { state[target.dataset.lgColor] = rgb; commit(); }
+        if (rgb) { currentPreset = null; state[target.dataset.lgColor] = rgb; commit(); }
       }
     });
 
     panel.addEventListener("click", function (event) {
       var preset = event.target.dataset && event.target.dataset.lgPreset;
       if (preset) {
+        currentPreset = preset;
         state = sanitize(presets[preset]);
         commit();
         return;
       }
       var action = event.target.dataset && event.target.dataset.lgAction;
-      if (action === "reset") { state = clone(defaults); commit(); }
+      if (action === "reset") { currentPreset = "violeta"; state = clone(defaults); commit(); }
       if (action === "all") {
         SCOPES.forEach(function (name) { store[name] = clone(state); });
         save();
@@ -379,6 +438,7 @@
       if (action === "paste") {
         try {
           var parsed = JSON.parse(code.value);
+          currentPreset = null;
           state = sanitize(parsed);
           commit();
         } catch (error) {

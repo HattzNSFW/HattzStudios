@@ -1193,15 +1193,16 @@ async function loadProfileEntitlements() {
       chip.dataset.remoteEntitlement = "badge";
       const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";
       chip.setAttribute("aria-label", `${item.name}. Raridade ${rarityLabel}. ${item.description || ""}`);
-      const img = document.createElement("img");
-      img.src = String(item.icon || "").startsWith("data:image/png;base64,") || /^(https:\/\/|assets\/)/i.test(String(item.icon || "")) ? item.icon : "assets/badges/default.png";
-      img.alt = ""; img.width = 30; img.height = 30; img.loading = "lazy"; img.decoding = "async";
+      const emoji = document.createElement("span");
+      emoji.className = "hattz-badge-emoji";
+      emoji.textContent = window.HattzEmoji?.badge?.(item) || "✦";
+      emoji.setAttribute("aria-hidden", "true");
       const detail = document.createElement("span");
       detail.className = "hattz-badge-detail";
       const name = document.createElement("strong"); name.textContent = item.name || "Insígnia";
       const rarity = document.createElement("small"); rarity.textContent = rarityLabel;
       const description = document.createElement("span"); description.textContent = item.description || "Insígnia colecionável Hättz.";
-      detail.append(name, rarity, description); chip.append(img, detail);
+      detail.append(name, rarity, description); chip.append(emoji, detail);
       chip.addEventListener("click", () => {
         const open = chip.classList.toggle("is-open");
         chip.setAttribute("aria-expanded", String(open));

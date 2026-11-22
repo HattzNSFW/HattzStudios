@@ -145,4 +145,4 @@ button:hover{filter:brightness(1.07)}
 .studio-status{border:1px solid rgba(var(--lg-tint),.24)!important;background:linear-gradient(135deg,rgba(var(--lg-tint),.14),rgba(var(--lg-tint),.04))!important;color:#e0ccff!important;box-shadow:inset 0 1px rgba(255,255,255,.12),0 6px 18px rgba(0,0,0,.18);backdrop-filter:blur(18px)}
 .collection-grid{gap:14px}
 .collection-card{border-radius:18px!important;border-color:rgba(255,255,255,.1)!important;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.014)),rgba(20,17,28,.62)!important;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-.collection-card:hover{transform:translateY(-3px);border-color:rgba(var(--lg-tint),.4)!important;box-shadow:0 16px 34px rgba(0,0,0,.28)}
+.collection-card:hover{transform:translateY(-3px);border-color:rgba(var(--lg-tint),.4)!important;box-shadow:0 16px 34px rgba(0,0,0,.28)}.hattz-badge-emoji-inline{font-size:19px;line-height:1;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
