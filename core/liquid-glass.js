@@ -211,7 +211,7 @@
   var bridge = [
     "body.capture-mode .hatz-lg-toggle,body.capture-mode .hatz-lg-panel{display:none!important}",
     /* Theme suave: realça o design existente em vez de repintar a interface. */
-    ".editor-card,.modal-content,.field-group,.content-section,.editor-tabs,.badge-library,.music-dock{",
+    ".editor-card,.modal-content,.field-group,.editor-tabs,.badge-library,.music-dock{",
     "  background:linear-gradient(135deg,rgba(255,255,255,calc(var(--lg-sheen-alpha) * .95)),rgba(255,255,255,.015) 38%,",
     "    rgba(var(--lg-tint),.035) 64%,rgba(var(--lg-surface),calc(var(--lg-alpha) * .38)))!important;",
     "  border-color:rgba(var(--lg-border),calc(var(--lg-border-alpha) * .8))!important;",
