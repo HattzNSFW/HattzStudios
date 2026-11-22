@@ -482,6 +482,111 @@
     update();
   }
 
+  /* Segunda passada: luz que segue o cursor, halo e entrada suave ao rolar. */
+  var LIGHT_SELECTOR = ".glass, .profile-card, .panel, .metric, .editor-card, .studio-top, .studio-sidebar, .topbar, .stat-card, .detail-card, .frame-option, .catalog-item, .collection-card";
+  var REVEAL_SELECTOR = ".profile-card, [id=\"statsSection\"], [id=\"detailsSection\"], .studio-top, .studio-sidebar, .shell > section, .metric, .panel, .chart-card, .stat-card, .detail-card, .catalog-item, .frame-option";
+
+  function closestLight(node) {
+    while (node && node.nodeType === 1) {
+      if (node.matches && node.matches(LIGHT_SELECTOR)) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function buildPolish() {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var observer = null;
+
+    if (!reduce && window.IntersectionObserver) {
+      observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-in");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { rootMargin: "0px 0px -6% 0px", threshold: 0.04 });
+    }
+
+    function revealAll() {
+      Array.prototype.forEach.call(document.querySelectorAll(".hattz-reveal:not(.is-in)"), function (node) {
+        node.classList.add("is-in");
+      });
+    }
+
+    function enhance(node) {
+      if (!node || node.nodeType !== 1 || !node.matches || node.dataset.hattzPolish) return;
+      var light = node.matches(LIGHT_SELECTOR);
+      var reveal = node.matches(REVEAL_SELECTOR);
+      if (!light && !reveal) return;
+      node.dataset.hattzPolish = "1";
+      if (light) {
+        node.classList.add("hattz-light");
+        if (window.getComputedStyle(node).position === "static") node.style.position = "relative";
+        if (!node.matches(".metric")) node.classList.add("hattz-breathe");
+      }
+      if (reveal && !reduce) {
+        node.classList.add("hattz-reveal");
+        if (observer) observer.observe(node);
+        else node.classList.add("is-in");
+      }
+    }
+
+    function scan(root) {
+      if (root && root.nodeType === 1) enhance(root);
+      var scope = root && root.nodeType === 1 ? root : document;
+      Array.prototype.forEach.call(scope.querySelectorAll(LIGHT_SELECTOR + ", " + REVEAL_SELECTOR), enhance);
+    }
+
+    var scheduled = false;
+    var last = null;
+    var frame = window.requestAnimationFrame || function (callback) { return setTimeout(callback, 16); };
+    document.addEventListener("pointermove", function (event) {
+      if (!event || event.pointerType === "touch" || document.body.classList.contains("capture-mode")) return;
+      var target = closestLight(event.target);
+      if (!target) return;
+      last = { target: target, x: event.clientX, y: event.clientY };
+      if (scheduled) return;
+      scheduled = true;
+      frame(function () {
+        scheduled = false;
+        if (!last) return;
+        var node = last.target;
+        var rect = node.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          node.style.setProperty("--hattz-mx", (((last.x - rect.left) / rect.width) * 100).toFixed(1) + "%");
+          node.style.setProperty("--hattz-my", (((last.y - rect.top) / rect.height) * 100).toFixed(1) + "%");
+        }
+        last = null;
+      });
+    }, { passive: true });
+
+    if (window.MutationObserver) {
+      new MutationObserver(function (mutations) {
+        var added = false;
+        mutations.forEach(function (mutation) {
+          if (!mutation.addedNodes) return;
+          Array.prototype.forEach.call(mutation.addedNodes, function (node) {
+            if (node.nodeType !== 1) return;
+            scan(node);
+            added = true;
+          });
+        });
+        if (added && document.body.classList.contains("capture-mode")) revealAll();
+      }).observe(document.body, { childList: true, subtree: true });
+
+      new MutationObserver(function () {
+        if (document.body.classList.contains("capture-mode")) revealAll();
+      }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    if (document.body.classList.contains("capture-mode")) revealAll();
+    scan(document);
+    /* Rede de segurança: aba em segundo plano pode não disparar o observer. */
+    setTimeout(revealAll, 1200);
+  }
+
   function buttonFeedback(button, text) {
     var original = button.textContent;
     button.textContent = text;
@@ -509,7 +614,7 @@
   };
 
   apply(state);
-  function ready() { build(); buildToTop(); }
+  function ready() { build(); buildToTop(); buildPolish(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready);
   else ready();
 })();

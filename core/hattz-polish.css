@@ -172,14 +172,100 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.99); }
 .hatz-to-top svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 body.capture-mode .hatz-to-top { display: none !important; }
 
+/* ---------------------------------------------------------------------------
+   Segunda passada — luz, relevo e entrada.
+   Tudo é progressivo: se o JS não rodar, o conteúdo continua visível.
+   --------------------------------------------------------------------------- */
+
+/* Brilho que acompanha o cursor, limitado às superfícies de vidro. */
+.hattz-light { isolation: isolate; }
+.hattz-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(240px circle at var(--hattz-mx, 50%) var(--hattz-my, 0%),
+              rgba(var(--lg-tint), .17), rgba(var(--lg-tint), .05) 42%, transparent 68%);
+  opacity: 0;
+  transition: opacity .35s var(--hattz-ease);
+}
+.hattz-light:hover::before { opacity: 1; }
+
+/* Halo respirando — não é aplicado ao .metric, que já tem ::after próprio. */
+.hattz-breathe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(var(--lg-tint), .1), 0 0 34px rgba(var(--lg-tint), .07);
+  opacity: 0;
+  animation: hattz-halo 9s ease-in-out infinite;
+}
+@keyframes hattz-halo {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.006); }
+}
+
+/* Entrada suave ao rolar. Usa `translate` para não brigar com hover/transform. */
+.hattz-reveal {
+  opacity: 0;
+  translate: 0 14px;
+  transition: opacity .55s var(--hattz-ease), translate .55s var(--hattz-ease);
+}
+.hattz-reveal.is-in { opacity: 1; translate: none; }
+
+/* Botões principais com varredura de luz ao passar o mouse. */
+:where(.primary-button, .primary, .save-button, .share-publish-button) {
+  position: relative;
+  overflow: hidden;
+}
+:where(.primary-button, .primary, .save-button, .share-publish-button)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 55%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .16), transparent);
+  transform: skewX(-22deg);
+  transition: left .62s var(--hattz-ease);
+}
+:where(.primary-button, .primary, .save-button, .share-publish-button):hover:not(:disabled)::after { left: 145%; }
+:where(.primary-button, .primary, .save-button, .share-publish-button):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(var(--lg-tint), .22);
+}
+
+/* Captura e movimento reduzido: superfície limpa, sem animações. */
+body.capture-mode .hattz-light::before,
+body.capture-mode .hattz-breathe::after,
+body.capture-mode :where(.primary-button, .primary, .save-button, .share-publish-button)::after { display: none !important; }
+body.capture-mode .hattz-reveal { opacity: 1 !important; translate: none !important; transition: none !important; }
+
+@supports (bottom: env(safe-area-inset-bottom)) {
+  .hatz-to-top { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+}
+
 @media (max-width: 650px) {
   .table-wrap { border-radius: 12px; }
   .table-wrap thead th, .table-wrap tbody td { padding: 9px 10px; font-size: 11px; }
-  .hatz-to-top { left: 12px; bottom: 12px; }
+  .hatz-to-top { left: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (pointer: coarse) {
+  .hatz-to-top { width: 44px; height: 44px; }
+  .capture-exit-button { width: 44px; height: 44px; border-radius: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .skeleton::after { animation: none; }
+  .skeleton::after, .hattz-light::before, .hattz-breathe::after,
+  :where(.primary-button, .primary, .save-button, .share-publish-button)::after { animation: none !important; transition: none !important; opacity: 0 !important; }
+  .hattz-reveal { opacity: 1 !important; translate: none !important; transition: none !important; }
   :where(button, .primary, .secondary, .quiet-button, .studio-nav, .nav-item) { transition: none; }
 }
