@@ -494,7 +494,7 @@ button {
   margin-top: 10px;
 
   color: #c4bdce;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.65;
 
   overflow-wrap: anywhere;
@@ -509,7 +509,7 @@ button {
 }
 
 .badge {
-  padding: 5px 10px;
+  padding: 6px 11px;
 
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   border-radius: 20px;
@@ -517,7 +517,7 @@ button {
   background: color-mix(in srgb, var(--accent) 9%, transparent);
 
   color: var(--accent);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1622,7 +1622,7 @@ input[type="range"] {
 @media (max-width: 650px) {
   .name-line h1 { font-size: clamp(24px, 7vw, 31px); }
   .username, .bio { font-size: 13px; }
-  .badge { font-size: 10px; padding: 5px 9px; }
+  .badge { font-size: 11px; padding: 5px 9px; }
   .section-heading h2 { font-size: 21px; }
 }
 
@@ -1841,7 +1841,7 @@ input[type="range"] {
   }
 
   .bio {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .stats-grid {
@@ -2073,7 +2073,7 @@ input[type="range"] {
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 12%, var(--card));
   color: var(--accent);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .8px;
   text-transform: uppercase;
@@ -2081,7 +2081,7 @@ input[type="range"] {
 
 .role-chip:not([hidden])::before {
   content: "✦";
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .role-chip.owner-role {
