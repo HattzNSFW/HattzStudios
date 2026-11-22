@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9c">
-  <link rel="stylesheet" href="control.css?v=e7c4a9c">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9c">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9d">
+  <link rel="stylesheet" href="control.css?v=e7c4a9d">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9d">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -43,6 +43,8 @@
           <button class="nav-item active" data-view="overview"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span> Visão geral</button>
           <button class="nav-item" data-view="profiles"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Perfis na nuvem</button>
           <button class="nav-item" data-view="ecosystem"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M10.4 13.6 6.6 16M13.6 13.6l3.8 2.4"/></svg></span> Ecossistema</button>
+          <button class="nav-item" data-view="roles"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 2.4 3.8-.4 1.2 3.6 3 2.4-2 3.2 1 3.8-3.6 1.4L16 23l-4-1.6L8 23l-2.4-4.6L2 17l1-3.8-2-3.2 3-2.4 1.2-3.6 3.8.4L12 2Z"/></svg></span> Cargos e VIP</button>
+          <button class="nav-item" data-view="badges"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-2.5 5 2.5-1.5-8"/></svg></span> Insígnias</button>
           <button class="nav-item" data-view="storage"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg></span> Armazenamento</button>
           <button class="nav-item" data-view="maintenance"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 21l-3 0-3.5-3.5"/><path d="M14.7 6.3 17.7 3.3a2.1 2.1 0 0 1 3 3l-3 3"/><path d="M14.7 6.3 4 17l-1 4 4-1L18 8.3"/></svg></span> Manutenção</button>
           <button class="nav-item" data-view="ip"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span> IP Intelligence</button>
@@ -85,55 +87,12 @@
           </section>
 
           <section class="view" id="view-ecosystem">
-            <div class="page-heading"><div><p class="eyebrow">HÄTTZ ECOSYSTEM</p><h1>Ecossistema</h1><p class="muted">Crie cargos, insígnias e molduras do zero e escolha exatamente quais perfis recebem cada item.</p></div><button id="reloadEcosystem" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
-            <div class="panel-grid">
-              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">STUDIO PERMISSIONS</p><h2>Cargos autorizados ao editor de tema</h2></div></div><p class="muted">Selecione um ou mais cargos. Apenas os perfis que possuírem pelo menos um deles poderão editar o próprio tema no Studio.</p><div id="studioAccessRoles" class="role-list"><p class="empty">Carregando cargos...</p></div><button id="saveStudioAccess" class="secondary" type="button">Salvar permissões do Studio</button></article>
-              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar ou atualizar item</h2></div></div>
-                <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
-                  <button type="button" class="quiet-button" data-badge-preset="server-booster">💜 Booster</button>
-                  <button type="button" class="quiet-button" data-badge-preset="early-supporter">🏅 Apoiador antigo</button>
-                  <button type="button" class="quiet-button" data-badge-preset="creative-spark">✨ Faísca criativa</button>
-                  <button type="button" class="quiet-button" data-badge-preset="community-pillar">🛡️ Pilar da comunidade</button>
-                </div><small>Preenchem o formulário; use “Salvar item” para publicar.</small></div>
-                <div class="field"><label for="catalogKind">Tipo</label><select id="catalogKind"><option value="badges">Insígnia</option><option value="frames">Moldura</option></select></div>
-                <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: early-supporter"></div>
-                <div class="field"><label for="catalogName">Nome</label><input id="catalogName" maxlength="64" placeholder="Nome exibido"></div>
-                <div class="field"><label for="catalogDescription">Descrição</label><textarea id="catalogDescription" maxlength="240" rows="2"></textarea></div>
-                <div class="field"><label for="catalogRarity">Raridade</label><select id="catalogRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select></div>
-                <div class="field" id="catalogBadgeFields"><label class="check-row"><input id="catalogIsPublic" type="checkbox"> Insígnia visível publicamente <small>(privada por padrão)</small></label><label for="catalogCategory">Categoria</label><input id="catalogCategory" maxlength="32" value="" placeholder="Categoria personalizada"><label for="catalogIcon">Ícone (emoji ou PNG)</label><input id="catalogIcon" maxlength="4" value="" placeholder="✦"><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o emoji.</small></div>
-                <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameAccess">Acesso</label><select id="catalogFrameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div><div class="field" id="catalogFrameRoleField" hidden><label for="catalogFrameRole">Cargo exigido</label><select id="catalogFrameRole"><option value="">Carregando cargos...</option></select></div><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
-              </article>
-              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PROFILE BENEFITS</p><h2>Gerenciar benefícios</h2></div></div>
-                <div class="field"><label for="entitlementCode">Código do perfil</label><input id="entitlementCode" placeholder="HTZ-ABCDE-FGHIJ"></div>
-                <div class="field"><label for="vipEnabled">Acesso VIP</label><select id="vipEnabled"><option value="true">Conceder / manter ativo</option><option value="false">Revogar</option></select></div>
-                <div class="field"><label for="vipExpiry">Validade (opcional)</label><input id="vipExpiry" type="datetime-local"></div>
-                <button id="saveVip" class="secondary">Atualizar VIP</button><p class="muted">Benefício aplicado no backend: limite individual de mídia de 500 MiB enquanto o VIP estiver ativo (250 MiB no plano padrão). O teto global do Hättz não muda.</p>
-                <div class="field"><label for="grantBadgeId">Insígnia</label><select id="grantBadgeId"></select><button id="grantBadge" class="secondary">Conceder tag</button><button id="revokeBadge" class="quiet-button">Revogar tag</button></div>
-                <div class="field"><label for="grantFrameId">Moldura</label><select id="grantFrameId"></select><button id="grantFrame" class="secondary">Conceder moldura</button><button id="revokeFrame" class="quiet-button">Revogar moldura</button></div>
-                <div class="field role-manager">
-                  <label for="grantRoleId">Cargo do perfil</label>
-                  <select id="grantRoleId"><option value="">Carregando cargos...</option></select>
-                  <label for="roleExpiry">Validade do cargo (opcional)</label>
-                  <input id="roleExpiry" type="datetime-local">
-                  <div class="inline-actions"><button id="grantRole" class="secondary" type="button">Conceder cargo</button><button id="revokeRole" class="quiet-button" type="button">Revogar cargo</button><button id="loadProfileRoles" class="quiet-button" type="button">Ver cargos</button></div>
-                  <div id="profileRoleList" class="role-list"><p class="empty">Informe um perfil para consultar os cargos.</p></div>
-                  <div class="inline-actions"><button id="loadProfileBadges" class="quiet-button" type="button">Ver insígnias, molduras e benefícios</button></div>
-                  <div id="profileBadgeList" class="role-list"><p class="empty">As insígnias, molduras e benefícios atribuídos aparecerão aqui.</p></div>
-                </div>
-                <p class="muted">VIP é um benefício separado dos cargos. Cargos administrativos e reservados não aparecem nesta lista.</p>
-                <p class="muted">Todas as operações são validadas no Worker e registradas na auditoria.</p>
-              </article>
+            <div class="page-heading"><div><p class="eyebrow">HÄTTZ ECOSYSTEM</p><h1>Ecossistema</h1><p class="muted">Configuração global de benefícios e atalhos para as áreas de identidade e reconhecimento.</p></div><button id="reloadEcosystem" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="view-hub">
+              <button type="button" class="hub-card" data-open-view="roles"><span class="hub-emoji">👑</span><span class="hub-copy"><strong>Cargos e VIP</strong><small>Identidades, temas exclusivos, benefícios e acesso ao Studio.</small></span><span class="hub-arrow">↗</span></button>
+              <button type="button" class="hub-card" data-open-view="badges"><span class="hub-emoji">🏅</span><span class="hub-copy"><strong>Insígnias</strong><small>Catálogo em emoji, coleções e concessões por perfil.</small></span><span class="hub-arrow">↗</span></button>
             </div>
             <div class="panel-grid">
-              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">COLLECTION SETS</p><h2>Coleções e conjuntos</h2><p class="muted">Defina conjuntos de insígnias e a recompensa concedida automaticamente ao concluí-los.</p></div></div>
-                <div class="field"><label for="collectionId">ID único</label><input id="collectionId" maxlength="48" placeholder="ex.: fundadores"></div>
-                <div class="field"><label for="collectionName">Nome</label><input id="collectionName" maxlength="64" placeholder="Nome da coleção"></div>
-                <div class="field"><label for="collectionDescription">Descrição</label><textarea id="collectionDescription" maxlength="240" rows="2"></textarea></div>
-                <div class="field"><label for="collectionBadges">Insígnias do conjunto</label><select id="collectionBadges" multiple size="7"></select><small>Selecione uma ou mais insígnias publicadas no catálogo.</small></div>
-                <div class="field"><label for="collectionRewardTitle">Título da recompensa</label><input id="collectionRewardTitle" maxlength="80" placeholder="ex.: Fundador Hättz"></div>
-                <div class="inline-actions"><button id="saveCollection" class="primary" type="button">Salvar coleção</button><button id="newCollection" class="quiet-button" type="button">Nova coleção</button></div>
-                <div id="collectionList" class="audit-list"><p class="empty">Carregando coleções...</p></div>
-              </article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">BENEFIT CATALOGUE</p><h2>Catálogo de benefícios</h2><p class="muted">Benefícios independentes que podem ser concedidos diretamente, herdados por cargos ou revertidos por coleções.</p></div></div>
                 <div class="field"><label for="benefitId">ID único</label><input id="benefitId" maxlength="48" placeholder="ex.: storage-plus"></div>
                 <div class="field"><label for="benefitName">Nome</label><input id="benefitName" maxlength="64" placeholder="Nome do benefício"></div>
@@ -142,11 +101,39 @@
                 <div class="field"><label for="benefitValue">Valor</label><input id="benefitValue" maxlength="120" placeholder="Ex.: 524288000 ou Fundador"></div>
                 <div class="inline-actions"><button id="saveBenefit" class="primary" type="button">Salvar benefício</button><button id="newBenefit" class="quiet-button" type="button">Novo benefício</button></div>
                 <div id="benefitList" class="audit-list"><p class="empty">Carregando benefícios...</p></div>
-                <div class="field"><label for="grantBenefitId">Conceder benefício direto</label><select id="grantBenefitId"><option value="">Carregando benefícios...</option></select><div class="inline-actions"><button id="grantBenefit" class="secondary" type="button">Conceder</button><button id="revokeBenefit" class="quiet-button" type="button">Revogar</button></div><small>Use o código do perfil informado em “Gerenciar benefícios”.</small></div>
               </article>
             </div>
+          </section>
+
+          <section class="view" id="view-roles">
+            <div class="page-heading"><div><p class="eyebrow">IDENTIDADE E ACESSO</p><h1>Cargos e VIP</h1><p class="muted">Crie cargos com tema próprio, defina quem pode editar o Studio e gerencie VIP e benefícios por perfil.</p></div><button id="reloadRoles" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="workspace-summary" id="roleSummary">
+              <div class="summary-chip"><span>CARGOS ATIVOS</span><strong id="roleActiveCount">—</strong></div>
+              <div class="summary-chip"><span>CARGOS CRIADOS</span><strong id="roleTotalCount">—</strong></div>
+              <div class="summary-chip"><span>ATRIBUIÇÕES</span><strong id="roleAssignmentCount">—</strong></div>
+              <div class="summary-chip"><span>ACESSO AO STUDIO</span><strong id="roleStudioCount">—</strong></div>
+            </div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PROFILE BENEFITS</p><h2>VIP, benefícios e cargos do perfil</h2></div></div>
+                <div class="field"><label for="entitlementCode">Código do perfil</label><input id="entitlementCode" placeholder="HTZ-ABCDE-FGHIJ"></div>
+                <div class="field"><label for="vipEnabled">Acesso VIP</label><select id="vipEnabled"><option value="true">Conceder / manter ativo</option><option value="false">Revogar</option></select></div>
+                <div class="field"><label for="vipExpiry">Validade (opcional)</label><input id="vipExpiry" type="datetime-local"></div>
+                <button id="saveVip" class="secondary">Atualizar VIP</button><p class="muted">Benefício aplicado no backend: limite individual de mídia de 500 MiB enquanto o VIP estiver ativo (250 MiB no plano padrão). O teto global do Hättz não muda.</p>
+                <div class="field role-manager">
+                  <label for="grantRoleId">Cargo do perfil</label>
+                  <select id="grantRoleId"><option value="">Carregando cargos...</option></select>
+                  <label for="roleExpiry">Validade do cargo (opcional)</label>
+                  <input id="roleExpiry" type="datetime-local">
+                  <div class="inline-actions"><button id="grantRole" class="secondary" type="button">Conceder cargo</button><button id="revokeRole" class="quiet-button" type="button">Revogar cargo</button><button id="loadProfileRoles" class="quiet-button" type="button">Ver cargos</button></div>
+                  <div id="profileRoleList" class="role-list"><p class="empty">Informe um perfil para consultar os cargos.</p></div>
+                </div>
+                <div class="field"><label for="grantBenefitId">Conceder benefício direto</label><select id="grantBenefitId"><option value="">Carregando benefícios...</option></select><div class="inline-actions"><button id="grantBenefit" class="secondary" type="button">Conceder</button><button id="revokeBenefit" class="quiet-button" type="button">Revogar</button></div><small>Use o código do perfil informado em “Gerenciar benefícios”.</small></div>
+                <p class="muted">VIP é um benefício separado dos cargos. Cargos administrativos e reservados não aparecem nesta lista.</p>
+                <p class="muted">Todas as operações são validadas no Worker e registradas na auditoria.</p>
+              </article>
             <article class="panel glass role-design-panel">
               <div class="panel-heading"><div><p class="eyebrow">SPECIAL IDENTITIES</p><h2>Cargos especiais e temas exclusivos</h2><p class="muted">Crie cargos personalizados com identidade visual própria. Depois, conceda-os individualmente pelo código do perfil.</p></div></div>
+                <div class="identity-preview" id="roleIdentityPreview"><span class="preview-emoji" id="roleEmojiPreview">✦</span><span class="preview-copy"><strong id="rolePreviewName">Novo cargo</strong><small id="rolePreviewMeta">Nome e cor aparecem aqui</small></span></div>
               <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
                 <button type="button" class="quiet-button" data-role-preset="booster">💜 Booster</button>
                 <button type="button" class="quiet-button" data-role-preset="veteran">🏅 Veterano</button>
@@ -171,11 +158,62 @@
               <p class="eyebrow role-theme-eyebrow">BENEFÍCIOS HERDADOS PELO CARGO</p>
               <div id="roleBenefitOptions" class="role-list"><p class="empty">Carregando benefícios...</p></div>
               <div class="inline-actions"><button id="saveRoleDefinition" class="primary" type="button">Salvar cargo especial</button><button id="newRoleDefinition" class="quiet-button" type="button">Novo cargo</button></div>
+              <div class="catalog-toolbar"><input id="roleDefinitionSearch" class="search-input" type="search" placeholder="Buscar cargo por nome ou ID" aria-label="Buscar cargo"><span id="roleSearchHint" class="search-hint" hidden>Nenhum cargo encontrado.</span></div>
               <div id="roleDefinitionList" class="role-definition-list"><p class="empty">Carregando cargos...</p></div>
               <p class="muted">Os temas são aplicados somente ao perfil que recebeu o cargo ativo. Cargos administrativos e VIP não podem ser criados por este editor.</p>
             </article>
-            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">ROLE ASSIGNMENTS</p><h2>Quem recebeu cada cargo ou insígnia</h2><p class="muted">Lista de atribuições ativas, com perfil, cargo e validade.</p></div><button id="reloadRoleAssignments" class="quiet-button" type="button">↻ Atualizar</button></div><div id="roleAssignmentsList" class="audit-list"><p class="empty">Carregando atribuições...</p></div></article>
-            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Insígnias e molduras disponíveis</h2></div></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div></article>
+            </div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">STUDIO PERMISSIONS</p><h2>Cargos autorizados ao editor de tema</h2></div></div><p class="muted">Selecione um ou mais cargos. Apenas os perfis que possuírem pelo menos um deles poderão editar o próprio tema no Studio.</p><div id="studioAccessRoles" class="role-list"><p class="empty">Carregando cargos...</p></div><button id="saveStudioAccess" class="secondary" type="button">Salvar permissões do Studio</button></article>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">ROLE ASSIGNMENTS</p><h2>Quem recebeu cada cargo ou insígnia</h2><p class="muted">Lista de atribuições ativas, com perfil, cargo e validade.</p></div><button id="reloadRoleAssignments" class="quiet-button" type="button">↻ Atualizar</button></div><div class="catalog-toolbar"><input id="roleAssignmentSearch" class="search-input" type="search" placeholder="Buscar por cargo ou perfil" aria-label="Buscar atribuição"><span id="assignmentSearchHint" class="search-hint" hidden>Nenhuma atribuição encontrada.</span></div><div id="roleAssignmentsList" class="audit-list"><p class="empty">Carregando atribuições...</p></div></article>
+            </div>
+          </section>
+
+          <section class="view" id="view-badges">
+            <div class="page-heading"><div><p class="eyebrow">RECONHECIMENTO</p><h1>Insígnias</h1><p class="muted">Crie insígnias em emoji, publique o catálogo, monte coleções e conceda itens aos perfis.</p></div><button id="reloadBadges" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="workspace-summary" id="badgeSummary">
+              <div class="summary-chip"><span>INSÍGNIAS ATIVAS</span><strong id="badgeActiveCount">—</strong></div>
+              <div class="summary-chip"><span>PÚBLICAS</span><strong id="badgePublicCount">—</strong></div>
+              <div class="summary-chip"><span>CONCESSÃO MANUAL</span><strong id="badgeManualCount">—</strong></div>
+              <div class="summary-chip"><span>COLEÇÕES</span><strong id="badgeCollectionCount">—</strong></div>
+            </div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar insígnia ou moldura</h2></div></div>
+                <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
+                  <button type="button" class="quiet-button" data-badge-preset="server-booster">💜 Booster</button>
+                  <button type="button" class="quiet-button" data-badge-preset="early-supporter">🏅 Apoiador antigo</button>
+                  <button type="button" class="quiet-button" data-badge-preset="creative-spark">✨ Faísca criativa</button>
+                  <button type="button" class="quiet-button" data-badge-preset="community-pillar">🛡️ Pilar da comunidade</button>
+                </div><small>Preenchem o formulário; use “Salvar item” para publicar.</small></div>
+                <div class="identity-preview" id="badgeIdentityPreview"><span class="preview-emoji" id="badgeEmojiPreview">✦</span><span class="preview-copy"><strong id="badgePreviewName">Nova insígnia</strong><small id="badgePreviewMeta">Emoji, nome e raridade aparecem aqui</small></span></div>
+                <div class="field"><label for="catalogKind">Tipo</label><select id="catalogKind"><option value="badges">Insígnia</option><option value="frames">Moldura</option></select></div>
+                <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: early-supporter"></div>
+                <div class="field"><label for="catalogName">Nome</label><input id="catalogName" maxlength="64" placeholder="Nome exibido"></div>
+                <div class="field"><label for="catalogDescription">Descrição</label><textarea id="catalogDescription" maxlength="240" rows="2"></textarea></div>
+                <div class="field"><label for="catalogRarity">Raridade</label><select id="catalogRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select></div>
+                <div class="field" id="catalogBadgeFields"><label class="check-row"><input id="catalogIsPublic" type="checkbox"> Insígnia visível publicamente <small>(privada por padrão)</small></label><label for="catalogCategory">Categoria</label><input id="catalogCategory" maxlength="32" value="" placeholder="Categoria personalizada"><label for="catalogIcon">Ícone (emoji ou PNG)</label><input id="catalogIcon" maxlength="4" value="" placeholder="✦"><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o emoji.</small></div>
+                <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameAccess">Acesso</label><select id="catalogFrameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div><div class="field" id="catalogFrameRoleField" hidden><label for="catalogFrameRole">Cargo exigido</label><select id="catalogFrameRole"><option value="">Carregando cargos...</option></select></div><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
+              </article>
+              <article class="panel glass">
+                <div class="panel-heading"><div><p class="eyebrow">GRANT COLLECTIBLES</p><h2>Conceder insígnias e molduras</h2><p class="muted">Escolha o perfil pelo código e conceda ou revogue itens do catálogo. Cada concessão é registrada na auditoria.</p></div></div>
+                <div class="field"><label for="badgeProfileCode">Código do perfil</label><input id="badgeProfileCode" placeholder="HTZ-ABCDE-FGHIJ"><small>O mesmo código usado no Share. As insígnias aparecem no perfil público.</small></div>
+                <div class="field"><label for="grantBadgeId">Insígnia</label><select id="grantBadgeId"></select><div class="inline-actions"><button id="grantBadge" class="secondary">Conceder insígnia</button><button id="revokeBadge" class="quiet-button">Revogar insígnia</button></div></div>
+                <div class="field"><label for="grantFrameId">Moldura</label><select id="grantFrameId"></select><div class="inline-actions"><button id="grantFrame" class="secondary">Conceder moldura</button><button id="revokeFrame" class="quiet-button">Revogar moldura</button></div><div class="inline-actions"><button id="loadProfileBadges" class="quiet-button" type="button">Ver itens do perfil</button></div></div>
+                <div id="profileBadgeList" class="role-list"><p class="empty">Informe um perfil para consultar insígnias, molduras e benefícios.</p></div>
+              </article>
+            </div>
+            <div class="panel-grid">
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Insígnias e molduras disponíveis</h2></div></div><div class="catalog-toolbar"><input id="catalogSearch" class="search-input" type="search" placeholder="Buscar insígnia ou moldura" aria-label="Buscar no catálogo"><span id="catalogSearchHint" class="search-hint" hidden>Nenhum item encontrado.</span></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">COLLECTION SETS</p><h2>Coleções e conjuntos</h2><p class="muted">Defina conjuntos de insígnias e a recompensa concedida automaticamente ao concluí-los.</p></div></div>
+                <div class="field"><label for="collectionId">ID único</label><input id="collectionId" maxlength="48" placeholder="ex.: fundadores"></div>
+                <div class="field"><label for="collectionName">Nome</label><input id="collectionName" maxlength="64" placeholder="Nome da coleção"></div>
+                <div class="field"><label for="collectionDescription">Descrição</label><textarea id="collectionDescription" maxlength="240" rows="2"></textarea></div>
+                <div class="field"><label for="collectionBadges">Insígnias do conjunto</label><select id="collectionBadges" multiple size="7"></select><small>Selecione uma ou mais insígnias publicadas no catálogo.</small></div>
+                <div class="field"><label for="collectionRewardTitle">Título da recompensa</label><input id="collectionRewardTitle" maxlength="80" placeholder="ex.: Fundador Hättz"></div>
+                <div class="inline-actions"><button id="saveCollection" class="primary" type="button">Salvar coleção</button><button id="newCollection" class="quiet-button" type="button">Nova coleção</button></div>
+                <div class="catalog-toolbar"><input id="collectionSearch" class="search-input" type="search" placeholder="Buscar coleção" aria-label="Buscar coleção"><span id="collectionSearchHint" class="search-hint" hidden>Nenhuma coleção encontrada.</span></div><div id="collectionList" class="audit-list"><p class="empty">Carregando coleções...</p></div>
+              </article>
+            </div>
           </section>
 
           <section class="view" id="view-storage">
@@ -233,6 +271,6 @@
   <script src="share-config.js"></script>
   <script src="core/hattz-core.js"></script>
   <script src="control.js"></script>
-  <script src="core/liquid-glass.js?v=e7c4a9c"></script>
+  <script src="core/liquid-glass.js?v=e7c4a9d"></script>
 </body>
 </html>
