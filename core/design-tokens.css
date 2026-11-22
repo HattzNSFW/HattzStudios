@@ -31,18 +31,39 @@
   --hattz-motion-fast: .18s ease;
   --hattz-motion-normal: .28s ease;
 
-  /* Camada "iPhone OS" — tokens novos, sem alterar os valores legados usados pelo Share. */
-  --hattz-premium-bg: #07070d;
-  --hattz-premium-surface: rgba(24, 22, 35, .56);
-  --hattz-premium-surface-strong: rgba(34, 30, 49, .72);
-  --hattz-premium-line: rgba(255, 255, 255, .105);
-  --hattz-premium-line-strong: rgba(214, 192, 255, .3);
-  --hattz-premium-accent: #cbaaff;
-  --hattz-premium-accent-2: #8f7cff;
-  --hattz-premium-cyan: #8ce4ff;
-  --hattz-premium-radius: 26px;
-  --hattz-premium-blur: 30px;
-  --hattz-premium-shadow: 0 26px 70px rgba(0, 0, 0, .42), 0 2px 12px rgba(0, 0, 0, .22);
-  --hattz-premium-inset: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 rgba(255, 255, 255, .035);
-  --hattz-premium-sheen: linear-gradient(135deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .025) 34%, rgba(255, 255, 255, 0) 62%);
+  /* Liquid Glass — valores personalizáveis pelo painel Hättz (Share, Studio e Control). */
+  --lg-tint: 203, 170, 255;
+  --lg-tint-2: 140, 124, 255;
+  --lg-cyan: 140, 228, 255;
+  --lg-surface: 24, 22, 35;
+  --lg-surface-strong: 34, 30, 49;
+  --lg-bg-base: 7, 7, 13;
+  --lg-bg-a: 112, 78, 180;
+  --lg-bg-b: 70, 95, 195;
+  --lg-bg-c: 132, 72, 180;
+  --lg-border: 255, 255, 255;
+  --lg-alpha: .56;
+  --lg-border-alpha: .105;
+  --lg-highlight-alpha: .15;
+  --lg-sheen-alpha: .15;
+  --lg-glow-alpha: .34;
+  --lg-shadow-alpha: .42;
+  --lg-blur: 30px;
+  --lg-saturate: 165%;
+  --lg-radius: 26px;
+  --lg-speed: .22s;
+
+  --hattz-premium-bg: rgb(var(--lg-bg-base));
+  --hattz-premium-surface: rgba(var(--lg-surface), var(--lg-alpha));
+  --hattz-premium-surface-strong: rgba(var(--lg-surface-strong), var(--lg-alpha));
+  --hattz-premium-line: rgba(var(--lg-border), var(--lg-border-alpha));
+  --hattz-premium-line-strong: rgba(var(--lg-tint), .3);
+  --hattz-premium-accent: rgb(var(--lg-tint));
+  --hattz-premium-accent-2: rgb(var(--lg-tint-2));
+  --hattz-premium-cyan: rgb(var(--lg-cyan));
+  --hattz-premium-radius: var(--lg-radius);
+  --hattz-premium-blur: var(--lg-blur);
+  --hattz-premium-shadow: 0 26px 70px rgba(0, 0, 0, var(--lg-shadow-alpha)), 0 2px 12px rgba(0, 0, 0, calc(var(--lg-shadow-alpha) * .5));
+  --hattz-premium-inset: inset 0 1px 0 rgba(var(--lg-border), var(--lg-highlight-alpha)), inset 0 -1px 0 rgba(var(--lg-border), .035);
+  --hattz-premium-sheen: linear-gradient(135deg, rgba(255, 255, 255, var(--lg-sheen-alpha)), rgba(255, 255, 255, calc(var(--lg-sheen-alpha) * .17)) 34%, rgba(255, 255, 255, 0) 62%);
 }

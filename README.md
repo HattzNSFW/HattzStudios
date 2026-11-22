@@ -93,6 +93,12 @@ Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas 
 
 A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada (`0d5a61d`). Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
 
+### Liquid Glass personalizável
+
+O liquid glass é global e pode ser ajustado em **Share, Studio e Control** pelo botão flutuante “Personalizar liquid glass” no canto inferior direito. O painel traz 10 sliders (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores, 4 presets (Violeta, Ciano, Rose e Esmeralda), reset e cópia/aplicação do tema em JSON.
+
+As preferências são salvas em `localStorage` (`hattz_liquid_glass_v1`) e valem para todas as páginas da mesma origem; não precisam de login e não são enviadas ao servidor. A API `window.HattzLiquidGlass` expõe `get()`, `set(partial)`, `reset()` e `apply()` para integrações. Tudo passa pelos tokens `--lg-*` em `core/design-tokens.css` e também atualiza os aliases legados (`--hattz-color-accent`, `--hattz-glass-bg`, `--hattz-radius-lg` etc.), mantendo compatibilidade com o Share original.
+
 ## Configuração do backend
 
 Entre em `backend/`:
