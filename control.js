@@ -36,6 +36,16 @@
     });
   }
 
+  /* Deixa claro no login se a chave local ou a credencial remota é esperada.
+     A origem vem do share-config.js, sem expor URLs secretas nem credenciais. */
+  function setupLoginHint() {
+    const hint = $("loginModeHint");
+    if (!hint) return;
+    hint.textContent = window.HATTZ_SHARE_CONFIG?.mode === "remote"
+      ? "Site público: use a credencial administrativa do servidor. A chave local funciona apenas em localhost."
+      : "Modo local: use a chave gravada em data/admin-key.txt.";
+  }
+
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   }
@@ -1184,6 +1194,7 @@
   $("credentialForm").addEventListener("submit", saveCredential);
 
   setupStatus();
+  setupLoginHint();
   syncFrameAccessFields();
   if (token) showApp(true); else showApp(false);
 })();

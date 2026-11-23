@@ -86,6 +86,33 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.99); }
               inset 0 1px 0 rgba(var(--lg-border), var(--lg-highlight-alpha));
 }
 
+/* Reflexo superior muito suave: aplicado como camada isolada para não ser
+   sobrescrito pelo liquid glass nem cobrir o conteúdo das superfícies. */
+body:not(.capture-mode) .glass:not(.panel),
+body:not(.capture-mode) .panel {
+  position: relative;
+  isolation: isolate;
+}
+body:not(.capture-mode) .glass:not(.panel)::before,
+body:not(.capture-mode) .panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(150deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, 0) 26%);
+}
+body:not(.capture-mode) .summary-chip { position: relative; overflow: hidden; }
+body:not(.capture-mode) .summary-chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(110% 80% at 100% 0, rgba(var(--lg-tint), .1), transparent 62%);
+}
+
 /* Share — hierarquia e ícones redondos, sem caixas novas. */
 .profile-card { box-shadow: 0 30px 90px rgba(0, 0, 0, .45), inset 0 1px rgba(255, 255, 255, .07); }
 .name-line h1, .section-heading h2, .panel-heading h2, .page-heading h1 { letter-spacing: -.03em; }
