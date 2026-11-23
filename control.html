@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9d">
-  <link rel="stylesheet" href="control.css?v=e7c4a9d">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9d">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9e">
+  <link rel="stylesheet" href="control.css?v=e7c4a9e">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9e">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -106,7 +106,7 @@
           </section>
 
           <section class="view" id="view-roles">
-            <div class="page-heading"><div><p class="eyebrow">IDENTIDADE E ACESSO</p><h1>Cargos e VIP</h1><p class="muted">Crie cargos com tema próprio, defina quem pode editar o Studio e gerencie VIP e benefícios por perfil.</p></div><button id="reloadRoles" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="page-heading"><div><p class="eyebrow">IDENTIDADE E ACESSO</p><h1>Cargos e VIP</h1><p class="muted">Crie cargos com tema próprio, defina quem pode editar o Studio e gerencie VIP e benefícios por perfil.</p></div><div class="page-actions"><button id="previewRoles" class="secondary" type="button">Ver publicado ↗</button><button id="reloadRoles" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div></div>
             <div class="workspace-summary" id="roleSummary">
               <div class="summary-chip"><span>CARGOS ATIVOS</span><strong id="roleActiveCount">—</strong></div>
               <div class="summary-chip"><span>CARGOS CRIADOS</span><strong id="roleTotalCount">—</strong></div>
@@ -170,7 +170,7 @@
           </section>
 
           <section class="view" id="view-badges">
-            <div class="page-heading"><div><p class="eyebrow">RECONHECIMENTO</p><h1>Insígnias</h1><p class="muted">Crie insígnias em emoji, publique o catálogo, monte coleções e conceda itens aos perfis.</p></div><button id="reloadBadges" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="page-heading"><div><p class="eyebrow">RECONHECIMENTO</p><h1>Insígnias</h1><p class="muted">Crie insígnias em emoji, publique o catálogo, monte coleções e conceda itens aos perfis.</p></div><div class="page-actions"><button id="previewBadges" class="secondary" type="button">Ver publicado ↗</button><button id="reloadBadges" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div></div>
             <div class="workspace-summary" id="badgeSummary">
               <div class="summary-chip"><span>INSÍGNIAS ATIVAS</span><strong id="badgeActiveCount">—</strong></div>
               <div class="summary-chip"><span>PÚBLICAS</span><strong id="badgePublicCount">—</strong></div>
@@ -203,7 +203,7 @@
               </article>
             </div>
             <div class="panel-grid">
-            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Insígnias e molduras disponíveis</h2></div></div><div class="catalog-toolbar"><input id="catalogSearch" class="search-input" type="search" placeholder="Buscar insígnia ou moldura" aria-label="Buscar no catálogo"><span id="catalogSearchHint" class="search-hint" hidden>Nenhum item encontrado.</span></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div></article>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Insígnias e molduras disponíveis</h2></div></div><div class="catalog-toolbar"><input id="catalogSearch" class="search-input" type="search" placeholder="Buscar insígnia ou moldura" aria-label="Buscar no catálogo"><span id="catalogCount" class="catalog-count">— itens</span><span id="catalogSearchHint" class="search-hint" hidden>Nenhum item encontrado.</span></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div><button id="catalogMore" class="quiet-button catalog-more" type="button" hidden>Ver mais</button></article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">COLLECTION SETS</p><h2>Coleções e conjuntos</h2><p class="muted">Defina conjuntos de insígnias e a recompensa concedida automaticamente ao concluí-los.</p></div></div>
                 <div class="field"><label for="collectionId">ID único</label><input id="collectionId" maxlength="48" placeholder="ex.: fundadores"></div>
                 <div class="field"><label for="collectionName">Nome</label><input id="collectionName" maxlength="64" placeholder="Nome da coleção"></div>
@@ -268,9 +268,18 @@
       <footer class="footer">HÄTTZ CONTROL <span>✦</span> PRIVATE ADMINISTRATION</footer>
     </section>
   </main>
+  <div id="previewModal" class="preview-modal" hidden role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+    <div class="preview-dialog glass">
+      <div class="preview-head">
+        <div><p class="eyebrow">PRÉVIA PUBLICADA</p><h2 id="previewTitle">Como o perfil está no Share</h2><p id="previewSubtitle">—</p></div>
+        <div class="preview-head-actions"><button id="previewOpenTab" class="secondary" type="button">Abrir em nova aba ↗</button><button id="previewClose" class="quiet-button" type="button">Fechar</button></div>
+      </div>
+      <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
+    </div>
+  </div>
   <script src="share-config.js"></script>
   <script src="core/hattz-core.js"></script>
   <script src="control.js"></script>
-  <script src="core/liquid-glass.js?v=e7c4a9d"></script>
+  <script src="core/liquid-glass.js?v=e7c4a9e"></script>
 </body>
 </html>

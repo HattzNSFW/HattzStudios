@@ -1025,7 +1025,13 @@ function renderServerRoles() {
   shelf.className = "hattz-server-shelf";
   const label = document.createElement("span");
   label.className = "hattz-shelf-label";
-  label.textContent = "CARGOS";
+  const total = Math.max(roles.length, Number(remoteEntitlements?.catalogTotals?.roles) || 0);
+  label.append("CARGOS");
+  const count = document.createElement("span");
+  count.className = "hattz-shelf-count";
+  count.textContent = `${roles.length}/${total}`;
+  count.setAttribute("aria-label", `${roles.length} de ${total} cargos disponíveis`);
+  label.append(count);
   shelf.append(label);
   for (const role of roles) {
     const chip = document.createElement("span");
@@ -1234,7 +1240,14 @@ async function loadProfileEntitlements() {
     shelf.dataset.remoteEntitlement = "badge";
     const shelfLabel = document.createElement("span");
     shelfLabel.className = "hattz-shelf-label";
-    shelfLabel.textContent = "INSÍGNIAS";
+    const awarded = data.badges.length;
+    const total = Math.max(awarded, Number(data.catalogTotals?.badges) || 0);
+    shelfLabel.append("INSÍGNIAS");
+    const shelfCount = document.createElement("span");
+    shelfCount.className = "hattz-shelf-count";
+    shelfCount.textContent = `${awarded}/${total}`;
+    shelfCount.setAttribute("aria-label", `${awarded} de ${total} insígnias disponíveis`);
+    shelfLabel.append(shelfCount);
     shelf.append(shelfLabel);
     for (const item of (data.badges || [])) {
       const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";

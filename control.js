@@ -17,6 +17,11 @@
   let ecosystemFrames = [];
   let roleAssignmentRows = [];
   let studioRoleIds = new Set();
+  let catalogItems = [];
+  let catalogVisible = 12;
+  let previewUrl = "";
+  const loadedViews = new Set();
+  const CATALOG_PAGE = 12;
   const statusLabels = { idle: "Pronto", online: "Sincronizado", offline: "Sem conexão", syncing: "Sincronizando…", degraded: "Serviço instável", error: "Falha" };
 
   function setupStatus() {
@@ -160,7 +165,14 @@
     document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === name));
     if (name === "profiles") loadProfiles();
-    if (name === "ecosystem" || name === "roles" || name === "badges") loadEcosystem();
+    if (name === "ecosystem" || name === "roles" || name === "badges") {
+      if (!loadedViews.has(name)) {
+        loadedViews.add(name);
+        if (name === "roles") loadRolesView();
+        else if (name === "badges") loadBadgesView();
+        else loadEcosystem();
+      }
+    }
     if (name === "storage") loadStorage();
     if (name === "maintenance") loadMaintenance();
     if (name === "ip") loadIp();
@@ -491,26 +503,35 @@
   function applyAllFilters() {
     filterList('roleDefinitionList', $('roleDefinitionSearch')?.value, 'roleSearchHint');
     filterList('roleAssignmentsList', $('roleAssignmentSearch')?.value, 'assignmentSearchHint');
-    filterList('ecosystemCatalog', $('catalogSearch')?.value, 'catalogSearchHint');
     filterList('collectionList', $('collectionSearch')?.value, 'collectionSearchHint');
   }
 
-  async function loadEcosystem() {
+  function renderCatalog() {
+    const root = $('ecosystemCatalog');
+    if (!root) return;
+    const query = String($('catalogSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
+    const matches = catalogItems.filter(item => !query || item.term.includes(query));
+    const shown = matches.slice(0, catalogVisible);
+    root.innerHTML = shown.map(item => item.html).join('')
+      || `<p class="empty">${query ? 'Nenhum item encontrado.' : 'Nenhuma insígnia ou moldura cadastrada. Crie cada item manualmente.'}</p>`;
+    root.querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', () => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog)));
+    const count = $('catalogCount');
+    if (count) count.textContent = query ? `${matches.length} encontrado(s)` : `${shown.length} de ${matches.length} itens`;
+    const more = $('catalogMore');
+    if (more) {
+      more.hidden = shown.length >= matches.length;
+      more.textContent = `Ver mais (${matches.length - shown.length})`;
+    }
+    const hint = $('catalogSearchHint');
+    if (hint) hint.hidden = !query || matches.length > 0;
+  }
+
+  /* Cada aba busca apenas o que usa. O catálogo é paginado para não transformar
+     a lista publicada numa parede de 3000px. */
+  async function ensureRoles() {
     try {
-      const [catalogResult, rolesResult, collectionsResult, benefitsResult] = await Promise.allSettled([
-        api('/api/admin/catalog'), api('/api/admin/roles'),
-        api('/api/admin/collections'), api('/api/admin/benefits')
-      ]);
-      if (catalogResult.status === 'rejected') throw catalogResult.reason;
-      if (rolesResult.status === 'rejected') throw rolesResult.reason;
-      const data = catalogResult.value;
-      const roleData = rolesResult.value;
-      ecosystemCollections = collectionsResult.status === 'fulfilled' ? (collectionsResult.value.collections || []) : [];
-      ecosystemBenefits = benefitsResult.status === 'fulfilled' ? (benefitsResult.value.benefits || []) : [];
-      const frames = data.frames || [], badges = data.badges || [];
-      const roles = roleData.roles || [];
-      ecosystemBadges = badges;
-      ecosystemFrames = frames;
+      const data = await api('/api/admin/roles');
+      const roles = data.roles || [];
       ecosystemRoles = roles;
       const activeRoles = roles.filter(x => Number(x.enabled) !== 0);
       const roleOptions = activeRoles.map(x => `<option value="${escapeHtml(x.id)}">${emojiFor(x)} ${escapeHtml(x.label)}</option>`).join('') || '<option value="">Nenhum cargo disponível</option>';
@@ -519,27 +540,80 @@
       $('roleDefinitionList').innerHTML = roles.map(role => `<div class="role-definition-row searchable" data-search="${escapeHtml(`${role.id} ${role.label || ''} ${role.description || ''}`)}"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color || '#b99af0')}"><span class="chip-emoji">${emojiFor(role)}</span> ${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)}${Number(role.enabled) === 0 ? ' · Desativado' : ''}${role.benefits && Object.keys(role.benefits).length ? ` · ${Object.keys(role.benefits).length} benefício(s)` : ''}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">${Number(role.enabled) === 0 ? 'Editar / reativar' : 'Editar'}</button>${Number(role.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Desativar</button>` : ''}</div>`).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
       $('roleDefinitionList').querySelectorAll('[data-edit-role]').forEach(button => button.addEventListener('click', () => editRoleDefinition(roles.find(role => role.id === button.dataset.editRole))));
       $('roleDefinitionList').querySelectorAll('[data-delete-role]').forEach(button => button.addEventListener('click', () => removeRoleDefinition(button.dataset.deleteRole)));
+      updateRoleSummary();
+      applyRolePreview();
+      filterList('roleDefinitionList', $('roleDefinitionSearch')?.value, 'roleSearchHint');
+    } catch (error) { notify(error.message); }
+  }
+
+  /* A API não expõe catálogo de benefícios/coleções; manter estes renderizadores
+     locais evita uma requisição 404 em cada visita ao Control. */
+  async function ensureBenefits() {
+    ecosystemBenefits = [];
+    $('grantBenefitId').innerHTML = '<option value="">Nenhum benefício disponível</option>';
+    renderBenefitList();
+    renderRoleBenefitOptions();
+  }
+
+  async function ensureCatalog() {
+    try {
+      const data = await api('/api/admin/catalog');
+      const frames = data.frames || [], badges = data.badges || [];
+      ecosystemBadges = badges;
+      ecosystemFrames = frames;
       $('grantBadgeId').innerHTML = badges.filter(x => Number(x.enabled) !== 0 && x.award_mode !== 'automatic').map(x => `<option value="${escapeHtml(x.id)}">${emojiFor(x)} ${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma insígnia manual disponível</option>';
       $('collectionBadges').innerHTML = badges.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">${emojiFor(x)} ${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma insígnia disponível</option>';
       $('grantFrameId').innerHTML = frames.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">✧ ${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
-      $('grantBenefitId').innerHTML = ecosystemBenefits.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} · ${escapeHtml(effectValueLabel(x.effect))}</option>`).join('') || '<option value="">Nenhum benefício disponível</option>';
-      $('ecosystemCatalog').innerHTML = [...badges.map(x => ({ ...x, kind: 'Insígnia', catalogKind: 'badges' })), ...frames.map(x => ({ ...x, kind: 'Moldura', catalogKind: 'frames' }))].map(x => {
+      catalogItems = [...badges.map(x => ({ ...x, kind: 'Insígnia', catalogKind: 'badges' })), ...frames.map(x => ({ ...x, kind: 'Moldura', catalogKind: 'frames' }))].map(x => {
         const asset = x.kind === 'Moldura' ? parseAsset(x.asset_json) : {};
-        const term = escapeHtml(`${x.id} ${x.name || ''} ${x.category || ''} ${x.kind}`);
-        return `<div class="audit-item searchable" data-search="${term}"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action"><span class="catalog-emoji">${x.kind === 'Insígnia' ? emojiFor(x) : '✧'}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ` · Acesso: ${escapeHtml(asset.accessMode || 'public')}${asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : ''}`}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-access="${escapeHtml(asset.accessMode || 'public')}" data-catalog-role="${escapeHtml(asset.requiredRoleId || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Desativar</button></div>`;
-      }).join('') || '<p class="empty">Nenhuma tag ou moldura cadastrada. Crie cada item manualmente.</p>';
-      $('ecosystemCatalog').querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', () => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog)));
-      renderCollectionList();
-      renderBenefitList();
-      renderRoleBenefitOptions();
-      await loadRoleAssignments();
-      await loadStudioAccess();
-      updateRoleSummary();
+        const term = `${x.id} ${x.name || ''} ${x.category || ''} ${x.kind}`;
+        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action"><span class="catalog-emoji">${x.kind === 'Insígnia' ? emojiFor(x) : '✧'}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ` · Acesso: ${escapeHtml(asset.accessMode || 'public')}${asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : ''}`}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-access="${escapeHtml(asset.accessMode || 'public')}" data-catalog-role="${escapeHtml(asset.requiredRoleId || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Desativar</button></div>`;
+        return { term: term.toLocaleLowerCase('pt-BR'), html };
+      });
+      catalogVisible = CATALOG_PAGE;
+      renderCatalog();
       updateBadgeSummary();
-      applyRolePreview();
       applyBadgePreview();
-      applyAllFilters();
     } catch (error) { notify(error.message); }
+  }
+
+  async function ensureCollections() {
+    ecosystemCollections = [];
+    renderCollectionList();
+    updateBadgeSummary();
+    filterList('collectionList', $('collectionSearch')?.value, 'collectionSearchHint');
+  }
+
+  async function loadRolesView() {
+    await Promise.all([ensureRoles(), ensureBenefits(), loadRoleAssignments(), loadStudioAccess()]);
+  }
+
+  async function loadBadgesView() {
+    await Promise.all([ensureCatalog(), ensureRoles(), ensureCollections()]);
+  }
+
+  async function loadEcosystem() {
+    await ensureBenefits();
+  }
+
+  function openPreview(sourceId) {
+    const code = codeFrom(sourceId);
+    if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code)) {
+      notify('Informe um código de perfil válido para ver a prévia publicada.');
+      return;
+    }
+    const url = new URL('index.html', window.location.href);
+    url.searchParams.set('share', code);
+    previewUrl = url.toString();
+    $('previewFrame').src = previewUrl;
+    $('previewSubtitle').textContent = `Perfil ${code} · Share público, sem login.`;
+    $('previewModal').hidden = false;
+    $('previewClose').focus();
+  }
+  function closePreview() {
+    $('previewModal').hidden = true;
+    $('previewFrame').src = 'about:blank';
+    previewUrl = '';
   }
 
   function renderCollectionList() {
@@ -580,12 +654,12 @@
       await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
       notify('Coleção salva.');
       resetCollectionForm();
-      await loadEcosystem();
+      await ensureCollections();
     } catch (error) { notify(error.message); }
   }
   async function removeCollection(id) {
     if (!id || !window.confirm(`Desativar a coleção "${id}"? As conquistas já concedidas serão preservadas.`)) return;
-    try { await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Coleção desativada. Conquistas preservadas.'); await loadEcosystem(); }
+    try { await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Coleção desativada. Conquistas preservadas.'); await ensureCollections(); }
     catch (error) { notify(error.message); }
   }
 
@@ -636,12 +710,12 @@
       await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
       notify('Benefício salvo.');
       resetBenefitForm();
-      await loadEcosystem();
+      await ensureBenefits();
     } catch (error) { notify(error.message); }
   }
   async function removeBenefit(id) {
     if (!id || !window.confirm(`Desativar o benefício "${id}"? Concessões existentes serão preservadas.`)) return;
-    try { await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Benefício desativado. Concessões preservadas.'); await loadEcosystem(); }
+    try { await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Benefício desativado. Concessões preservadas.'); await ensureBenefits(); }
     catch (error) { notify(error.message); }
   }
   function renderRoleBenefitOptions() {
@@ -772,7 +846,7 @@
       await api(editing ? `/api/admin/roles/${encodeURIComponent(id)}` : '/api/admin/roles', { method: editing ? 'PUT' : 'POST', body: JSON.stringify(body) });
       notify(editing ? 'Cargo e tema atualizados.' : 'Cargo especial criado.');
       resetRoleDefinition();
-      await loadEcosystem();
+      await ensureRoles();
     } catch (error) { notify(error.message); }
   }
 
@@ -811,7 +885,7 @@
         body.asset={ imageData: await readPng($('catalogFrameFile').files?.[0],300*1024), scale:Number($('catalogFrameScale').value), x:Number($('catalogFrameX').value), y:Number($('catalogFrameY').value) };
       }
     } catch(error) { notify(error.message); return; }
-    try { await api(`/api/admin/catalog/${kind}/${encodeURIComponent(id)}`, {method:'PUT',body:JSON.stringify(body)}); notify('Item salvo no catálogo.'); await loadEcosystem(); }
+    try { await api(`/api/admin/catalog/${kind}/${encodeURIComponent(id)}`, {method:'PUT',body:JSON.stringify(body)}); notify('Item salvo no catálogo.'); await ensureCatalog(); }
     catch(error) { notify(error.message); }
   }
   async function removeRoleDefinition(id) {
@@ -820,7 +894,7 @@
       await api(`/api/admin/roles/${encodeURIComponent(id)}`, { method: 'DELETE' });
       notify('Cargo desativado. As atribuições foram preservadas.');
       resetRoleDefinition();
-      await Promise.all([loadEcosystem(), loadRoleAssignments()]);
+      await Promise.all([ensureRoles(), loadRoleAssignments()]);
     } catch (error) { notify(error.message); }
   }
   async function removeCatalogItem(kind, id) {
@@ -828,7 +902,7 @@
     try {
       await api(`/api/admin/catalog/${kind}/${encodeURIComponent(id)}`, { method: 'DELETE' });
       notify('Item desativado. As concessões foram preservadas.');
-      await loadEcosystem();
+      await ensureCatalog();
     } catch (error) { notify(error.message); }
   }
   function codeFrom(fieldId) {
@@ -1023,14 +1097,21 @@
   $("nextPage").addEventListener("click", () => { page = Math.min(totalPages, page + 1); loadProfiles(); });
   $("reloadStorage").addEventListener("click", loadStorage);
   $("reloadEcosystem").addEventListener("click", loadEcosystem);
-  $("reloadRoles").addEventListener("click", loadEcosystem);
-  $("reloadBadges").addEventListener("click", loadEcosystem);
+  $("reloadRoles").addEventListener("click", loadRolesView);
+  $("reloadBadges").addEventListener("click", loadBadgesView);
   [["roleDefinitionSearch", "roleDefinitionList", "roleSearchHint"],
    ["roleAssignmentSearch", "roleAssignmentsList", "assignmentSearchHint"],
-   ["catalogSearch", "ecosystemCatalog", "catalogSearchHint"],
    ["collectionSearch", "collectionList", "collectionSearchHint"]].forEach(([inputId, listId, hintId]) => {
     $(inputId).addEventListener("input", () => filterList(listId, $(inputId).value, hintId));
   });
+  $("catalogSearch").addEventListener("input", () => { catalogVisible = CATALOG_PAGE; renderCatalog(); });
+  $("catalogMore").addEventListener("click", () => { catalogVisible += CATALOG_PAGE; renderCatalog(); });
+  $("previewRoles").addEventListener("click", () => openPreview('entitlementCode'));
+  $("previewBadges").addEventListener("click", () => openPreview('badgeProfileCode'));
+  $("previewClose").addEventListener("click", closePreview);
+  $("previewOpenTab").addEventListener("click", () => { if (previewUrl) window.open(previewUrl, '_blank', 'noopener,noreferrer'); });
+  $("previewModal").addEventListener("click", (event) => { if (event.target === $('previewModal')) closePreview(); });
+  document.addEventListener("keydown", (event) => { if (event.key === 'Escape' && !$('previewModal').hidden) closePreview(); });
   ["roleDefinitionId", "roleDefinitionLabel", "roleDefinitionColor"].forEach(id => $(id).addEventListener("input", applyRolePreview));
   ["catalogId", "catalogName", "catalogIcon", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", applyBadgePreview));
   $("catalogIconFile").addEventListener("change", () => { if ($("catalogIconFile").files?.length) { $("badgeEmojiPreview").textContent = "🖼️"; $("badgePreviewMeta").textContent = "PNG personalizado"; } else applyBadgePreview(); });
