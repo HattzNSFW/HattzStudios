@@ -468,6 +468,9 @@ function loadProfile() {
       localStorage.setItem(scopedKey, legacySaved);
     }
     profile = normalizeProfileData(JSON.parse(saved));
+    // Usuários comuns não criam molduras: limpa qualquer PNG local de versões antigas.
+    if (profile.moldura === "moldura-custom") profile.moldura = "none";
+    delete profile.customFrame;
   } catch (error) {
     console.error("Erro ao carregar perfil:", error);
     profile = structuredClone(DEFAULT_PROFILE);
@@ -493,6 +496,8 @@ async function loadSharedProfile() {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Não foi possível localizar este perfil.");
   profile = normalizeProfileData(data.profile);
+  if (profile.moldura === "moldura-custom") profile.moldura = "none";
+  delete profile.customFrame;
   sharedMediaManifest = Array.isArray(data.media) ? data.media : [];
   sharedProfileLoaded = true;
   sharedState.ok = true;
@@ -682,17 +687,6 @@ function renderFrame() {
   const name = profile.moldura || "none";
 
   const remoteFrame = window.HATTZ_REMOTE_FRAMES?.[name];
-  const localFrame = name === "moldura-custom" ? profile.customFrame : null;
-  if (localFrame?.imageData) {
-    frame.className = "avatar-frame rarity-custom";
-    const img = document.createElement("img");
-    img.src = localFrame.imageData; img.alt = ""; img.className = "remote-avatar-frame custom-local-frame";
-    const avatarAdjust = profile.studio?.avatar || {};
-    img.style.transform = `translate(${Number(avatarAdjust.frameX||0)}px,${Number(avatarAdjust.frameY||0)}px) scale(${Number(avatarAdjust.frameScale||100)/100})`;
-    img.style.width = "100%"; img.style.height = "100%"; img.style.objectFit = "contain"; img.style.pointerEvents = "none";
-    frame.replaceChildren(img);
-    return;
-  }
   if (remoteFrame?.imageData) {
     frame.className = "avatar-frame rarity-custom";
     const img = document.createElement("img");
@@ -917,10 +911,11 @@ async function loadProfileEntitlements() {
   const profileCode = IS_PUBLIC_VIEW
     ? SHARED_PROFILE_CODE
     : (localStorage.getItem(SHARE_PUBLIC_CODE_KEY) || "");
-  if (!profileCode) return;
+  if (!profileCode) { loadFrameCatalog(); return; }
   const api = getShareApiBase();
   if (!api) {
     window.HATTZ_CORE?.setConnectionState?.("offline", "API não configurada.");
+    loadFrameCatalog();
     return;
   }
   const normalizedCode = normalizePublicCode(profileCode) || profileCode;
@@ -930,6 +925,7 @@ async function loadProfileEntitlements() {
     if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
     const data = await response.json();
     remoteEntitlements = data;
+    loadFrameCatalog();
     const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
     const verifiedBadge = $("verifiedBadge");
     verifiedBadge.hidden = data.vip !== true;
@@ -1000,6 +996,49 @@ async function loadProfileEntitlements() {
   } catch (error) {
     window.HATTZ_CORE?.setConnectionState?.(error.status >= 500 ? "degraded" : "offline", error.message);
     window.HATTZ_CORE?.reportError?.(error, "share:entitlements");
+    loadFrameCatalog();
+  }
+}
+
+function frameAccessHint(frame, asset) {
+  if (asset.accessMode === "vip") return "Bloqueada · exige VIP e concessão do Control.";
+  if (asset.accessMode === "role") return "Bloqueada · exige cargo ativo e concessão do Control.";
+  if (["premium", "elite"].includes(String(frame.rarity || "").toLowerCase())) return "Bloqueada · exige VIP e concessão do Control.";
+  return "Bloqueada · exige concessão do Control.";
+}
+
+async function loadFrameCatalog() {
+  const root = $("frameCatalogGrid");
+  if (!root) return;
+  const section = $("frameCatalogSection");
+  const api = getShareApiBase();
+  const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
+  if (!api || api.includes("YOUR-WORKER")) {
+    root.innerHTML = '<p class="muted">Catálogo indisponível: API não configurada.</p>';
+    if (section) section.hidden = false;
+    return;
+  }
+  const owned = new Set((remoteEntitlements?.frames || []).map((frame) => frame.id));
+  try {
+    const response = await fetch(`${api}/api/catalog`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
+    const data = await response.json();
+    const frames = Array.isArray(data.frames) ? data.frames : [];
+    if (section) section.hidden = frames.length === 0;
+    root.innerHTML = frames.length ? frames.map((frame) => {
+      let asset = {};
+      try { asset = JSON.parse(frame.asset_json || "{}") || {}; } catch {}
+      const available = owned.has(frame.id);
+      const label = available ? "Disponível" : "Bloqueada";
+      const hint = available ? (frame.description || "Concedida a este perfil.") : frameAccessHint(frame, asset);
+      const preview = asset.imageData
+        ? `<span class="frame-catalog-preview"><img src="${escape(asset.imageData)}" alt=""></span>`
+        : '<span class="frame-catalog-preview plain">○</span>';
+      return `<article class="frame-catalog-item ${available ? "" : "locked"}"><span class="frame-catalog-status ${available ? "available" : "locked"}">${label}</span>${preview}<div class="frame-catalog-body"><strong>${escape(frame.name || frame.id)}</strong><small>${escape(frame.rarityLabel || frame.rarity || "Especial")}</small><p class="muted">${escape(hint)}</p></div></article>`;
+    }).join("") : '<p class="muted">Nenhuma moldura publicada no catálogo.</p>';
+  } catch (error) {
+    root.textContent = `Não foi possível carregar o catálogo: ${error.message}`;
+    if (section) section.hidden = false;
   }
 }
 
@@ -3751,6 +3790,20 @@ function setupEvents() {
       "--font",
       `"${profile.fonte}", sans-serif`
     );
+  });
+
+  document.addEventListener("hattz:menu", (event) => {
+    const { action, panel } = event.detail || {};
+    if (action === "editor" && !IS_PUBLIC_VIEW) { openEditor(); return; }
+    if (action === "share" && !IS_PUBLIC_VIEW) { openShareManager(); return; }
+    if (action === "capture") { setCaptureMode(true); return; }
+    if (action === "other-profile" && !IS_PUBLIC_VIEW) { openOtherProfile(); return; }
+    const targets = { frames: "frameCatalogSection", badges: "badges", cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
+    const target = panel && $(targets[panel]);
+    if (target) {
+      target.hidden = false;
+      target.scrollIntoView({ block: "start" });
+    }
   });
 }
 

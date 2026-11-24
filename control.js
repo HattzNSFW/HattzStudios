@@ -638,10 +638,16 @@
       const access = asset.accessMode || 'public';
       const term = `${frame.id} ${frame.name || ''} ${frame.description || ''} ${access}${asset.requiredRoleId ? ` ${asset.requiredRoleId}` : ''}`;
       const role = access === 'role' && asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : '';
-      return `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">MOLDURA</span><div><div class="audit-action"><span class="catalog-emoji">🖼️</span> ${escapeHtml(frame.name)}</div><div class="audit-detail">${escapeHtml(frame.description || '')} · Acesso: ${escapeHtml(access)}${role}</div></div><span class="audit-target">${escapeHtml(frame.rarityLabel || frame.rarity || '—')}${Number(frame.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-frame="${escapeHtml(frame.id)}">Editar</button>${Number(frame.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-frame="${escapeHtml(frame.id)}">Desativar</button>` : ''}</div>`;
+      return `<div class="audit-item searchable frame-catalog-row" data-frame-id="${escapeHtml(frame.id)}" data-search="${escapeHtml(term)}" role="button" tabindex="0" title="Clique para editar"><span class="audit-time">MOLDURA</span><div><div class="audit-action"><span class="catalog-emoji">🖼️</span> ${escapeHtml(frame.name)}</div><div class="audit-detail">${escapeHtml(frame.description || '')} · Acesso: ${escapeHtml(access)}${role}</div></div><span class="audit-target">${escapeHtml(frame.rarityLabel || frame.rarity || '—')}${Number(frame.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-frame="${escapeHtml(frame.id)}">Editar</button>${Number(frame.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-frame="${escapeHtml(frame.id)}">Desativar</button>` : ''}</div>`;
     }).join('') : `<p class="empty">${query ? 'Nenhuma moldura encontrada.' : 'Nenhuma moldura cadastrada. Envie um PNG para começar.'}</p>`;
-    root.querySelectorAll('[data-edit-frame]').forEach(button => button.addEventListener('click', () => editFrame(ecosystemFrames.find(frame => frame.id === button.dataset.editFrame))));
+    const openFrame = (id) => editFrame(ecosystemFrames.find(frame => frame.id === id));
+    root.querySelectorAll('[data-edit-frame]').forEach(button => button.addEventListener('click', () => openFrame(button.dataset.editFrame)));
     root.querySelectorAll('[data-delete-frame]').forEach(button => button.addEventListener('click', () => removeCatalogItem('frames', button.dataset.deleteFrame)));
+    root.querySelectorAll('.frame-catalog-row').forEach(row => {
+      const activate = (event) => { if (!event.target.closest('button')) openFrame(row.dataset.frameId); };
+      row.addEventListener('click', activate);
+      row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activate(event); } });
+    });
     const count = $('frameCatalogCount');
     if (count) count.textContent = query ? `${matches.length} encontrada(s)` : `${matches.length} moldura(s)`;
     const hint = $('frameCatalogHint');
@@ -1044,6 +1050,7 @@
     $('frameY').value = String(asset.y || 0);
     syncFrameAccessFields();
     $('frameName').focus();
+    $('frameName').scrollIntoView({ block: 'center' });
     notify('Moldura carregada. Envie um novo PNG apenas se quiser substituir a imagem.');
   }
   async function saveFrame() {

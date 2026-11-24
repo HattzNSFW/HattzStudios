@@ -5,13 +5,13 @@
   <meta name="theme-color" content="#09090d"><title>Hättz Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9p"><link rel="stylesheet" href="studio.css?v=e7c4a9p">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9p">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9q"><link rel="stylesheet" href="studio.css?v=e7c4a9q">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9q">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <main class="studio-shell">
-    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><div class="top-right"><span id="blocksState" class="blocks-chip" data-state="local">8 blocos · salvo localmente</span><span id="activeProfileLabel">Perfil 1</span><button id="saveStudio" class="primary"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Salvar alterações</button><a class="quiet" id="backToProfile" href="./index.html"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>Voltar ao perfil</a></div></header>
+    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><div class="top-right"><button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button><span id="blocksState" class="blocks-chip" data-state="local">8 blocos · salvo localmente</span><span id="activeProfileLabel">Perfil 1</span><button id="saveStudio" class="primary"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Salvar alterações</button><a class="quiet" id="backToProfile" href="./index.html"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>Voltar ao perfil</a></div></header>
     <div class="studio-layout">
       <aside class="studio-sidebar glass">
         <p class="eyebrow">WORKSPACE</p>
@@ -53,23 +53,13 @@
             <label>Ajuste horizontal da moldura <output id="avatarFrameXOut">0 px</output><input data-avatar="frameX" type="range" min="-100" max="100" value="0"></label>
             <label>Ajuste vertical da moldura <output id="avatarFrameYOut">0 px</output><input data-avatar="frameY" type="range" min="-100" max="100" value="0"></label>
           </div>
-          <div class="custom-frame-panel" id="customFramePanel">
-            <div class="heading"><div><p class="eyebrow">MOLDURA PNG PRÓPRIA</p><h2>Sua moldura</h2><p>Envie um PNG com o centro transparente. Use os controles de escala e posição acima para ajustar — a prévia do perfil atualiza na hora.</p></div></div>
-            <div class="custom-frame-row">
-              <input type="file" id="customFrameFile" accept="image/png" hidden>
-              <button type="button" class="secondary" id="customFramePick">Escolher PNG</button>
-              <button type="button" class="quiet" id="customFrameClear">Remover moldura PNG</button>
-              <span class="custom-frame-status" id="customFrameStatus">Nenhuma imagem enviada.</span>
-            </div>
-          </div>
         </article>
         </section>
         <section class="studio-panel" id="panel-frames">
-          <div class="heading"><div><p class="eyebrow">FRAME COLLECTION</p><h1>Hättz Frames</h1><p>Catálogo de molduras PNG. Envie seu PNG no Avatar Lab ou escolha uma moldura publicada no catálogo.</p></div></div>
+          <div class="heading"><div><p class="eyebrow">FRAME COLLECTION</p><h1>Hättz Frames</h1><p>Catálogo de molduras PNG publicadas pelo Control. Molduras bloqueadas exigem concessão, VIP ou cargo ativo.</p></div></div>
           <article class="glass editor-card"><div class="frame-grid">
             <button class="frame-option" data-frame="none"><span class="frame-preview plain">○</span><b>Sem moldura</b><small>Basic</small></button>
-            <button class="frame-option" data-frame="moldura-custom"><span class="frame-preview">PNG</span><b>Minha moldura</b><small>PNG enviado por você</small></button>
-          </div><p class="muted">Apenas molduras PNG: sua moldura local e as molduras publicadas pelo Control. O catálogo remoto é atualizado automaticamente.</p></article>
+          </div><div class="frame-catalog" id="studioFrameCatalog"><p class="muted">Carregando catálogo...</p></div><p class="muted">Somente o Control pode criar molduras. Aqui você escolhe entre as molduras concedidas ao perfil.</p></article>
         </section>
         <section class="studio-panel" id="panel-theme" hidden>
           <div class="heading"><div><p class="eyebrow">EXCLUSIVE ROLE BENEFIT</p><h1>Tema exclusivo</h1><p>Personalize as cores do seu próprio perfil. O acesso depende dos cargos configurados no Control.</p></div></div>
@@ -96,5 +86,26 @@
     </div>
     <footer>HÄTTZ STUDIO <span>✦</span> LIQUID GLASS CUSTOM</footer>
   </main>
-  <script defer src="share-config.js?v=e7c4a9p"></script><script defer src="core/hattz-core.js?v=e7c4a9p"></script><script defer src="core/local-history.js?v=e7c4a9p"></script><script defer src="core/profile-contract.js"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4a9p"></script><script defer src="core/liquid-glass.js?v=e7c4a9p"></script>
+  <div class="hattz-menu-backdrop" id="hattzMenuBackdrop" hidden></div>
+  <aside class="hattz-menu glass" id="hattzMenu" aria-label="Menu Hättz" hidden>
+    <div class="hattz-menu-head"><div><p class="eyebrow">MENU ÚNICO</p><h2>Hättz</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
+    <label class="hattz-menu-search"><span>Buscar função</span><input id="hattzMenuSearch" type="search" placeholder="Ex.: moldura, insígnia, avatar" autocomplete="off"></label>
+    <nav class="hattz-menu-list" id="hattzMenuList" aria-label="Funções do Hättz">
+      <p class="hattz-menu-group">SHARE</p>
+      <button type="button" data-menu-href="./index.html" data-keywords="share perfil público ver perfil publicar">Ver perfil no Share</button>
+      <p class="hattz-menu-group">STUDIO</p>
+      <button type="button" data-menu-panel="cards" data-keywords="vidro cartões transparência glass">Vidro dos cartões</button>
+      <button type="button" data-menu-panel="avatar" data-keywords="avatar foto posição iluminação">Avatar Lab</button>
+      <button type="button" data-menu-panel="frames" data-keywords="molduras png catálogo disponível bloqueada">Molduras</button>
+      <button type="button" data-menu-panel="badges" data-keywords="insígnias emoji coleção catálogo">Insígnias</button>
+      <button type="button" data-menu-panel="collections" data-keywords="coleções conjuntos conquistas">Coleções</button>
+      <button type="button" data-menu-action="theme" data-keywords="tema global cores">Tema global</button>
+      <p class="hattz-menu-group">CONTROL</p>
+      <button type="button" data-menu-href="./control.html" data-keywords="control administrador senha criar moldura catálogo">Abrir Control</button>
+    </nav>
+    <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
+  </aside>
+
+  <script defer src="core/hattz-menu.js?v=e7c4a9q"></script>
+  <script defer src="share-config.js?v=e7c4a9q"></script><script defer src="core/hattz-core.js?v=e7c4a9q"></script><script defer src="core/local-history.js?v=e7c4a9q"></script><script defer src="core/profile-contract.js?v=e7c4a9q"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4a9q"></script><script defer src="core/liquid-glass.js?v=e7c4a9q"></script>
 </body></html>

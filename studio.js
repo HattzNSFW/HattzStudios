@@ -20,8 +20,7 @@
     return JSON.parse(JSON.stringify({
       studio: profile.studio,
       moldura: profile.moldura,
-      raridadeMoldura: profile.raridadeMoldura,
-      customFrame: profile.customFrame || null
+      raridadeMoldura: profile.raridadeMoldura
     }));
   }
   window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { label: "Studio carregado" });
@@ -29,7 +28,10 @@
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
   $("backToProfile").href = `./index.html?profile=${profileId}`;
   $("profilePreview").src = `./index.html?profile=${profileId}&studioPreview=${Date.now()}`;
-  syncCustomFrameUI();
+  // Molduras só entram no catálogo pelo Control; remove qualquer PNG local antigo.
+  if (profile.moldura === "moldura-custom") profile.moldura = "none";
+  if (profile.customFrame) { delete profile.customFrame; window.HATTZ_CORE?.setProfile?.(profileId, profile); }
+  syncFrameSelection();
 
   const escapeText = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const parseAsset = (value) => { try { return JSON.parse(value || "{}") || {}; } catch { return {}; } };
@@ -76,18 +78,7 @@
       out.textContent = item[prop] === undefined ? "Global" : `${item[prop]}${prop === "blur" ? " px" : "%"}`;
     }
   }
-  function syncCustomFrameUI() {
-    const hasFrame = Boolean(profile.customFrame?.imageData);
-    const status = $("customFrameStatus");
-    if (status) {
-      status.textContent = hasFrame ? "PNG aplicado ao perfil." : "Nenhuma imagem enviada.";
-      status.classList.toggle("has-frame", hasFrame);
-    }
-    const customButton = document.querySelector('[data-frame="moldura-custom"]');
-    if (customButton) {
-      customButton.disabled = !hasFrame;
-      customButton.title = hasFrame ? "Usar a moldura PNG enviada." : "Envie um PNG na aba Avatar Lab primeiro.";
-    }
+  function syncFrameSelection() {
     document.querySelectorAll("[data-frame]").forEach(button => {
       button.classList.toggle("selected", button.dataset.frame === (profile.moldura || "none"));
     });
@@ -125,15 +116,12 @@
       profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio?.(snapshot.studio) || snapshot.studio;
       profile.moldura = snapshot.moldura || "none";
       profile.raridadeMoldura = snapshot.raridadeMoldura || "none";
-      if (snapshot.customFrame?.imageData) profile.customFrame = { imageData: String(snapshot.customFrame.imageData) };
-      else delete profile.customFrame;
+      if (profile.moldura === "moldura-custom") profile.moldura = "none";
+      delete profile.customFrame;
       renderGlass();
       renderAvatar();
       renderCard();
-      syncCustomFrameUI();
-      document.querySelectorAll("[data-frame]").forEach((button) => {
-        button.classList.toggle("selected", button.dataset.frame === (profile.moldura || "none"));
-      });
+      syncFrameSelection();
       writeProfile(false);
       if (message) toast(message);
     } finally {
@@ -186,70 +174,21 @@
     renderCard(); save(false);
   }));
   $("resetCard").addEventListener("click", () => { delete profile.studio.cards[$("cardTarget").value]; renderCard(); save(false); });
-  document.querySelectorAll("[data-frame]").forEach(btn => btn.addEventListener("click", () => {
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-frame]");
+    if (!btn) return;
     if (btn.disabled) {
       toast(btn.title || "Esta moldura ainda não está disponível para este perfil.");
       return;
     }
-    if (btn.dataset.frame === "moldura-custom" && !profile.customFrame?.imageData) {
-      toast("Envie um PNG na aba Avatar Lab primeiro.");
-      return;
-    }
     profile.moldura = btn.dataset.frame;
-    document.querySelectorAll("[data-frame]").forEach(x => x.classList.toggle("selected", x === btn));
+    syncFrameSelection();
     save(false);
-  }));
+  });
   $("profilePreview").addEventListener("load", () => {
     try { $("profilePreview").contentWindow.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH" }, location.origin); } catch {}
   });
   $("saveStudio").addEventListener("click", () => save(true));
-
-  const CUSTOM_FRAME_MAX_BYTES = 300 * 1024;
-  $("customFramePick")?.addEventListener("click", () => $("customFrameFile")?.click());
-  $("customFrameFile")?.addEventListener("change", async (event) => {
-    const input = event.currentTarget;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (file.type !== "image/png") {
-      toast("Use um arquivo PNG.");
-      input.value = "";
-      return;
-    }
-    if (file.size > CUSTOM_FRAME_MAX_BYTES) {
-      toast("PNG muito grande. Limite: 300 KB.");
-      input.value = "";
-      return;
-    }
-    try {
-      const imageData = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = () => reject(new Error("Não foi possível ler o PNG."));
-        reader.readAsDataURL(file);
-      });
-      if (!/^data:image\/png;base64,[A-Za-z0-9+/=\r\n]+$/i.test(imageData)) throw new Error("PNG inválido.");
-      profile.customFrame = { imageData };
-      profile.moldura = "moldura-custom";
-      syncCustomFrameUI();
-      save(false);
-      toast("Moldura aplicada. Ajuste escala e posição na prévia.");
-    } catch (error) {
-      toast(error?.message || "Não foi possível aplicar o PNG.");
-    } finally {
-      input.value = "";
-    }
-  });
-  $("customFrameClear")?.addEventListener("click", () => {
-    if (!profile.customFrame?.imageData) {
-      toast("Nenhuma moldura PNG para remover.");
-      return;
-    }
-    delete profile.customFrame;
-    profile.moldura = "none";
-    syncCustomFrameUI();
-    save(false);
-    toast("Moldura PNG removida.");
-  });
 
   let themeAllowed = false;
   let profileCode = "";
@@ -352,42 +291,42 @@
       return `<article class="catalog-item ${isActive ? "" : "locked"}"><strong>${escapeText(benefit.name || benefit.id)}</strong><small>${isActive ? "ATIVO" : "DISPONÍVEL"}</small><p class="muted">${escapeText(benefit.description || effects)}</p></article>`;
     }).join("") : '<p class="muted">Nenhum benefício publicado no catálogo.</p>');
   }
-  function applyFramePermissions(catalogFrames = [], info = {}) {
+  function frameAccessHint(frame, asset) {
+    if (asset.accessMode === "vip") return "Bloqueada · exige VIP e concessão do Control.";
+    if (asset.accessMode === "role") return "Bloqueada · exige cargo ativo e concessão do Control.";
+    if (["premium", "elite"].includes(String(frame.rarity || "").toLowerCase())) return "Bloqueada · exige VIP e concessão do Control.";
+    return "Bloqueada · exige concessão do Control.";
+  }
+  function renderFrameCatalog(catalogFrames = [], info = {}) {
     const owned = new Set((info.frames || []).map(frame => frame.id));
     const byId = new Map(catalogFrames.map(frame => [frame.id, frame]));
-    for (const button of document.querySelectorAll("[data-frame]")) {
-      const id = button.dataset.frame;
-      const frame = byId.get(id);
-      if (!frame || id === "none") continue;
-      const asset = parseAsset(frame.asset_json);
-      const restricted = Boolean(asset.imageData) || ["vip", "role"].includes(asset.accessMode) || ["premium", "elite"].includes(String(frame.rarity || "").toLowerCase());
-      if (restricted && !owned.has(id)) {
-        button.disabled = true;
-        button.title = asset.accessMode === "vip" ? "Moldura VIP: concedida pelo Control Owner." : asset.accessMode === "role" ? "Moldura de cargo: exige cargo ativo e concessão." : "Moldura premium: concessão administrativa necessária.";
-      } else {
-        button.disabled = false;
-        button.title = frame.description || frame.name || "";
-      }
+    for (const button of document.querySelectorAll("button[data-frame]")) {
+      const frame = byId.get(button.dataset.frame);
+      if (!frame || button.dataset.frame === "none") continue;
+      const available = owned.has(frame.id);
+      button.disabled = !available;
+      button.title = available ? (frame.description || frame.name || "") : frameAccessHint(frame, parseAsset(frame.asset_json));
     }
-    const grid = document.querySelector(".frame-grid");
-    if (!grid) return;
-    for (const frame of catalogFrames) {
-      if (!frame.asset_json || document.querySelector(`[data-frame="${CSS.escape(frame.id)}"]`)) continue;
-      const asset = parseAsset(frame.asset_json);
-      if (!asset.imageData) continue;
-      if (!owned.has(frame.id)) continue;
-      const button = document.createElement("button");
-      button.className = "frame-option";
-      button.dataset.frame = frame.id;
-      button.innerHTML = `<span class="frame-preview">PNG</span><b>${escapeText(frame.name)}</b><small>${escapeText(frame.rarityLabel || "Exclusiva")}</small>`;
-      button.addEventListener("click", () => {
-        profile.moldura = frame.id;
-        document.querySelectorAll("[data-frame]").forEach(x => x.classList.toggle("selected", x === button));
-        save(false);
-      });
-      grid.append(button);
+    const root = $("studioFrameCatalog");
+    if (!root) return;
+    if (!catalogFrames.length) {
+      root.innerHTML = '<p class="muted">Nenhuma moldura publicada no catálogo.</p>';
+      return;
     }
-    document.querySelectorAll("[data-frame]").forEach(button => button.classList.toggle("selected", button.dataset.frame === (profile.moldura || "none")));
+    root.innerHTML = catalogFrames.map((frame) => {
+      const asset = parseAsset(frame.asset_json);
+      const available = owned.has(frame.id);
+      const label = available ? "Disponível" : "Bloqueada";
+      const hint = available ? (frame.description || "Concedida a este perfil.") : frameAccessHint(frame, asset);
+      const preview = asset.imageData
+        ? `<span class="frame-catalog-preview"><img src="${escapeText(asset.imageData)}" alt=""></span>`
+        : '<span class="frame-catalog-preview plain">○</span>';
+      const action = available
+        ? `<button class="frame-option frame-catalog-button" type="button" data-frame="${escapeText(frame.id)}" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>${escapeText(frame.rarityLabel || frame.rarity || "Especial")}</small></button>`
+        : `<div class="frame-option frame-catalog-button locked" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>🔒 Bloqueada</small></div>`;
+      return `<article class="frame-catalog-item ${available ? "" : "locked"}"><span class="frame-catalog-status ${available ? "available" : "locked"}">${label}</span>${action}<small class="frame-catalog-hint">${escapeText(hint)}</small></article>`;
+    }).join("");
+    syncFrameSelection();
   }
 
   async function loadCatalog() {
@@ -409,7 +348,7 @@
       }
       window.HATTZ_REMOTE_BENEFITS = info.benefits || {};
       window.HATTZ_REMOTE_COLLECTIONS = info.collections || [];
-      applyFramePermissions(data.frames || [], info);
+      renderFrameCatalog(data.frames || [], info);
       const earned = new Map((info.badges || []).map(item => [item.id, item]));
       root.innerHTML = (data.badges || []).map(b => {
         const award = earned.get(b.id);
@@ -430,6 +369,18 @@
 
   $("reloadCatalog")?.addEventListener("click", loadCatalog);
   $("reloadCollections")?.addEventListener("click", loadCatalog);
+  document.addEventListener("hattz:menu", (event) => {
+    const { action, panel } = event.detail || {};
+    if (panel) {
+      const nav = document.querySelector(`.studio-nav[data-panel="${panel}"]`);
+      if (nav && !nav.hidden) {
+        nav.click();
+        $(`panel-${panel}`)?.scrollIntoView({ block: "start" });
+      }
+      return;
+    }
+    if (action === "theme") $("openThemeCustomizer")?.click();
+  });
   setupStatus();
   renderGlass(); renderAvatar(); renderCard();
   loadCatalog();

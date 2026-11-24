@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9p">
-  <link rel="stylesheet" href="style.css?v=e7c4a9p">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9p">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9q">
+  <link rel="stylesheet" href="style.css?v=e7c4a9q">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9q">
 </head>
 
 <body>
@@ -40,6 +40,7 @@
             <span class="banner-subtitle" id="bannerSubtitle" hidden></span>
           </div>
           <div class="banner-tool-actions">
+            <button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button>
             <button class="profile-switch-button" id="openOtherProfile" type="button" title="Abrir o outro perfil em uma nova aba">
               <span class="profile-switch-icon" aria-hidden="true">↗</span>
               <span id="openOtherProfileLabel">Criar perfil 2</span>
@@ -95,6 +96,11 @@
             <div id="serverRoles" class="server-roles" hidden></div>
             <div class="badges" id="badges"></div>
           </div>
+        </section>
+
+        <section class="content-section" id="frameCatalogSection" hidden>
+          <div class="section-heading"><div><h2>Catálogo de molduras</h2><p class="section-description" id="frameCatalogDescription">Molduras publicadas pelo Control. As bloqueadas exigem concessão administrativa, VIP ou cargo ativo.</p></div></div>
+          <div class="frame-catalog" id="frameCatalogGrid"></div>
         </section>
 
         <section class="content-section" id="statsSection">
@@ -440,7 +446,6 @@
             <label for="avatarFrameSelect">Estilo da moldura</label>
             <select class="text-input" id="avatarFrameSelect">
               <option value="none">Sem moldura</option>
-              <option value="moldura-custom">Minha moldura PNG (enviada no Studio)</option>
             </select>
             <label for="frameRarity" class="sub-field-label">Raridade visual</label>
             <select class="text-input" id="frameRarity">
@@ -857,12 +862,36 @@
     </section>
   </div>
 
-  <script defer src="share-config.js?v=e7c4a9p"></script>
-  <script defer src="core/hattz-core.js?v=e7c4a9p"></script>
-  <script defer src="core/local-history.js?v=e7c4a9p"></script>
-  <script defer src="core/profile-contract.js"></script>
+  <div class="hattz-menu-backdrop" id="hattzMenuBackdrop" hidden></div>
+  <aside class="hattz-menu glass" id="hattzMenu" aria-label="Menu Hättz" hidden>
+    <div class="hattz-menu-head"><div><p class="eyebrow">MENU ÚNICO</p><h2>Hättz</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
+    <label class="hattz-menu-search"><span>Buscar função</span><input id="hattzMenuSearch" type="search" placeholder="Ex.: moldura, insígnia, compartilhar" autocomplete="off"></label>
+    <nav class="hattz-menu-list" id="hattzMenuList" aria-label="Funções do Hättz">
+      <p class="hattz-menu-group">SHARE</p>
+      <button type="button" data-menu-action="editor" data-keywords="perfil editar nome bio design conteúdo">Editar perfil</button>
+      <button type="button" data-menu-action="share" data-keywords="compartilhar publicar código perfil">Compartilhar / publicar</button>
+      <button type="button" data-menu-action="capture" data-keywords="modo captura screenshot imagem">Modo captura</button>
+      <button type="button" data-menu-action="other-profile" data-keywords="perfil 2 alternar outro">Abrir outro perfil</button>
+      <p class="hattz-menu-group">STUDIO</p>
+      <button type="button" data-menu-href="./studio.html" data-keywords="studio editor cartões avatar molduras insígnias coleções tema">Abrir Studio</button>
+      <button type="button" data-menu-panel="cards" data-keywords="vidro cartões transparência glass">Vidro dos cartões</button>
+      <button type="button" data-menu-panel="avatar" data-keywords="avatar foto posição iluminação">Avatar Lab</button>
+      <button type="button" data-menu-panel="frames" data-keywords="molduras png catálogo disponível bloqueada">Molduras</button>
+      <button type="button" data-menu-panel="badges" data-keywords="insígnias emoji coleção catálogo">Insígnias</button>
+      <button type="button" data-menu-panel="collections" data-keywords="coleções conjuntos conquistas">Coleções</button>
+      <p class="hattz-menu-group">CONTROL</p>
+      <button type="button" data-menu-href="./control.html" data-keywords="control administrador senha catálogo molduras criar">Abrir Control</button>
+    </nav>
+    <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
+  </aside>
+
+  <script defer src="core/hattz-menu.js?v=e7c4a9q"></script>
+  <script defer src="share-config.js?v=e7c4a9q"></script>
+  <script defer src="core/hattz-core.js?v=e7c4a9q"></script>
+  <script defer src="core/local-history.js?v=e7c4a9q"></script>
+  <script defer src="core/profile-contract.js?v=e7c4a9q"></script>
   <script defer src="maintenance.js"></script>
-  <script defer src="script.js?v=e7c4a9p"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4a9p"></script>
+  <script defer src="script.js?v=e7c4a9q"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4a9q"></script>
 </body>
 </html>

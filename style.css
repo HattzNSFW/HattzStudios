@@ -3342,7 +3342,7 @@ body.has-animated-background:not(.has-card-background) .card-background-overlay 
   box-shadow: 0 12px 32px rgba(0,0,0,calc(.12 + var(--studio-depth, .42) * .18)), inset 0 1px 0 rgba(255,255,255,calc(var(--studio-reflection, .42) * .18)), 0 0 22px color-mix(in srgb, var(--accent) calc(var(--card-glass-glow, var(--studio-glow, .28)) * 18%), transparent);
 }
 .hattz-vip-badge{border-color:#d6b36c!important;background:linear-gradient(120deg,rgba(133,95,43,.28),rgba(232,204,137,.12))!important;color:#f0d69a!important;box-shadow:0 0 12px rgba(211,173,100,.18)}
-.hattz-collectible.rarity-premium{border-color:#8f78c7!important;color:#c9b5f3!important}.hattz-collectible.rarity-elite{border-color:#d6b36c!important;color:#f0d69a!important;box-shadow:0 0 12px rgba(211,173,100,.16)}
+.hattz-collectible.rarity-premium .hattz-badge-emoji{filter:drop-shadow(0 0 5px rgba(143,120,199,.55))}.hattz-collectible.rarity-elite .hattz-badge-emoji{filter:drop-shadow(0 0 6px rgba(214,179,108,.6))}
 
 
 /* Identidade oficial: selo distinto do VIP e do verificado. */
@@ -3378,12 +3378,12 @@ button:disabled{opacity:.5;cursor:not-allowed;filter:saturate(.6)}
 img,video{max-width:100%}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
-/* Hättz Badges: avatar/profile view displays the artwork only; details open on hover, focus or click. */
-.hattz-collectible{position:relative;display:inline-grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid rgba(255,255,255,.13);border-radius:50%;background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.015)),rgba(16,14,24,.55);backdrop-filter:blur(16px) saturate(165%);-webkit-backdrop-filter:blur(16px) saturate(165%);box-shadow:inset 0 1px rgba(255,255,255,.16),0 6px 18px rgba(0,0,0,.24);color:inherit;cursor:pointer;vertical-align:middle;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.hattz-collectible img,.hattz-badge-emoji{display:block;width:24px;height:24px;object-fit:contain;pointer-events:none}
-.hattz-badge-emoji{font-size:20px;line-height:1;text-align:center;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}
-.hattz-badge-emoji-inline{font-size:19px;line-height:1;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
-.hattz-collectible:hover,.hattz-collectible:focus-visible,.hattz-collectible.is-open{transform:translateY(-2px);outline:none;border-color:rgba(var(--lg-tint,203,170,255),.55);box-shadow:0 0 0 3px rgba(var(--lg-tint,203,170,255),.1),0 10px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.2)}
+/* Hättz Badges: emoji inline, sem caixa, quadrado ou retângulo (estilo Discord). */
+.hattz-collectible{position:relative;display:inline-flex;align-items:center;gap:3px;padding:0 2px;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;color:inherit;cursor:pointer;vertical-align:baseline;line-height:1.15;transition:transform .18s ease,filter .18s ease}
+.hattz-collectible img,.hattz-badge-emoji{display:inline-block;width:auto;height:auto;object-fit:contain;pointer-events:none;overflow:visible}
+.hattz-badge-emoji{font-size:1.15em;line-height:1;text-align:center;vertical-align:-.08em;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+.hattz-badge-emoji-inline{font-size:1em;line-height:1;vertical-align:-.08em;overflow:visible;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+.hattz-collectible:hover,.hattz-collectible:focus-visible,.hattz-collectible.is-open{transform:translateY(-1px);outline:none;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}
 .hattz-badge-detail{position:absolute;z-index:30;left:50%;bottom:calc(100% + 10px);display:grid;gap:4px;width:min(240px,70vw);padding:12px 14px;border:1px solid rgba(190,170,230,.32);border-radius:13px;background:rgba(18,15,26,.97);box-shadow:0 14px 40px rgba(0,0,0,.42);text-align:left;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,5px);transition:opacity .15s ease,transform .15s ease}
 .hattz-badge-detail strong{font-size:12px;color:#f4efff}.hattz-badge-detail small{font-size:10px;color:#c7a9ff}.hattz-badge-detail span{font-size:11px;line-height:1.45;color:#c5bfce}.hattz-collectible:hover .hattz-badge-detail,.hattz-collectible:focus-visible .hattz-badge-detail,.hattz-collectible.is-open .hattz-badge-detail{opacity:1;visibility:visible;transform:translate(-50%,0)}
 @media(prefers-reduced-motion:reduce){.hattz-collectible,.hattz-badge-detail{transition:none}}
