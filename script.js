@@ -322,10 +322,11 @@ function saveProfile() {
   if (IS_PUBLIC_VIEW) return false;
   if (!applyingHistory) {
     // Registra o estado resultante; o estado inicial é semeado em init().
-    window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile, { coalesceMs: 500 });
+    window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile, { coalesceMs: 500, label: "Perfil salvo" });
     try { sessionStorage.setItem(LAST_PROFILE_SAVE_KEY, String(Date.now())); } catch {}
   }
   localStorage.setItem(getProfileStorageKey(), JSON.stringify(profile));
+  window.HATTZ_SUITE?.backup?.(ACTIVE_PROFILE_ID, profile);
   updateProfileSwitcher();
 }
 
@@ -344,6 +345,11 @@ function applyProfileSnapshot(snapshot, message) {
     applyingHistory = false;
   }
 }
+
+window.addEventListener("hattz:restore-profile", (event) => {
+  if (IS_PUBLIC_VIEW || !event.detail) return;
+  applyProfileSnapshot(normalizeProfileData(event.detail), "Perfil restaurado neste navegador.");
+});
 
 function collectEditorDraft() {
   const values = {};
@@ -2506,11 +2512,59 @@ async function removeMusicCover() {
   }
 }
 
+let draggingRow = null;
+
+function handleRowDrag(event, key, render) {
+  const row = event.target.closest(".dynamic-row");
+  if (!row) return;
+  if (event.type === "dragstart") {
+    draggingRow = { key, id: row.dataset.id };
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", row.dataset.id);
+    }
+    row.classList.add("is-dragging");
+    return;
+  }
+  if (event.type === "dragover") {
+    event.preventDefault();
+    row.classList.add("is-drop-target");
+    return;
+  }
+  if (event.type === "dragleave") {
+    row.classList.remove("is-drop-target");
+    return;
+  }
+  if (event.type === "drop") {
+    event.preventDefault();
+    row.classList.remove("is-drop-target");
+    const list = profile[key];
+    const from = list?.findIndex((item) => item.id === draggingRow?.id) ?? -1;
+    const to = list?.findIndex((item) => item.id === row.dataset.id) ?? -1;
+    if (from >= 0 && to >= 0 && from !== to) {
+      const [moved] = list.splice(from, 1);
+      list.splice(to, 0, moved);
+      render();
+      saveProfile();
+      showToast("Ordem atualizada.");
+    }
+    draggingRow = null;
+    return;
+  }
+  if (event.type === "dragend") {
+    document.querySelectorAll(".dynamic-row.is-dragging, .dynamic-row.is-drop-target").forEach((el) => {
+      el.classList.remove("is-dragging", "is-drop-target");
+    });
+    draggingRow = null;
+  }
+}
+
 function renderStatsEditor() {
   const container = $("statsEditor");
 
   container.innerHTML = profile.estatisticas.map((stat) => `
-    <div class="dynamic-row" data-id="${escapeHTML(stat.id)}">
+    <div class="dynamic-row" data-id="${escapeHTML(stat.id)}" draggable="true">
+      <button class="drag-row" type="button" title="Arrastar para reordenar" aria-label="Arrastar para reordenar">⠿</button>
       <input
         class="text-input row-label"
         type="text"
@@ -2580,7 +2634,8 @@ function renderDetailsEditor() {
   const container = $("detailsEditor");
 
   container.innerHTML = profile.detalhes.map((detail) => `
-    <div class="dynamic-row" data-id="${escapeHTML(detail.id)}">
+    <div class="dynamic-row" data-id="${escapeHTML(detail.id)}" draggable="true">
+      <button class="drag-row" type="button" title="Arrastar para reordenar" aria-label="Arrastar para reordenar">⠿</button>
       <input
         class="text-input row-label"
         type="text"
@@ -3818,9 +3873,15 @@ function setupEvents() {
 
   $("statsEditor").addEventListener("input", handleStatsEditor);
   $("statsEditor").addEventListener("click", handleStatsEditor);
+  ["dragstart", "dragover", "dragleave", "drop", "dragend"].forEach((type) => {
+    $("statsEditor").addEventListener(type, (event) => handleRowDrag(event, "estatisticas", () => { renderStatsEditor(); renderStats(); }));
+  });
 
   $("detailsEditor").addEventListener("input", handleDetailsEditor);
   $("detailsEditor").addEventListener("click", handleDetailsEditor);
+  ["dragstart", "dragover", "dragleave", "drop", "dragend"].forEach((type) => {
+    $("detailsEditor").addEventListener(type, (event) => handleRowDrag(event, "detalhes", () => { renderDetailsEditor(); renderDetails(); }));
+  });
 
   $("addStat").addEventListener("click", addStat);
   $("addDetail").addEventListener("click", addDetail);
@@ -4017,7 +4078,7 @@ async function init() {
     }
   } else {
     loadProfile();
-    window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile);
+    window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile, { label: "Perfil carregado" });
   }
 
   try {

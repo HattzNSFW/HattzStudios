@@ -23,7 +23,7 @@
       raridadeMoldura: profile.raridadeMoldura
     }));
   }
-  window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot());
+  window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { label: "Studio carregado" });
 
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
   $("backToProfile").href = `./index.html?profile=${profileId}`;
@@ -89,13 +89,14 @@
   function writeProfile(show = false) {
     if (window.HATTZ_CORE?.setProfile) window.HATTZ_CORE.setProfile(profileId, profile);
     else localStorage.setItem(storageKey, JSON.stringify(profile));
+    window.HATTZ_SUITE?.backup?.(profileId, profile);
     applyPreview();
     if (show) toast("Personalização salva neste perfil.");
   }
 
   function save(show = true) {
     if (!applyingStudioHistory) {
-      window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { coalesceMs: 500 });
+      window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { coalesceMs: 500, label: "Studio alterado" });
     }
     writeProfile(show);
   }
@@ -118,6 +119,11 @@
       applyingStudioHistory = false;
     }
   }
+
+  window.addEventListener("hattz:restore-studio", (event) => {
+    if (!event.detail?.studio) return;
+    applyStudioSnapshot(event.detail, "Studio restaurado neste navegador.");
+  });
 
   window.HATTZ_HISTORY?.bindShortcut({
     priority: 5,

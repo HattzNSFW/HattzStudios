@@ -17,9 +17,27 @@
     try { return JSON.stringify(value); } catch { return String(value); }
   }
 
+  function defaultLabel(key) {
+    const id = String(key || "geral");
+    if (id.startsWith("profile:")) return "Perfil alterado";
+    if (id.startsWith("studio:")) return "Studio alterado";
+    if (id.startsWith("liquid:")) return "Tema alterado";
+    return "Alteração local";
+  }
+
+  function meta(label, at) {
+    return { label: String(label || defaultLabel("geral")), at: Number(at) || Date.now() };
+  }
+
   function getStack(key) {
     const id = String(key || "geral");
-    if (!stacks.has(id)) stacks.set(id, { past: [], present: undefined, future: [], at: 0 });
+    if (!stacks.has(id)) {
+      stacks.set(id, {
+        past: [], present: undefined, future: [],
+        metaPast: [], metaPresent: meta(defaultLabel(id)), metaFuture: [],
+        at: 0
+      });
+    }
     return stacks.get(id);
   }
 
@@ -31,21 +49,30 @@
 
     const now = Date.now();
     const coalesceMs = Math.max(0, Number(options.coalesceMs) || 0);
+    const entry = meta(options.label || defaultLabel(key), now);
     // O primeiro push após semear/undo/redo sempre cria um ponto restaurável.
     // Coalesce só substitui o estado atual de uma sequência rápida já iniciada.
     if (coalesceMs && stack.present !== undefined && stack.past.length > 0 && now - stack.at < coalesceMs) {
       stack.present = snapshot;
+      stack.metaPresent = entry;
       stack.future.length = 0;
+      stack.metaFuture.length = 0;
       stack.at = now;
       return false;
     }
 
     if (stack.present !== undefined) {
       stack.past.push(clone(stack.present));
-      if (stack.past.length > LIMIT) stack.past.shift();
+      stack.metaPast.push(stack.metaPresent);
+      if (stack.past.length > LIMIT) {
+        stack.past.shift();
+        stack.metaPast.shift();
+      }
     }
     stack.present = snapshot;
+    stack.metaPresent = entry;
     stack.future.length = 0;
+    stack.metaFuture.length = 0;
     stack.at = now;
     return true;
   }
@@ -54,8 +81,13 @@
     const stack = getStack(key);
     if (!stack.past.length) return null;
     stack.future.unshift(stack.present);
-    if (stack.future.length > LIMIT) stack.future.pop();
+    stack.metaFuture.unshift(stack.metaPresent);
+    if (stack.future.length > LIMIT) {
+      stack.future.pop();
+      stack.metaFuture.pop();
+    }
     stack.present = stack.past.pop();
+    stack.metaPresent = stack.metaPast.pop() || meta(defaultLabel(key));
     stack.at = 0;
     return clone(stack.present);
   }
@@ -64,8 +96,43 @@
     const stack = getStack(key);
     if (!stack.future.length) return null;
     stack.past.push(stack.present);
-    if (stack.past.length > LIMIT) stack.past.shift();
+    stack.metaPast.push(stack.metaPresent);
+    if (stack.past.length > LIMIT) {
+      stack.past.shift();
+      stack.metaPast.shift();
+    }
     stack.present = stack.future.shift();
+    stack.metaPresent = stack.metaFuture.shift() || meta(defaultLabel(key));
+    stack.at = 0;
+    return clone(stack.present);
+  }
+
+  function timeline(key) {
+    const stack = getStack(key);
+    const pastCount = stack.past.length;
+    const values = [...stack.past, stack.present, ...stack.future];
+    const metas = [...stack.metaPast, stack.metaPresent, ...stack.metaFuture];
+    return values.map((value, index) => ({
+      index,
+      label: (metas[index] || {}).label || defaultLabel(key),
+      at: (metas[index] || {}).at || 0,
+      current: index === pastCount,
+      available: index <= pastCount
+    })).reverse();
+  }
+
+  function jump(key, index) {
+    const stack = getStack(key);
+    const values = [...stack.past, stack.present, ...stack.future];
+    const metas = [...stack.metaPast, stack.metaPresent, ...stack.metaFuture];
+    const target = Number(index);
+    if (!values.length || !Number.isInteger(target) || target < 0 || target >= values.length) return null;
+    stack.past = values.slice(0, target);
+    stack.metaPast = metas.slice(0, target);
+    stack.present = values[target];
+    stack.metaPresent = metas[target] || meta(defaultLabel(key));
+    stack.future = values.slice(target + 1);
+    stack.metaFuture = metas.slice(target + 1);
     stack.at = 0;
     return clone(stack.present);
   }
@@ -143,6 +210,8 @@
     push,
     undo,
     redo,
+    timeline,
+    jump,
     canUndo,
     canRedo,
     saveDraft,

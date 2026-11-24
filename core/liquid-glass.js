@@ -342,7 +342,7 @@
     var token = themeHistoryToken;
     Promise.resolve().then(function () {
       if (token !== themeHistoryToken || restoringTheme) return;
-      window.HATTZ_HISTORY.push(THEME_HISTORY_KEY, clone(store), { coalesceMs: 500 });
+      window.HATTZ_HISTORY.push(THEME_HISTORY_KEY, clone(store), { coalesceMs: 500, label: "Tema alterado" });
     });
   }
 
@@ -371,7 +371,7 @@
     }
   }
 
-  window.HATTZ_HISTORY?.push(THEME_HISTORY_KEY, clone(store));
+  window.HATTZ_HISTORY?.push(THEME_HISTORY_KEY, clone(store), { label: "Tema carregado" });
 
   function updateFill(input) {
     var min = Number(input.min), max = Number(input.max);
