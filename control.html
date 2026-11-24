@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9n">
-  <link rel="stylesheet" href="control.css?v=e7c4a9n">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9n">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9o">
+  <link rel="stylesheet" href="control.css?v=e7c4a9o">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9o">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -178,21 +178,31 @@
               <div class="summary-chip"><span>CONCESSÃO MANUAL</span><strong id="badgeManualCount">—</strong></div>
               <div class="summary-chip"><span>COLEÇÕES</span><strong id="badgeCollectionCount">—</strong></div>
             </div>
+            <div class="editor-tabs badge-tabs" role="tablist" aria-label="Seções de insígnias">
+              <button type="button" class="tab-button active" data-badge-tab="catalog" role="tab" aria-selected="true">Catálogo e concessões</button>
+              <button type="button" class="tab-button" data-badge-tab="purge" role="tab" aria-selected="false">Excluir insígnias</button>
+            </div>
+            <div id="badgeCatalogPane">
             <div class="panel-grid">
-              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar insígnia ou moldura</h2></div></div>
-                <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
-                  <button type="button" class="quiet-button" data-badge-preset="server-booster">💜 Booster</button>
-                  <button type="button" class="quiet-button" data-badge-preset="early-supporter">🏅 Apoiador antigo</button>
-                  <button type="button" class="quiet-button" data-badge-preset="creative-spark">✨ Faísca criativa</button>
-                  <button type="button" class="quiet-button" data-badge-preset="community-pillar">🛡️ Pilar da comunidade</button>
-                </div><small>Preenchem o formulário; use “Salvar item” para publicar.</small></div>
-                <div class="identity-preview" id="badgeIdentityPreview"><span class="preview-emoji" id="badgeEmojiPreview">✦</span><span class="preview-copy"><strong id="badgePreviewName">Nova insígnia</strong><small id="badgePreviewMeta">Emoji, nome e raridade aparecem aqui</small></span></div>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar insígnia</h2><p class="muted">Preencha apenas ID, nome, descrição e símbolo. Os modelos já vêm configurados.</p></div></div>
+                <div class="field"><span class="field-hint">Modelos Discord</span><div class="inline-actions">
+                  <button type="button" class="quiet-button" data-badge-preset="owner">👑 Owner</button>
+                  <button type="button" class="quiet-button" data-badge-preset="vip">💎 VIP</button>
+                  <button type="button" class="quiet-button" data-badge-preset="apoiador">🤝 Apoiador</button>
+                </div><small>Owner permanece reservado aos dois perfis oficiais.</small></div>
+                <div class="identity-preview" id="badgeIdentityPreview"><span class="preview-emoji" id="badgeEmojiPreview">✦</span><span class="preview-copy"><strong id="badgePreviewName">Nova insígnia</strong><small id="badgePreviewMeta">Símbolo, nome e descrição aparecem aqui</small></span></div>
                 <div class="field"><label for="catalogKind">Tipo</label><select id="catalogKind"><option value="badges">Insígnia</option><option value="frames">Moldura</option></select></div>
-                <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: early-supporter"></div>
+                <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: vip"></div>
                 <div class="field"><label for="catalogName">Nome</label><input id="catalogName" maxlength="64" placeholder="Nome exibido"></div>
                 <div class="field"><label for="catalogDescription">Descrição</label><textarea id="catalogDescription" maxlength="240" rows="2"></textarea></div>
-                <div class="field"><label for="catalogRarity">Raridade</label><select id="catalogRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select></div>
-                <div class="field" id="catalogBadgeFields"><label class="check-row"><input id="catalogIsPublic" type="checkbox"> Insígnia visível publicamente <small>(privada por padrão)</small></label><label for="catalogCategory">Categoria</label><input id="catalogCategory" maxlength="32" value="" placeholder="Categoria personalizada"><label for="catalogIcon">Ícone (emoji ou PNG)</label><input id="catalogIcon" maxlength="4" value="" placeholder="✦"><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o emoji.</small></div>
+                <div class="field" id="catalogBadgeFields"><label for="catalogIcon">Símbolo</label><input id="catalogIcon" maxlength="8" value="" placeholder="✦">
+                  <details class="advanced-fields"><summary>Opções avançadas</summary>
+                    <label for="catalogRarity">Raridade</label><select id="catalogRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select>
+                    <label for="catalogCategory">Categoria</label><input id="catalogCategory" maxlength="32" value="server" placeholder="server">
+                    <label class="check-row"><input id="catalogIsPublic" type="checkbox" checked> Insígnia visível publicamente</label>
+                    <label for="catalogIconFile">Substituir por PNG (opcional)</label><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o símbolo.</small>
+                  </details>
+                </div>
                 <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameAccess">Acesso</label><select id="catalogFrameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div><div class="field" id="catalogFrameRoleField" hidden><label for="catalogFrameRole">Cargo exigido</label><select id="catalogFrameRole"><option value="">Carregando cargos...</option></select></div><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
               </article>
               <article class="panel glass">
@@ -213,6 +223,14 @@
                 <div class="field"><label for="collectionRewardTitle">Título da recompensa</label><input id="collectionRewardTitle" maxlength="80" placeholder="ex.: Fundador Hättz"></div>
                 <div class="inline-actions"><button id="saveCollection" class="primary" type="button">Salvar coleção</button><button id="newCollection" class="quiet-button" type="button">Nova coleção</button></div>
                 <div class="catalog-toolbar"><input id="collectionSearch" class="search-input" type="search" placeholder="Buscar coleção" aria-label="Buscar coleção"><span id="collectionSearchHint" class="search-hint" hidden>Nenhuma coleção encontrada.</span></div><div id="collectionList" class="audit-list"><p class="empty">Carregando coleções...</p></div>
+              </article>
+            </div>
+            </div>
+            <div id="badgePurgePane" hidden>
+              <article class="panel glass">
+                <div class="panel-heading"><div><p class="eyebrow">PERMANENT REMOVAL</p><h2>Excluir insígnias permanentemente</h2><p class="muted">Esta ação apaga a insígnia do catálogo e remove todas as concessões associadas. Não há desfazer.</p></div></div>
+                <div class="catalog-toolbar"><input id="badgePurgeSearch" class="search-input" type="search" placeholder="Buscar insígnia" aria-label="Buscar insígnia para exclusão"><span id="badgePurgeCount" class="catalog-count">— itens</span><span id="badgePurgeHint" class="search-hint" hidden>Nenhuma insígnia encontrada.</span></div>
+                <div id="badgePurgeList" class="audit-list"><p class="empty">Carregando insígnias...</p></div>
               </article>
             </div>
           </section>
@@ -278,10 +296,10 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="share-config.js?v=e7c4a9n"></script>
-  <script defer src="core/hattz-core.js?v=e7c4a9n"></script>
-  <script defer src="core/local-history.js?v=e7c4a9n"></script>
-  <script defer src="control.js?v=e7c4a9n"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4a9n"></script>
+  <script defer src="share-config.js?v=e7c4a9o"></script>
+  <script defer src="core/hattz-core.js?v=e7c4a9o"></script>
+  <script defer src="core/local-history.js?v=e7c4a9o"></script>
+  <script defer src="control.js?v=e7c4a9o"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4a9o"></script>
 </body>
 </html>

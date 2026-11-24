@@ -501,12 +501,12 @@
     const name = $('catalogName')?.value.trim() || 'Nova insígnia';
     const id = $('catalogId')?.value.trim() || 'sem-id';
     const icon = $('catalogIcon')?.value.trim();
-    const rarity = $('catalogRarity')?.selectedOptions?.[0]?.textContent || 'Comum';
+    const description = $('catalogDescription')?.value.trim();
     const category = $('catalogCategory')?.value.trim();
     const emoji = $('badgeEmojiPreview'), title = $('badgePreviewName'), meta = $('badgePreviewMeta');
     if (emoji) emoji.textContent = icon && /[^\x00-\x7F]/.test(icon) ? icon : emojiFor({ id, name, category, icon });
     if (title) title.textContent = name;
-    if (meta) meta.textContent = [rarity, category || 'sem categoria'].join(' · ');
+    if (meta) meta.textContent = description || 'Símbolo, nome e descrição aparecem aqui';
   }
   function filterList(rootId, needle, hintId) {
     const root = $(rootId);
@@ -546,6 +546,20 @@
     }
     const hint = $('catalogSearchHint');
     if (hint) hint.hidden = !query || matches.length > 0;
+  }
+
+  function renderBadgePurgeList() {
+    const root = $('badgePurgeList');
+    if (!root) return;
+    const query = String($('badgePurgeSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
+    const badges = ecosystemBadges.filter(badge => !query || `${badge.id} ${badge.name || ''} ${badge.description || ''}`.toLocaleLowerCase('pt-BR').includes(query));
+    root.innerHTML = badges.length ? badges.map(badge => `<div class="audit-item" data-search="${escapeHtml(`${badge.id} ${badge.name || ''} ${badge.description || ''}`)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(badge)}</span> ${escapeHtml(badge.name)}</div><div class="audit-detail">${escapeHtml(badge.id)} · ${escapeHtml(badge.description || '')}${Number(badge.enabled) === 0 ? ' · Desativada' : ''}</div></div><button type="button" class="quiet-button danger-action" data-purge-badge="${escapeHtml(badge.id)}">Excluir</button></div>`).join('')
+      : `<p class="empty">${query ? 'Nenhuma insígnia encontrada.' : 'Nenhuma insígnia cadastrada.'}</p>`;
+    root.querySelectorAll('[data-purge-badge]').forEach(button => button.addEventListener('click', () => removeCatalogItem('badges', button.dataset.purgeBadge)));
+    const count = $('badgePurgeCount');
+    if (count) count.textContent = `${badges.length} insígnia(s)`;
+    const hint = $('badgePurgeHint');
+    if (hint) hint.hidden = !query || badges.length > 0;
   }
 
   /* Cada aba busca apenas o que usa. O catálogo é paginado para não transformar
@@ -591,11 +605,12 @@
       catalogItems = [...badges.map(x => ({ ...x, kind: 'Insígnia', catalogKind: 'badges' })), ...frames.map(x => ({ ...x, kind: 'Moldura', catalogKind: 'frames' }))].map(x => {
         const asset = x.kind === 'Moldura' ? parseAsset(x.asset_json) : {};
         const term = `${x.id} ${x.name || ''} ${x.category || ''} ${x.kind}`;
-        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action"><span class="catalog-emoji">${x.kind === 'Insígnia' ? emojiFor(x) : '✧'}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ` · Acesso: ${escapeHtml(asset.accessMode || 'public')}${asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : ''}`}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-access="${escapeHtml(asset.accessMode || 'public')}" data-catalog-role="${escapeHtml(asset.requiredRoleId || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">Desativar</button></div>`;
+        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">${escapeHtml(x.kind)}</span><div><div class="audit-action"><span class="catalog-emoji">${x.kind === 'Insígnia' ? emojiFor(x) : '✧'}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')}${x.kind === 'Insígnia' ? ` · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}` : ` · Acesso: ${escapeHtml(asset.accessMode || 'public')}${asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : ''}`}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-access="${escapeHtml(asset.accessMode || 'public')}" data-catalog-role="${escapeHtml(asset.requiredRoleId || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="${x.catalogKind}">${x.catalogKind === 'badges' ? 'Excluir' : 'Desativar'}</button></div>`;
         return { term: term.toLocaleLowerCase('pt-BR'), html };
       });
       catalogVisible = CATALOG_PAGE;
       renderCatalog();
+      renderBadgePurgeList();
       updateBadgeSummary();
       applyBadgePreview();
     } catch (error) { notify(error.message); }
@@ -792,10 +807,9 @@
     }
   };
   const SERVER_BADGE_PRESETS = {
-    'server-booster': { name: 'Booster do Servidor', description: 'Apoio ativo ao servidor Hättz.', category: 'server', rarity: '4', icon: '💜' },
-    'early-supporter': { name: 'Apoiador Antigo', description: 'Esteve presente nos primeiros dias da comunidade.', category: 'server', rarity: '3', icon: '🏅' },
-    'creative-spark': { name: 'Faísca Criativa', description: 'Destaque em criações visuais da comunidade.', category: 'achievement', rarity: '3', icon: '✨' },
-    'community-pillar': { name: 'Pilar da Comunidade', description: 'Reconhecimento por ajudar outros perfis.', category: 'community', rarity: '5', icon: '🛡️' }
+    owner: { name: 'Owner', description: 'Insígnia reservada aos perfis oficiais do Hättz.', category: 'server', rarity: '5', icon: '👑' },
+    vip: { name: 'VIP', description: 'Apoio premium ao ecossistema Hättz.', category: 'server', rarity: '4', icon: '💎' },
+    apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝' }
   };
   function applyRolePreset(id) {
     const preset = SERVER_ROLE_PRESETS[id];
@@ -897,7 +911,7 @@
   async function saveCatalogItem() {
     const kind = $('catalogKind').value, id = $('catalogId').value.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(id)) { notify('Use um ID de 2 a 48 caracteres: letras, números, hífen ou sublinhado.'); return; }
-    const body = { name:$('catalogName').value, description:$('catalogDescription').value, rarityLevel:Number($('catalogRarity').value), isPublic:$('catalogIsPublic')?.checked !== false };
+    const body = { name:$('catalogName').value, description:$('catalogDescription').value, rarityLevel:Number($('catalogRarity')?.value || 1), isPublic:$('catalogIsPublic')?.checked !== false, awardMode:'manual' };
     const readPng = (file, limit) => new Promise((resolve,reject)=>{ if(!file){resolve("");return;} if(file.type!=="image/png"||file.size>limit){reject(new Error(`Envie um PNG de até ${Math.round(limit/1024)} KB.`));return;} const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result)); reader.onerror=()=>reject(new Error("Não foi possível ler o PNG.")); reader.readAsDataURL(file); });
     try {
       if (kind === 'badges') { body.category=$('catalogCategory').value; body.icon=await readPng($('catalogIconFile').files?.[0],128*1024)||$('catalogIcon').value||'✦'; }
@@ -924,10 +938,17 @@
     } catch (error) { notify(error.message); }
   }
   async function removeCatalogItem(kind, id) {
-    if (!id || !window.confirm(`Desativar "${id}"? As concessões históricas serão preservadas e voltarão a aparecer se o item for reativado.`)) return;
+    const permanent = kind === 'badges';
+    const question = permanent
+      ? `Excluir a insígnia "${id}" permanentemente? Todas as concessões serão removidas e esta ação não pode ser desfeita.`
+      : `Desativar "${id}"? As concessões históricas serão preservadas e voltarão a aparecer se o item for reativado.`;
+    if (!id || !window.confirm(question)) return;
+    const path = permanent
+      ? `/api/admin/catalog/${kind}/${encodeURIComponent(id)}/permanent`
+      : `/api/admin/catalog/${kind}/${encodeURIComponent(id)}`;
     try {
-      await api(`/api/admin/catalog/${kind}/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      notify('Item desativado. As concessões foram preservadas.');
+      const result = await api(path, { method: 'DELETE' });
+      notify(permanent ? `Insígnia "${id}" excluída. ${Number(result.grantsRemoved || 0)} concessão(ões) removida(s).` : 'Item desativado. As concessões foram preservadas.');
       await ensureCatalog();
     } catch (error) { notify(error.message); }
   }
@@ -1133,6 +1154,17 @@
   });
   $("catalogSearch").addEventListener("input", () => { catalogVisible = CATALOG_PAGE; renderCatalog(); });
   $("catalogMore").addEventListener("click", () => { catalogVisible += CATALOG_PAGE; renderCatalog(); });
+  $("badgePurgeSearch").addEventListener("input", renderBadgePurgeList);
+  document.querySelectorAll("[data-badge-tab]").forEach(button => button.addEventListener("click", () => {
+    const purge = button.dataset.badgeTab === 'purge';
+    $('badgeCatalogPane').hidden = purge;
+    $('badgePurgePane').hidden = !purge;
+    document.querySelectorAll('[data-badge-tab]').forEach(tab => {
+      const active = tab === button;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+  }));
   $("previewRoles").addEventListener("click", () => openPreview('entitlementCode'));
   $("previewBadges").addEventListener("click", () => openPreview('badgeProfileCode'));
   $("previewClose").addEventListener("click", closePreview);
@@ -1140,7 +1172,7 @@
   $("previewModal").addEventListener("click", (event) => { if (event.target === $('previewModal')) closePreview(); });
   document.addEventListener("keydown", (event) => { if (event.key === 'Escape' && !$('previewModal').hidden) closePreview(); });
   ["roleDefinitionId", "roleDefinitionLabel", "roleDefinitionColor"].forEach(id => $(id).addEventListener("input", applyRolePreview));
-  ["catalogId", "catalogName", "catalogIcon", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", applyBadgePreview));
+  ["catalogId", "catalogName", "catalogDescription", "catalogIcon", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", applyBadgePreview));
   $("catalogIconFile").addEventListener("change", () => { if ($("catalogIconFile").files?.length) { $("badgeEmojiPreview").textContent = "🖼️"; $("badgePreviewMeta").textContent = "PNG personalizado"; } else applyBadgePreview(); });
   $("catalogKind").addEventListener("change", () => { const badges=$("catalogKind").value === "badges"; $("catalogBadgeFields").hidden = !badges; $("catalogFrameFields").hidden = badges; syncFrameAccessFields(); });
   $("catalogFrameAccess").addEventListener("change", syncFrameAccessFields);
@@ -1158,7 +1190,7 @@
     const kind = button.dataset.catalogKind; $("catalogKind").value = kind; $("catalogKind").dispatchEvent(new Event("change"));
     $("catalogId").value = button.dataset.editCatalog; $("catalogName").value = button.dataset.catalogName || "";
     $("catalogDescription").value = button.dataset.catalogDescription || ""; $("catalogRarity").value = button.dataset.catalogRarity || "1";
-    if (kind === "badges") { $("catalogCategory").value = button.dataset.catalogCategory || ""; $("catalogIsPublic").checked = button.dataset.catalogPublic !== "0"; $("catalogIcon").value = "✦"; $("catalogIconFile").value = ""; }
+    if (kind === "badges") { $("catalogCategory").value = button.dataset.catalogCategory || "server"; $("catalogIsPublic").checked = button.dataset.catalogPublic !== "0"; $("catalogIcon").value = button.dataset.catalogIcon || "✦"; $("catalogIconFile").value = ""; }
     else {
       $("catalogFrameFile").value = "";
       $("catalogFrameAccess").value = button.dataset.catalogAccess || "public";
