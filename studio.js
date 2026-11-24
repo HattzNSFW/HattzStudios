@@ -15,7 +15,6 @@
   profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio(profile.studio) || structuredClone(defaults);
 
   const STUDIO_HISTORY_KEY = `studio:${profileId}`;
-  let savedStudioSnapshot = null;
   let applyingStudioHistory = false;
   function studioSnapshot() {
     return JSON.parse(JSON.stringify({
@@ -24,7 +23,7 @@
       raridadeMoldura: profile.raridadeMoldura
     }));
   }
-  savedStudioSnapshot = studioSnapshot();
+  window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot());
 
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
   $("backToProfile").href = `./index.html?profile=${profileId}`;
@@ -95,10 +94,9 @@
   }
 
   function save(show = true) {
-    if (!applyingStudioHistory && savedStudioSnapshot) {
-      window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, savedStudioSnapshot, { coalesceMs: 500 });
+    if (!applyingStudioHistory) {
+      window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { coalesceMs: 500 });
     }
-    savedStudioSnapshot = studioSnapshot();
     writeProfile(show);
   }
 
@@ -108,7 +106,6 @@
       profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio?.(snapshot.studio) || snapshot.studio;
       profile.moldura = snapshot.moldura || "none";
       profile.raridadeMoldura = snapshot.raridadeMoldura || "none";
-      savedStudioSnapshot = studioSnapshot();
       renderGlass();
       renderAvatar();
       renderCard();

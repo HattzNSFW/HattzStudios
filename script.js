@@ -315,21 +315,15 @@ function showToast(message) {
 const PROFILE_HISTORY_KEY = `profile:${ACTIVE_PROFILE_ID}`;
 const EDITOR_DRAFT_KEY = `editor:${ACTIVE_PROFILE_ID}`;
 const LAST_PROFILE_SAVE_KEY = `hattz2:last-profile-save:${ACTIVE_PROFILE_ID}`;
-let savedProfileSnapshot = null;
 let applyingHistory = false;
 let applyingDraft = false;
-
-function rememberProfileBaseline() {
-  try { savedProfileSnapshot = JSON.parse(JSON.stringify(profile)); }
-  catch { savedProfileSnapshot = structuredClone(profile); }
-}
 
 function saveProfile() {
   if (IS_PUBLIC_VIEW) return false;
   if (!applyingHistory) {
-    if (savedProfileSnapshot) window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, savedProfileSnapshot, { coalesceMs: 500 });
+    // Registra o estado resultante; o estado inicial é semeado em init().
+    window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile, { coalesceMs: 500 });
     try { sessionStorage.setItem(LAST_PROFILE_SAVE_KEY, String(Date.now())); } catch {}
-    rememberProfileBaseline();
   }
   localStorage.setItem(getProfileStorageKey(), JSON.stringify(profile));
   updateProfileSwitcher();
@@ -342,7 +336,6 @@ function applyProfileSnapshot(snapshot, message) {
       localStorage.setItem(getProfileStorageKey(), JSON.stringify(snapshot));
     }
     profile = normalizeProfileData(snapshot);
-    rememberProfileBaseline();
     renderProfile();
     fillEditor();
     updateProfileSwitcher();
@@ -4024,7 +4017,7 @@ async function init() {
     }
   } else {
     loadProfile();
-    rememberProfileBaseline();
+    window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile);
   }
 
   try {

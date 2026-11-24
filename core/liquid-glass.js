@@ -333,16 +333,22 @@
 
   var panel, code, toggle, currentPreset = "padrao";
   var restoringTheme = false;
+  var themeHistoryToken = 0;
   var THEME_HISTORY_KEY = "liquid:" + scope;
 
-  // Snapshot antes de qualquer mutação: nada de rede e nada de mídia binária.
+  // Registra o estado resultante da mutação (após o handler síncrono), sem rede.
   function pushThemeHistory() {
     if (restoringTheme || !window.HATTZ_HISTORY) return;
-    window.HATTZ_HISTORY.push(THEME_HISTORY_KEY, clone(store), { coalesceMs: 500 });
+    var token = themeHistoryToken;
+    Promise.resolve().then(function () {
+      if (token !== themeHistoryToken || restoringTheme) return;
+      window.HATTZ_HISTORY.push(THEME_HISTORY_KEY, clone(store), { coalesceMs: 500 });
+    });
   }
 
   function restoreStore(next) {
     if (!next || typeof next !== "object") return false;
+    themeHistoryToken += 1;
     restoringTheme = true;
     try {
       SCOPES.forEach(function (name) { store[name] = sanitize(next[name]); });
@@ -355,6 +361,8 @@
       restoringTheme = false;
     }
   }
+
+  window.HATTZ_HISTORY?.push(THEME_HISTORY_KEY, clone(store));
 
   function updateFill(input) {
     var min = Number(input.min), max = Number(input.max);

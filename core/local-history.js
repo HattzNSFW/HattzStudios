@@ -31,8 +31,11 @@
 
     const now = Date.now();
     const coalesceMs = Math.max(0, Number(options.coalesceMs) || 0);
-    if (coalesceMs && stack.present !== undefined && now - stack.at < coalesceMs) {
+    // O primeiro push após semear/undo/redo sempre cria um ponto restaurável.
+    // Coalesce só substitui o estado atual de uma sequência rápida já iniciada.
+    if (coalesceMs && stack.present !== undefined && stack.past.length > 0 && now - stack.at < coalesceMs) {
       stack.present = snapshot;
+      stack.future.length = 0;
       stack.at = now;
       return false;
     }
