@@ -896,18 +896,74 @@ body .hattz-collectible .hattz-badge-emoji {
   align-items: center;
   line-height: 1;
   color: var(--badge-accent, inherit);
+  position: relative;
+  isolation: isolate;
   --badge-glow-size: 0px;
   --badge-glow-alpha: 0%;
+  --badge-hover-glow-size: 5px;
+  --badge-hover-glow-alpha: 18%;
 }
 /* Brilho sutil: intensidade pela raridade, matiz pela cor da própria tag. */
-.hattz-badge-inline-item[data-rarity-level="2"] { --badge-glow-size: 4px; --badge-glow-alpha: 20%; }
-.hattz-badge-inline-item[data-rarity-level="3"] { --badge-glow-size: 6px; --badge-glow-alpha: 30%; }
-.hattz-badge-inline-item[data-rarity-level="4"] { --badge-glow-size: 8px; --badge-glow-alpha: 40%; }
-.hattz-badge-inline-item[data-rarity-level="5"] { --badge-glow-size: 10px; --badge-glow-alpha: 50%; }
+.hattz-badge-inline-item[data-rarity-level="2"] { --badge-glow-size: 4px; --badge-glow-alpha: 20%; --badge-hover-glow-size: 8px; --badge-hover-glow-alpha: 38%; }
+.hattz-badge-inline-item[data-rarity-level="3"] { --badge-glow-size: 6px; --badge-glow-alpha: 30%; --badge-hover-glow-size: 10px; --badge-hover-glow-alpha: 48%; }
+.hattz-badge-inline-item[data-rarity-level="4"] { --badge-glow-size: 8px; --badge-glow-alpha: 40%; --badge-hover-glow-size: 12px; --badge-hover-glow-alpha: 58%; }
+.hattz-badge-inline-item[data-rarity-level="5"] { --badge-glow-size: 10px; --badge-glow-alpha: 50%; --badge-hover-glow-size: 14px; --badge-hover-glow-alpha: 68%; }
+.hattz-badge-inline-item::before {
+  content: "";
+  position: absolute;
+  inset: -0.55em;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--badge-accent, #B8BCC8) 30%, transparent) 0%,
+    transparent 68%);
+  opacity: 0;
+  transform: scale(.72);
+  pointer-events: none;
+}
+.hattz-badge-inline-item::after {
+  content: "✦";
+  position: absolute;
+  top: -0.35em;
+  right: -0.4em;
+  font-size: .55em;
+  line-height: 1;
+  color: var(--badge-accent, #B8BCC8);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--badge-accent, #B8BCC8) 55%, transparent);
+  opacity: 0;
+  transform: translate(-2px, 2px) scale(.5) rotate(-18deg);
+  pointer-events: none;
+}
 .hattz-badge-inline-item .hattz-badge-emoji-inline {
   font-size: 1.15em;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .45))
     drop-shadow(0 0 var(--badge-glow-size) color-mix(in srgb, var(--badge-accent, #B8BCC8) var(--badge-glow-alpha), transparent));
+}
+.hattz-badge-inline-item:hover,
+.hattz-badge-inline-item:focus-visible { z-index: 2; }
+.hattz-badge-inline-item:hover::before,
+.hattz-badge-inline-item:focus-visible::before {
+  opacity: 1;
+  transform: scale(1);
+}
+.hattz-badge-inline-item:hover::after,
+.hattz-badge-inline-item:focus-visible::after {
+  opacity: .95;
+  transform: translate(0, 0) scale(1) rotate(0deg);
+}
+.hattz-badge-inline-item:hover .hattz-badge-emoji-inline,
+.hattz-badge-inline-item:focus-visible .hattz-badge-emoji-inline {
+  transform: translateY(-2px) scale(1.14);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .5))
+    drop-shadow(0 0 var(--badge-hover-glow-size) color-mix(in srgb, var(--badge-accent, #B8BCC8) var(--badge-hover-glow-alpha), transparent));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hattz-badge-inline-item,
+  .hattz-badge-inline-item::before,
+  .hattz-badge-inline-item::after,
+  .hattz-badge-inline-item .hattz-badge-emoji-inline {
+    transition: transform .18s ease, opacity .18s ease, filter .18s ease, color .18s ease;
+  }
 }
 /* O card de perfil tem overflow:hidden; abrir o detalhe para baixo evita
    que a explicação da insígnia seja cortada no topo do card. */
