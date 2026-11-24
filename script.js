@@ -1018,6 +1018,7 @@ async function loadProfileEntitlements() {
     // mais raras, em linhas de três com botão +N para revelar as próximas.
     window.HATTZ_INVENTORY_BADGES = sortCollectibles(data.badges || []);
     window.HATTZ_INVENTORY_FRAMES = sortCollectibles(data.frames || []);
+    if ($("inventoryModal")?.classList.contains("open")) renderInventory();
     const strip = renderBadgeStrip(window.HATTZ_INVENTORY_BADGES);
     if (strip.children.length) badges.append(strip);
     window.HATTZ_CORE?.setConnectionState?.("online");
