@@ -3419,8 +3419,10 @@ async function ensureInventory() {
     const response = await fetch(api ? `${api}/api/catalog` : "/api/catalog", { cache: "no-store" });
     if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
     const data = await response.json();
-    window.HATTZ_INVENTORY_BADGES = Array.isArray(data.badges) ? data.badges : [];
-    window.HATTZ_INVENTORY_FRAMES = Array.isArray(data.frames) ? data.frames : [];
+    // Os benefícios do perfil podem ter chegado enquanto o catálogo carregava:
+    // nunca sobrescreva o inventário real com o catálogo genérico.
+    if (!Array.isArray(window.HATTZ_INVENTORY_BADGES)) window.HATTZ_INVENTORY_BADGES = Array.isArray(data.badges) ? data.badges : [];
+    if (!Array.isArray(window.HATTZ_INVENTORY_FRAMES)) window.HATTZ_INVENTORY_FRAMES = Array.isArray(data.frames) ? data.frames : [];
   } catch (error) {
     window.HATTZ_INVENTORY_BADGES ||= [];
     window.HATTZ_INVENTORY_FRAMES ||= [];
