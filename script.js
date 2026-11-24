@@ -3652,6 +3652,13 @@ function openSharedProfileByCode() {
   window.open(buildPublicProfileUrl(`HTZ-${code.slice(0, 5)}-${code.slice(5)}`), "_blank", "noopener,noreferrer");
 }
 
+function shareableProfile() {
+  const copy = { ...profile };
+  delete copy.customFrame;
+  if (copy.moldura === "moldura-custom") copy.moldura = "none";
+  return copy;
+}
+
 async function publishProfile() {
   if (IS_PUBLIC_VIEW) return;
   const button = $("publishProfileButton");
@@ -3676,7 +3683,7 @@ async function publishProfile() {
       const created = await shareApiRequest("/api/profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ownerToken, profile })
+        body: JSON.stringify({ ownerToken, profile: shareableProfile() })
       });
       code = created.code;
       localStorage.setItem(SHARE_PUBLIC_CODE_KEY, code);
@@ -3687,7 +3694,7 @@ async function publishProfile() {
       await shareApiRequest(`/api/profiles/${encodeURIComponent(code)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile })
+        body: JSON.stringify({ profile: shareableProfile() })
       }, ownerToken);
     }
 
@@ -3736,7 +3743,7 @@ async function publishProfile() {
     await shareApiRequest(`/api/profiles/${encodeURIComponent(code)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile })
+      body: JSON.stringify({ profile: shareableProfile() })
     }, ownerToken);
 
     updateShareManagerFields();
