@@ -315,6 +315,12 @@
     };
   }
   function renderFrameCatalog(catalogFrames = [], info = {}) {
+    const selected = catalogFrames.find(frame => frame.id === profile.moldura);
+    if (selected && !frameAvailability(selected, info).available) {
+      // O backend também remove molduras sem acesso; mantém o Studio coerente.
+      profile.moldura = "none";
+      window.HATTZ_CORE?.setProfile?.(profileId, profile);
+    }
     const byId = new Map(catalogFrames.map(frame => [frame.id, frame]));
     for (const button of document.querySelectorAll("button[data-frame]")) {
       const frame = byId.get(button.dataset.frame);
