@@ -911,11 +911,10 @@ async function loadProfileEntitlements() {
   const profileCode = IS_PUBLIC_VIEW
     ? SHARED_PROFILE_CODE
     : (localStorage.getItem(SHARE_PUBLIC_CODE_KEY) || "");
-  if (!profileCode) { loadFrameCatalog(); return; }
+  if (!profileCode) return;
   const api = getShareApiBase();
   if (!api) {
     window.HATTZ_CORE?.setConnectionState?.("offline", "API não configurada.");
-    loadFrameCatalog();
     return;
   }
   const normalizedCode = normalizePublicCode(profileCode) || profileCode;
@@ -925,7 +924,6 @@ async function loadProfileEntitlements() {
     if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
     const data = await response.json();
     remoteEntitlements = data;
-    loadFrameCatalog();
     const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
     const verifiedBadge = $("verifiedBadge");
     verifiedBadge.hidden = data.vip !== true;
@@ -996,49 +994,6 @@ async function loadProfileEntitlements() {
   } catch (error) {
     window.HATTZ_CORE?.setConnectionState?.(error.status >= 500 ? "degraded" : "offline", error.message);
     window.HATTZ_CORE?.reportError?.(error, "share:entitlements");
-    loadFrameCatalog();
-  }
-}
-
-function frameAccessHint(frame, asset) {
-  if (asset.accessMode === "vip") return "Bloqueada · exige VIP e concessão do Control.";
-  if (asset.accessMode === "role") return "Bloqueada · exige cargo ativo e concessão do Control.";
-  if (["premium", "elite"].includes(String(frame.rarity || "").toLowerCase())) return "Bloqueada · exige VIP e concessão do Control.";
-  return "Bloqueada · exige concessão do Control.";
-}
-
-async function loadFrameCatalog() {
-  const root = $("frameCatalogGrid");
-  if (!root) return;
-  const section = $("frameCatalogSection");
-  const api = getShareApiBase();
-  const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
-  if (!api || api.includes("YOUR-WORKER")) {
-    root.innerHTML = '<p class="muted">Catálogo indisponível: API não configurada.</p>';
-    if (section) section.hidden = false;
-    return;
-  }
-  const owned = new Set((remoteEntitlements?.frames || []).map((frame) => frame.id));
-  try {
-    const response = await fetch(`${api}/api/catalog`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
-    const data = await response.json();
-    const frames = Array.isArray(data.frames) ? data.frames : [];
-    if (section) section.hidden = frames.length === 0;
-    root.innerHTML = frames.length ? frames.map((frame) => {
-      let asset = {};
-      try { asset = JSON.parse(frame.asset_json || "{}") || {}; } catch {}
-      const available = owned.has(frame.id);
-      const label = available ? "Disponível" : "Bloqueada";
-      const hint = available ? (frame.description || "Concedida a este perfil.") : frameAccessHint(frame, asset);
-      const preview = asset.imageData
-        ? `<span class="frame-catalog-preview"><img src="${escape(asset.imageData)}" alt=""></span>`
-        : '<span class="frame-catalog-preview plain">○</span>';
-      return `<article class="frame-catalog-item ${available ? "" : "locked"}"><span class="frame-catalog-status ${available ? "available" : "locked"}">${label}</span>${preview}<div class="frame-catalog-body"><strong>${escape(frame.name || frame.id)}</strong><small>${escape(frame.rarityLabel || frame.rarity || "Especial")}</small><p class="muted">${escape(hint)}</p></div></article>`;
-    }).join("") : '<p class="muted">Nenhuma moldura publicada no catálogo.</p>';
-  } catch (error) {
-    root.textContent = `Não foi possível carregar o catálogo: ${error.message}`;
-    if (section) section.hidden = false;
   }
 }
 
@@ -3798,7 +3753,7 @@ function setupEvents() {
     if (action === "share" && !IS_PUBLIC_VIEW) { openShareManager(); return; }
     if (action === "capture") { setCaptureMode(true); return; }
     if (action === "other-profile" && !IS_PUBLIC_VIEW) { openOtherProfile(); return; }
-    const targets = { frames: "frameCatalogSection", badges: "badges", cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
+    const targets = { badges: "badges", cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
     const target = panel && $(targets[panel]);
     if (target) {
       target.hidden = false;

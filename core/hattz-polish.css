@@ -955,7 +955,7 @@ body.hattz-menu-open { overflow: hidden; }
 .public-profile-view .hattz-menu-list [data-menu-action="share"],
 .public-profile-view .hattz-menu-list [data-menu-action="other-profile"] { display: none !important; }
 
-/* Catálogo de molduras: disponível ou bloqueada, no Share e no Studio. */
+/* Catálogo de molduras: fica somente na aba de Molduras do Studio. */
 .frame-catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 14px; }
 .frame-catalog-item {
   position: relative; display: flex; align-items: center; gap: 10px;
@@ -987,6 +987,7 @@ body.hattz-menu-open { overflow: hidden; }
 .frame-catalog .frame-catalog-button .frame-catalog-preview { width: 100%; height: 64px; flex-basis: 64px; }
 .frame-catalog .frame-catalog-button b { font-size: 12px; }
 .frame-catalog .frame-catalog-button small { font-size: 10px; color: var(--muted); }
+.frame-catalog-kind { flex-basis: 100%; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent, #a78bfa); }
 .frame-catalog-hint { flex-basis: 100%; font-size: 10px; line-height: 1.35; color: var(--muted); }
 .frame-catalog-row { cursor: pointer; }
 .frame-catalog-row:focus-visible { outline: 2px solid var(--accent, #a78bfa); outline-offset: 2px; }

@@ -155,6 +155,8 @@
     document.querySelectorAll(".studio-nav").forEach(x => x.classList.toggle("active", x === btn));
     document.querySelectorAll(".studio-panel").forEach(x => x.classList.toggle("active", x.id === `panel-${btn.dataset.panel}`));
   }));
+  // Link direto do menu do Share: abre a aba de molduras no Studio.
+  if (location.hash === "#frames") document.querySelector('.studio-nav[data-panel="frames"]')?.click();
   document.getElementById("openThemeCustomizer")?.addEventListener("click", () => {
     if (window.HattzLiquidGlass?.isOpen?.()) window.HattzLiquidGlass.close();
     else window.HattzLiquidGlass?.open?.();
@@ -291,21 +293,35 @@
       return `<article class="catalog-item ${isActive ? "" : "locked"}"><strong>${escapeText(benefit.name || benefit.id)}</strong><small>${isActive ? "ATIVO" : "DISPONÍVEL"}</small><p class="muted">${escapeText(benefit.description || effects)}</p></article>`;
     }).join("") : '<p class="muted">Nenhum benefício publicado no catálogo.</p>');
   }
-  function frameAccessHint(frame, asset) {
-    if (asset.accessMode === "vip") return "Bloqueada · exige VIP e concessão do Control.";
-    if (asset.accessMode === "role") return "Bloqueada · exige cargo ativo e concessão do Control.";
-    if (["premium", "elite"].includes(String(frame.rarity || "").toLowerCase())) return "Bloqueada · exige VIP e concessão do Control.";
-    return "Bloqueada · exige concessão do Control.";
+  function frameAccessRule(frame, asset = parseAsset(frame.asset_json)) {
+    const mode = ["public", "vip", "role"].includes(asset.accessMode)
+      ? asset.accessMode
+      : (["premium", "elite"].includes(String(frame.rarity || "basic").toLowerCase()) ? "vip" : "public");
+    return { mode, requiredRoleId: mode === "role" ? String(asset.requiredRoleId || "").trim().toLowerCase() : "" };
+  }
+  function frameAvailability(frame, info = {}) {
+    const rule = frameAccessRule(frame);
+    const roles = Array.isArray(info.roles) ? info.roles : [];
+    if (rule.mode === "public") return { available: true, kind: "public", hint: "Pública · qualquer perfil pode usar." };
+    if (rule.mode === "vip") {
+      const available = info.vip === true;
+      return { available, kind: "vip", hint: available ? "VIP ativo · liberada para este perfil." : "Bloqueada · exige VIP ativo." };
+    }
+    const role = rule.requiredRoleId ? roles.find(item => String(item.id).toLowerCase() === rule.requiredRoleId) : null;
+    const roleName = role?.label || rule.requiredRoleId || "cargo selecionado";
+    return {
+      available: Boolean(role), kind: "role",
+      hint: role ? `Cargo ${roleName} · liberada para este perfil.` : `Bloqueada · exige o cargo ${roleName}.`
+    };
   }
   function renderFrameCatalog(catalogFrames = [], info = {}) {
-    const owned = new Set((info.frames || []).map(frame => frame.id));
     const byId = new Map(catalogFrames.map(frame => [frame.id, frame]));
     for (const button of document.querySelectorAll("button[data-frame]")) {
       const frame = byId.get(button.dataset.frame);
       if (!frame || button.dataset.frame === "none") continue;
-      const available = owned.has(frame.id);
-      button.disabled = !available;
-      button.title = available ? (frame.description || frame.name || "") : frameAccessHint(frame, parseAsset(frame.asset_json));
+      const state = frameAvailability(frame, info);
+      button.disabled = !state.available;
+      button.title = state.available ? (frame.description || frame.name || state.hint) : state.hint;
     }
     const root = $("studioFrameCatalog");
     if (!root) return;
@@ -313,18 +329,21 @@
       root.innerHTML = '<p class="muted">Nenhuma moldura publicada no catálogo.</p>';
       return;
     }
+    const kindLabels = { public: "Pública", vip: "VIP", role: "Cargo" };
     root.innerHTML = catalogFrames.map((frame) => {
       const asset = parseAsset(frame.asset_json);
-      const available = owned.has(frame.id);
-      const label = available ? "Disponível" : "Bloqueada";
-      const hint = available ? (frame.description || "Concedida a este perfil.") : frameAccessHint(frame, asset);
+      const state = frameAvailability(frame, info);
+      const label = state.available ? "Disponível" : "Bloqueada";
+      const hint = state.available
+        ? (frame.description ? `${frame.description} · ${state.hint}` : state.hint)
+        : state.hint;
       const preview = asset.imageData
         ? `<span class="frame-catalog-preview"><img src="${escapeText(asset.imageData)}" alt=""></span>`
         : '<span class="frame-catalog-preview plain">○</span>';
-      const action = available
+      const action = state.available
         ? `<button class="frame-option frame-catalog-button" type="button" data-frame="${escapeText(frame.id)}" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>${escapeText(frame.rarityLabel || frame.rarity || "Especial")}</small></button>`
-        : `<div class="frame-option frame-catalog-button locked" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>🔒 Bloqueada</small></div>`;
-      return `<article class="frame-catalog-item ${available ? "" : "locked"}"><span class="frame-catalog-status ${available ? "available" : "locked"}">${label}</span>${action}<small class="frame-catalog-hint">${escapeText(hint)}</small></article>`;
+        : `<div class="frame-option frame-catalog-button locked" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>🔒 ${escapeText(kindLabels[state.kind])}</small></div>`;
+      return `<article class="frame-catalog-item ${state.available ? "" : "locked"}"><span class="frame-catalog-status ${state.available ? "available" : "locked"}">${label}</span>${action}<small class="frame-catalog-kind">${escapeText(kindLabels[state.kind])}</small><small class="frame-catalog-hint">${escapeText(hint)}</small></article>`;
     }).join("");
     syncFrameSelection();
   }
