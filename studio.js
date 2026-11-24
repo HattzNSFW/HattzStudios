@@ -20,7 +20,8 @@
     return JSON.parse(JSON.stringify({
       studio: profile.studio,
       moldura: profile.moldura,
-      raridadeMoldura: profile.raridadeMoldura
+      raridadeMoldura: profile.raridadeMoldura,
+      customFrame: profile.customFrame || null
     }));
   }
   window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { label: "Studio carregado" });
@@ -28,6 +29,7 @@
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
   $("backToProfile").href = `./index.html?profile=${profileId}`;
   $("profilePreview").src = `./index.html?profile=${profileId}&studioPreview=${Date.now()}`;
+  syncCustomFrameUI();
 
   const escapeText = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const parseAsset = (value) => { try { return JSON.parse(value || "{}") || {}; } catch { return {}; } };
@@ -74,6 +76,22 @@
       out.textContent = item[prop] === undefined ? "Global" : `${item[prop]}${prop === "blur" ? " px" : "%"}`;
     }
   }
+  function syncCustomFrameUI() {
+    const hasFrame = Boolean(profile.customFrame?.imageData);
+    const status = $("customFrameStatus");
+    if (status) {
+      status.textContent = hasFrame ? "PNG aplicado ao perfil." : "Nenhuma imagem enviada.";
+      status.classList.toggle("has-frame", hasFrame);
+    }
+    const customButton = document.querySelector('[data-frame="moldura-custom"]');
+    if (customButton) {
+      customButton.disabled = !hasFrame;
+      customButton.title = hasFrame ? "Usar a moldura PNG enviada." : "Envie um PNG na aba Avatar Lab primeiro.";
+    }
+    document.querySelectorAll("[data-frame]").forEach(button => {
+      button.classList.toggle("selected", button.dataset.frame === (profile.moldura || "none"));
+    });
+  }
   function applyPreview() {
     $("previewState").textContent = "Atualizando…";
     if (previewFrame) cancelAnimationFrame(previewFrame);
@@ -107,9 +125,12 @@
       profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio?.(snapshot.studio) || snapshot.studio;
       profile.moldura = snapshot.moldura || "none";
       profile.raridadeMoldura = snapshot.raridadeMoldura || "none";
+      if (snapshot.customFrame?.imageData) profile.customFrame = { imageData: String(snapshot.customFrame.imageData) };
+      else delete profile.customFrame;
       renderGlass();
       renderAvatar();
       renderCard();
+      syncCustomFrameUI();
       document.querySelectorAll("[data-frame]").forEach((button) => {
         button.classList.toggle("selected", button.dataset.frame === (profile.moldura || "none"));
       });
@@ -170,6 +191,10 @@
       toast(btn.title || "Esta moldura ainda não está disponível para este perfil.");
       return;
     }
+    if (btn.dataset.frame === "moldura-custom" && !profile.customFrame?.imageData) {
+      toast("Envie um PNG na aba Avatar Lab primeiro.");
+      return;
+    }
     profile.moldura = btn.dataset.frame;
     if (btn.dataset.frame === "amethyst") profile.raridadeMoldura = "elite";
     document.querySelectorAll("[data-frame]").forEach(x => x.classList.toggle("selected", x === btn));
@@ -179,6 +204,53 @@
     try { $("profilePreview").contentWindow.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH" }, location.origin); } catch {}
   });
   $("saveStudio").addEventListener("click", () => save(true));
+
+  const CUSTOM_FRAME_MAX_BYTES = 300 * 1024;
+  $("customFramePick")?.addEventListener("click", () => $("customFrameFile")?.click());
+  $("customFrameFile")?.addEventListener("change", async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.type !== "image/png") {
+      toast("Use um arquivo PNG.");
+      input.value = "";
+      return;
+    }
+    if (file.size > CUSTOM_FRAME_MAX_BYTES) {
+      toast("PNG muito grande. Limite: 300 KB.");
+      input.value = "";
+      return;
+    }
+    try {
+      const imageData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Não foi possível ler o PNG."));
+        reader.readAsDataURL(file);
+      });
+      if (!/^data:image\/png;base64,[A-Za-z0-9+/=\r\n]+$/i.test(imageData)) throw new Error("PNG inválido.");
+      profile.customFrame = { imageData };
+      profile.moldura = "moldura-custom";
+      syncCustomFrameUI();
+      save(false);
+      toast("Moldura aplicada. Ajuste escala e posição na prévia.");
+    } catch (error) {
+      toast(error?.message || "Não foi possível aplicar o PNG.");
+    } finally {
+      input.value = "";
+    }
+  });
+  $("customFrameClear")?.addEventListener("click", () => {
+    if (!profile.customFrame?.imageData) {
+      toast("Nenhuma moldura PNG para remover.");
+      return;
+    }
+    delete profile.customFrame;
+    profile.moldura = "none";
+    syncCustomFrameUI();
+    save(false);
+    toast("Moldura PNG removida.");
+  });
 
   let themeAllowed = false;
   let profileCode = "";

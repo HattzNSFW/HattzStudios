@@ -5,8 +5,8 @@
   <meta name="theme-color" content="#09090d"><title>Hättz Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9k"><link rel="stylesheet" href="studio.css?v=e7c4a9k">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9k">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9l"><link rel="stylesheet" href="studio.css?v=e7c4a9l">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9l">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -52,12 +52,23 @@
             <label>Escala da moldura PNG <output id="avatarFrameScaleOut">100%</output><input data-avatar="frameScale" type="range" min="25" max="200" value="100"></label>
             <label>Ajuste horizontal da moldura <output id="avatarFrameXOut">0 px</output><input data-avatar="frameX" type="range" min="-100" max="100" value="0"></label>
             <label>Ajuste vertical da moldura <output id="avatarFrameYOut">0 px</output><input data-avatar="frameY" type="range" min="-100" max="100" value="0"></label>
-          </div></article>
+          </div>
+          <div class="custom-frame-panel" id="customFramePanel">
+            <div class="heading"><div><p class="eyebrow">MOLDURA PNG PRÓPRIA</p><h2>Sua moldura</h2><p>Envie um PNG com o centro transparente. Use os controles de escala e posição acima para ajustar — a prévia do perfil atualiza na hora.</p></div></div>
+            <div class="custom-frame-row">
+              <input type="file" id="customFrameFile" accept="image/png" hidden>
+              <button type="button" class="secondary" id="customFramePick">Escolher PNG</button>
+              <button type="button" class="quiet" id="customFrameClear">Remover moldura PNG</button>
+              <span class="custom-frame-status" id="customFrameStatus">Nenhuma imagem enviada.</span>
+            </div>
+          </div>
+        </article>
         </section>
         <section class="studio-panel" id="panel-frames">
           <div class="heading"><div><p class="eyebrow">FRAME COLLECTION</p><h1>Hättz Frames</h1><p>Catálogo de molduras. A Amethyst é a primeira moldura integrada ao editor.</p></div></div>
           <article class="glass editor-card"><div class="frame-grid">
             <button class="frame-option" data-frame="none"><span class="frame-preview plain">○</span><b>Sem moldura</b><small>Basic</small></button>
+            <button class="frame-option" data-frame="moldura-custom"><span class="frame-preview">PNG</span><b>Minha moldura</b><small>PNG enviado por você</small></button>
             <button class="frame-option selected" data-frame="amethyst"><span class="frame-preview amethyst">✧</span><b>Amethyst</b><small>Elite · Hättz original</small></button>
             <button class="frame-option" data-frame="celestial"><span class="frame-preview celestial">✦</span><b>Celestial</b><small>Basic</small></button>
             <button class="frame-option" data-frame="gothic"><span class="frame-preview">♜</span><b>Gothic</b><small>Premium</small></button>
@@ -97,5 +108,5 @@
     </div>
     <footer>HÄTTZ STUDIO <span>✦</span> LIQUID GLASS CUSTOM</footer>
   </main>
-  <script defer src="share-config.js?v=e7c4a9k"></script><script defer src="core/hattz-core.js?v=e7c4a9k"></script><script defer src="core/local-history.js?v=e7c4a9k"></script><script defer src="core/profile-contract.js"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4a9k"></script><script defer src="core/liquid-glass.js?v=e7c4a9k"></script>
+  <script defer src="share-config.js?v=e7c4a9l"></script><script defer src="core/hattz-core.js?v=e7c4a9l"></script><script defer src="core/local-history.js?v=e7c4a9l"></script><script defer src="core/profile-contract.js"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4a9l"></script><script defer src="core/liquid-glass.js?v=e7c4a9l"></script>
 </body></html>

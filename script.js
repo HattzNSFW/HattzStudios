@@ -1005,6 +1005,17 @@ function renderFrame() {
 
   const artwork = name;
   const remoteFrame = window.HATTZ_REMOTE_FRAMES?.[name];
+  const localFrame = name === "moldura-custom" ? profile.customFrame : null;
+  if (localFrame?.imageData) {
+    frame.className = "avatar-frame rarity-custom";
+    const img = document.createElement("img");
+    img.src = localFrame.imageData; img.alt = ""; img.className = "remote-avatar-frame custom-local-frame";
+    const avatarAdjust = profile.studio?.avatar || {};
+    img.style.transform = `translate(${Number(avatarAdjust.frameX||0)}px,${Number(avatarAdjust.frameY||0)}px) scale(${Number(avatarAdjust.frameScale||100)/100})`;
+    img.style.width = "100%"; img.style.height = "100%"; img.style.objectFit = "contain"; img.style.pointerEvents = "none";
+    frame.replaceChildren(img);
+    return;
+  }
   if (remoteFrame?.imageData) {
     frame.className = "avatar-frame rarity-custom";
     const img = document.createElement("img");
@@ -1216,8 +1227,10 @@ function applyStudioSettings() {
     frame.style.setProperty("--studio-frame-thickness", `${avatar.thickness || 2}px`);
     frame.style.setProperty("--studio-frame-lighting", `${Number(avatar.lighting || 0) / 100}`);
     frame.style.translate = `${Number(avatar.offsetX || 0)}px ${Number(avatar.offsetY || 0)}px`;
-    const custom = frame.querySelector(".remote-avatar-frame");
+    const custom = frame.querySelector(".remote-avatar-frame:not(.custom-local-frame)");
     if (custom) { const asset=window.HATTZ_REMOTE_FRAMES?.[profile.moldura]||{}; custom.style.transform = `translate(${Number(asset.x||0)+Number(avatar.frameX||0)}px,${Number(asset.y||0)+Number(avatar.frameY||0)}px) scale(${Number(asset.scale||100)*Number(avatar.frameScale||100)/10000})`; }
+    const localCustom = frame.querySelector(".custom-local-frame");
+    if (localCustom) localCustom.style.transform = `translate(${Number(avatar.frameX||0)}px,${Number(avatar.frameY||0)}px) scale(${Number(avatar.frameScale||100)/100})`;
   }
   const cards = [...document.querySelectorAll(".stat-card, .detail-card")];
   cards.forEach((card, index) => {
