@@ -3756,14 +3756,6 @@ async function init() {
     window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile, { label: "Perfil carregado" });
   }
 
-  try {
-    if (!IS_PUBLIC_VIEW) await openDatabase();
-    if (!IS_PUBLIC_VIEW || sharedProfileLoaded) await restoreMedia();
-  } catch (error) {
-    console.error("Não foi possível iniciar o armazenamento:", error);
-    if (!IS_PUBLIC_VIEW) showToast("Não foi possível acessar as mídias salvas neste navegador.");
-  }
-
   $("profileAudio").volume = profile.volume / 100;
   $("profileVideo").volume = profile.volume / 100;
   $("musicVolume").value = profile.volume;
@@ -3780,7 +3772,15 @@ async function init() {
     ? `${profile.nome || "Perfil compartilhado"} — Hättz`
     : (ACTIVE_PROFILE_ID === "perfil-1" ? "Hättz — Perfil 1" : "Hättz — Perfil 2");
   renderProfile();
+  // Benefícios, molduras e insígnias vêm da API: não dependem do IndexedDB.
   await loadProfileEntitlements();
+  try {
+    if (!IS_PUBLIC_VIEW) await openDatabase();
+    if (!IS_PUBLIC_VIEW || sharedProfileLoaded) await restoreMedia();
+  } catch (error) {
+    console.error("Não foi possível iniciar o armazenamento:", error);
+    if (!IS_PUBLIC_VIEW) showToast("Não foi possível acessar as mídias salvas neste navegador.");
+  }
   if (IS_PUBLIC_VIEW && sharedProfileLoadError) {
     const name = $("profileName");
     const bio = $("profileBio");
