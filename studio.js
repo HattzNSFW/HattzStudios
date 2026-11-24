@@ -354,8 +354,8 @@
     }
   }
 
-  $("reloadCatalog").addEventListener("click", loadCatalog);
-  $("reloadCollections").addEventListener("click", loadCatalog);
+  $("reloadCatalog")?.addEventListener("click", loadCatalog);
+  $("reloadCollections")?.addEventListener("click", loadCatalog);
   setupStatus();
   renderGlass(); renderAvatar(); renderCard();
   loadCatalog();
