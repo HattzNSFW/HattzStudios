@@ -693,7 +693,9 @@ function renderFrame() {
     img.src = remoteFrame.imageData; img.alt = ""; img.className = "remote-avatar-frame";
     const avatarAdjust = profile.studio?.avatar || {};
     img.style.transform = `translate(${Number(remoteFrame.x||0)+Number(avatarAdjust.frameX||0)}px,${Number(remoteFrame.y||0)+Number(avatarAdjust.frameY||0)}px) scale(${Number(remoteFrame.scale||100)*Number(avatarAdjust.frameScale||100)/10000})`;
-    img.style.width = "100%"; img.style.height = "100%"; img.style.objectFit = "contain"; img.style.pointerEvents = "none";
+    img.style.width = "100%"; img.style.height = "100%";
+    img.style.objectFit = remoteFrame.fit === "cover" ? "cover" : "contain";
+    img.style.pointerEvents = "none";
     frame.replaceChildren(img);
     return;
   }
@@ -945,51 +947,25 @@ async function loadProfileEntitlements() {
     const badges = $("badges");
     badges.querySelectorAll("[data-remote-entitlement]").forEach(node => node.remove());
     renderServerRoles();
-    const rarityNames = { basic: "Comum", premium: "Épica", elite: "Lendária", common: "Comum", rare: "Rara", epic: "Épica", legendary: "Lendária", limited: "Limitada" };
-    const rarityLevels = { 1: "Comum", 2: "Rara", 3: "Épica", 4: "Lendária", 5: "Limitada" };
-    const shelf = document.createElement("div");
-    shelf.className = "hattz-server-shelf hattz-badge-shelf";
-    shelf.dataset.remoteEntitlement = "badge";
-    const shelfLabel = document.createElement("span");
-    shelfLabel.className = "hattz-shelf-label";
-    const awarded = data.badges.length;
-    const total = Math.max(awarded, Number(data.catalogTotals?.badges) || 0);
-    shelfLabel.append("INSÍGNIAS");
-    const shelfCount = document.createElement("span");
-    shelfCount.className = "hattz-shelf-count";
-    shelfCount.textContent = `${awarded}/${total}`;
-    shelfCount.setAttribute("aria-label", `${awarded} de ${total} insígnias disponíveis`);
-    shelfLabel.append(shelfCount);
-    shelf.append(shelfLabel);
+    // Insígnias no Share: apenas o símbolo, lado a lado, como no Discord.
+    // Sem prateleira, rótulo, contador ou detalhe expandível.
+    const strip = document.createElement("div");
+    strip.className = "hattz-badge-strip";
+    strip.dataset.remoteEntitlement = "badge";
+    strip.setAttribute("aria-label", "Insígnias do perfil");
     for (const item of (data.badges || [])) {
-      const rarityLabel = rarityLevels[Number(item.rarity_level)] || rarityNames[item.rarity] || item.rarityLabel || "Básica";
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = `hattz-collectible rarity-${["basic","premium","elite"].includes(item.rarity) ? item.rarity : "basic"}`;
-      chip.dataset.remoteEntitlement = "badge";
-      if (item.color && /^#[0-9a-f]{6}$/i.test(item.color)) chip.style.setProperty("--badge-accent", item.color);
-      chip.setAttribute("aria-label", `${item.name}. Raridade ${rarityLabel}. ${item.description || ""}`);
+      const holder = document.createElement("span");
+      holder.className = "hattz-badge-inline-item";
+      holder.title = item.name || "Insígnia";
+      if (item.color && /^#[0-9a-f]{6}$/i.test(item.color)) holder.style.setProperty("--badge-accent", item.color);
       const emoji = document.createElement("span");
-      emoji.className = "hattz-badge-emoji";
+      emoji.className = "hattz-badge-emoji-inline";
       emoji.textContent = roleGlyph(item);
       emoji.setAttribute("aria-hidden", "true");
-      const detail = document.createElement("span");
-      detail.className = "hattz-badge-detail";
-      const name = document.createElement("strong"); name.textContent = item.name || "Insígnia";
-      const rarity = document.createElement("small"); rarity.textContent = rarityLabel;
-      const category = document.createElement("span"); category.className = "hattz-badge-category"; category.textContent = item.category || "Comunidade";
-      const description = document.createElement("span"); description.textContent = item.description || "Insígnia colecionável Hättz.";
-      detail.append(name, rarity, category, description); chip.append(emoji, detail);
-      chip.addEventListener("click", () => {
-        const open = chip.classList.toggle("is-open");
-        chip.setAttribute("aria-expanded", String(open));
-        badges.querySelectorAll(".hattz-collectible.is-open").forEach(other => { if (other !== chip) { other.classList.remove("is-open"); other.setAttribute("aria-expanded", "false"); } });
-      });
-      chip.addEventListener("keydown", event => { if (event.key === "Escape") { chip.classList.remove("is-open"); chip.setAttribute("aria-expanded", "false"); } });
-      chip.setAttribute("aria-expanded", "false");
-      shelf.append(chip);
+      holder.append(emoji);
+      strip.append(holder);
     }
-    if (shelf.children.length > 1) badges.append(shelf);
+    if (strip.children.length) badges.append(strip);
     window.HATTZ_CORE?.setConnectionState?.("online");
   } catch (error) {
     window.HATTZ_CORE?.setConnectionState?.(error.status >= 500 ? "degraded" : "offline", error.message);
@@ -3820,6 +3796,9 @@ window.addEventListener("message", (event) => {
   if (event.data?.type === "HATTZ_STUDIO_THEME_PREVIEW") { applyColors(event.data.theme || {}); return; }
   if (event.data?.type !== "HATTZ_STUDIO_PREVIEW_REFRESH") return;
   try {
+    if (event.data.frames && typeof event.data.frames === "object") {
+      window.HATTZ_REMOTE_FRAMES = { ...(window.HATTZ_REMOTE_FRAMES || {}), ...event.data.frames };
+    }
     loadProfile();
     applyMediaOpacitySettings();
     applyMusicPlayerSize();

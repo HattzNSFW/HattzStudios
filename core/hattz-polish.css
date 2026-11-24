@@ -840,6 +840,32 @@ body .hattz-collectible .hattz-badge-emoji {
   vertical-align: -.08em;
   overflow: visible;
 }
+/* Share: only the badge glyphs, inline side by side (Discord-style). */
+.hattz-badge-strip {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.hattz-badge-inline-item {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  color: var(--badge-accent, inherit);
+}
+.hattz-badge-inline-item .hattz-badge-emoji-inline {
+  font-size: 1.15em;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .45));
+}
 /* O card de perfil tem overflow:hidden; abrir o detalhe para baixo evita
    que a explicação da insígnia seja cortada no topo do card. */
 body .hattz-collectible .hattz-badge-detail {

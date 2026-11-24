@@ -6,6 +6,7 @@
   const API = String(window.HATTZ_CORE?.apiBase?.() || window.HATTZ_SHARE_CONFIG?.apiBase || "").replace(/\/+$/, "");
   const $ = (id) => document.getElementById(id);
   const defaults = { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0 } };
+  const frameAssets = {};
   let profile;
   let toastTimer = 0;
   let previewFrame = 0;
@@ -89,7 +90,7 @@
     previewFrame = requestAnimationFrame(() => {
       previewFrame = 0;
       const frame = $("profilePreview");
-      try { frame.contentWindow?.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH" }, location.origin); }
+      try { frame.contentWindow?.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH", frames: frameAssets }, location.origin); }
       catch { frame.contentWindow?.location.reload(); }
       clearTimeout(previewStatusTimer);
       previewStatusTimer = setTimeout(() => { $("previewState").textContent = "Atualizado"; }, 180);
@@ -188,7 +189,7 @@
     save(false);
   });
   $("profilePreview").addEventListener("load", () => {
-    try { $("profilePreview").contentWindow.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH" }, location.origin); } catch {}
+    try { $("profilePreview").contentWindow.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH", frames: frameAssets }, location.origin); } catch {}
   });
   $("saveStudio").addEventListener("click", () => save(true));
 
@@ -321,6 +322,15 @@
       profile.moldura = "none";
       window.HATTZ_CORE?.setProfile?.(profileId, profile);
     }
+    // Envia os PNGs liberados para a prévia: a moldura selecionada precisa
+    // envolver o avatar mesmo quando o perfil ainda não foi publicado.
+    for (const key of Object.keys(frameAssets)) delete frameAssets[key];
+    for (const frame of catalogFrames) {
+      if (!frameAvailability(frame, info).available) continue;
+      const asset = parseAsset(frame.asset_json);
+      if (asset.imageData) frameAssets[frame.id] = asset;
+    }
+    applyPreview();
     const byId = new Map(catalogFrames.map(frame => [frame.id, frame]));
     for (const button of document.querySelectorAll("button[data-frame]")) {
       const frame = byId.get(button.dataset.frame);
