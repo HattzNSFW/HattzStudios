@@ -346,6 +346,14 @@
     });
   }
 
+  function detectPreset(theme) {
+    var current = JSON.stringify(theme);
+    for (var name in presets) {
+      if (Object.prototype.hasOwnProperty.call(presets, name) && JSON.stringify(sanitize(presets[name])) === current) return name;
+    }
+    return null;
+  }
+
   function restoreStore(next) {
     if (!next || typeof next !== "object") return false;
     themeHistoryToken += 1;
@@ -353,6 +361,7 @@
     try {
       SCOPES.forEach(function (name) { store[name] = sanitize(next[name]); });
       state = store[scope];
+      currentPreset = detectPreset(state);
       apply(state);
       save();
       if (panel) render();
