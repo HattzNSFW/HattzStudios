@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9w">
-  <link rel="stylesheet" href="style.css?v=e7c4a9w">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9w">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9x">
+  <link rel="stylesheet" href="style.css?v=e7c4a9x">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9x">
 </head>
 
 <body>
@@ -48,6 +48,7 @@
             <button class="share-profile-button" id="openShareManager" type="button" title="Compartilhar ou abrir perfil por código">
               <span aria-hidden="true">↗</span><span>Compartilhar</span>
             </button>
+            <button class="icon-button inventory-open-button" id="openInventory" type="button" aria-label="Ver inventário de insígnias e molduras" title="Inventário"><span aria-hidden="true">✦</span></button>
             <button class="icon-button capture-mode-button" id="toggleCaptureMode" type="button" aria-label="Ativar modo captura" aria-pressed="false" title="Modo captura">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
@@ -857,6 +858,23 @@
     </section>
   </div>
 
+  <div class="modal-backdrop inventory-backdrop" id="inventoryModal" aria-hidden="true">
+    <section class="inventory-modal" role="dialog" aria-modal="true" aria-labelledby="inventoryModalTitle">
+      <header class="inventory-modal-header">
+        <div><span class="inventory-eyebrow">HÄTTZ SHARE</span><h2 id="inventoryModalTitle">Inventário</h2></div>
+        <button class="close-button" id="closeInventoryModal" type="button" aria-label="Fechar">×</button>
+      </header>
+      <div class="inventory-tabs" role="tablist" aria-label="Inventário do perfil">
+        <button class="inventory-tab" type="button" role="tab" data-inventory-tab="badges" aria-selected="true">Insígnias</button>
+        <button class="inventory-tab" type="button" role="tab" data-inventory-tab="frames" aria-selected="false">Molduras</button>
+      </div>
+      <div class="inventory-modal-body">
+        <div id="inventoryBadges" class="inventory-grid" role="tabpanel"></div>
+        <div id="inventoryFrames" class="inventory-grid" role="tabpanel" hidden></div>
+      </div>
+    </section>
+  </div>
+
   <div class="hattz-menu-backdrop" id="hattzMenuBackdrop" hidden></div>
   <aside class="hattz-menu glass" id="hattzMenu" aria-label="Menu Hättz" hidden>
     <div class="hattz-menu-head"><div><p class="eyebrow">MENU ÚNICO</p><h2>Hättz</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
@@ -865,6 +883,7 @@
       <p class="hattz-menu-group">SHARE</p>
       <button type="button" data-menu-action="editor" data-keywords="perfil editar nome bio design conteúdo">Editar perfil</button>
       <button type="button" data-menu-action="share" data-keywords="compartilhar publicar código perfil">Compartilhar / publicar</button>
+      <button type="button" data-menu-action="inventory" data-keywords="inventário insígnias molduras possuídas perfil">Inventário</button>
       <button type="button" data-menu-action="capture" data-keywords="modo captura screenshot imagem">Modo captura</button>
       <button type="button" data-menu-action="other-profile" data-keywords="perfil 2 alternar outro">Abrir outro perfil</button>
       <p class="hattz-menu-group">STUDIO</p>
@@ -880,13 +899,13 @@
     <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4a9w"></script>
-  <script defer src="share-config.js?v=e7c4a9w"></script>
-  <script defer src="core/hattz-core.js?v=e7c4a9w"></script>
-  <script defer src="core/local-history.js?v=e7c4a9w"></script>
-  <script defer src="core/profile-contract.js?v=e7c4a9w"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4a9x"></script>
+  <script defer src="share-config.js?v=e7c4a9x"></script>
+  <script defer src="core/hattz-core.js?v=e7c4a9x"></script>
+  <script defer src="core/local-history.js?v=e7c4a9x"></script>
+  <script defer src="core/profile-contract.js?v=e7c4a9x"></script>
   <script defer src="maintenance.js"></script>
-  <script defer src="script.js?v=e7c4a9w"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4a9w"></script>
+  <script defer src="script.js?v=e7c4a9x"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4a9x"></script>
 </body>
 </html>

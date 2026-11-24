@@ -843,8 +843,9 @@ body .hattz-collectible .hattz-badge-emoji {
 /* Share: only the badge glyphs, inline side by side (Discord-style). */
 .hattz-badge-strip {
   display: inline-flex !important;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-wrap: nowrap;
   gap: 6px;
   width: auto !important;
   margin: 0 !important;
@@ -855,6 +856,40 @@ body .hattz-collectible .hattz-badge-emoji {
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+.hattz-badge-row {
+  display: inline-flex !important;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+.hattz-badge-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--lg-tint, #b99af0) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lg-tint, #b99af0) 12%, transparent);
+  color: var(--text, #f4f0fa);
+  font: 700 10px/1 var(--font, sans-serif);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.hattz-badge-more:hover {
+  border-color: var(--lg-tint, #b99af0);
+  background: color-mix(in srgb, var(--lg-tint, #b99af0) 24%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hattz-badge-more { transition: background .18s ease, border-color .18s ease; }
 }
 .hattz-badge-inline-item {
   display: inline-flex;
@@ -892,7 +927,8 @@ body .hattz-collectible.rarity-elite .hattz-badge-emoji {
 @media (pointer: coarse) {
   body .nav-item, .studio-nav, .selection-toolbar button, .pagination button,
   .profile-reset, .role-access-option, .maintenance-profile-choice,
-  body .editor-tabs .tab-button, .close-button, .share-profile-button {
+  body .editor-tabs .tab-button, .close-button, .share-profile-button,
+  .inventory-open-button, .inventory-tab, .hattz-badge-more {
     min-height: 44px;
   }
   .close-button, .share-profile-button, .hatz-to-top, .capture-exit-button {

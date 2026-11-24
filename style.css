@@ -3280,6 +3280,64 @@ body.has-animated-background:not(.has-card-background) .card-background-overlay 
 .share-unpublish { justify-self: start; padding-inline: 0; }
 .share-divider { display: flex; align-items: center; gap: 12px; color: var(--muted, #a9a2b2); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
 .share-divider::before, .share-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* Hättz Share — inventário completo de insígnias e molduras do perfil */
+.inventory-backdrop { z-index: 1201; }
+.inventory-modal {
+  width: min(620px, calc(100vw - 28px));
+  max-height: min(84dvh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, white 8%);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card) 93%, #08070c);
+  color: var(--text);
+  box-shadow: 0 28px 90px #0009;
+  transform: translateY(12px) scale(.985);
+  transition: transform .22s ease;
+}
+.inventory-backdrop.open .inventory-modal { transform: translateY(0) scale(1); }
+.inventory-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px 15px; border-bottom: 1px solid var(--border); }
+.inventory-modal-header h2 { margin: 4px 0 0; font: 700 20px/1.2 var(--font); color: var(--text); }
+.inventory-eyebrow { font-size: 9px; font-weight: 800; letter-spacing: .16em; color: var(--accent); }
+.inventory-tabs { display: flex; gap: 6px; padding: 12px 22px 0; }
+.inventory-tab {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, #a9a2b2);
+  font: 700 11px/1.2 var(--font);
+  cursor: pointer;
+}
+.inventory-tab[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+}
+.inventory-modal-body { display: grid; gap: 8px; padding: 16px 22px 22px; overflow: auto; }
+.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 0; }
+.inventory-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--inventory-accent, var(--border)) 35%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+.inventory-card strong { display: block; color: var(--text); font-size: 12px; line-height: 1.35; }
+.inventory-card small { display: block; margin-top: 2px; color: var(--muted, #a9a2b2); font-size: 10px; line-height: 1.4; }
+.inventory-glyph { flex: 0 0 28px; font-size: 20px; line-height: 1; text-align: center; color: var(--inventory-accent, inherit); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--inventory-accent, #B8BCC8) 35%, transparent)); }
+.inventory-frame-image { flex: 0 0 40px; width: 40px; height: 40px; object-fit: contain; }
+.inventory-frame-placeholder { flex: 0 0 40px; width: 40px; height: 40px; display: grid; place-items: center; color: var(--muted, #a9a2b2); font-size: 20px; }
+.inventory-empty { grid-column: 1 / -1; margin: 0; padding: 14px 2px; color: var(--muted, #a9a2b2); font-size: 11px; text-align: center; }
+.inventory-open-button { border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .inventory-tab { transition: background .18s ease, border-color .18s ease; }
+}
 .public-profile-view #openEditor,
 .public-profile-view #openOtherProfile,
 .public-profile-view #openShareManager { display: none !important; }

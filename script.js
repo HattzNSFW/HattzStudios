@@ -734,6 +734,64 @@ function badgeRarityLevel(badge) {
   return labels[String(raw || "").trim().toLowerCase()] || 1;
 }
 
+// Raridade primeiro (da mais rara para a mais comum), depois nome A-Z.
+function sortCollectibles(items) {
+  return [...(items || [])].sort((a, b) =>
+    (badgeRarityLevel(b) - badgeRarityLevel(a)) ||
+    String(a?.name || a?.id || "").localeCompare(String(b?.name || b?.id || ""), "pt-BR")
+  );
+}
+
+function createBadgeInlineItem(item) {
+  const holder = document.createElement("span");
+  holder.className = "hattz-badge-inline-item";
+  holder.dataset.rarityLevel = String(badgeRarityLevel(item));
+  holder.title = item.name || "Insígnia";
+  if (item.color && /^#[0-9a-f]{6}$/i.test(item.color)) holder.style.setProperty("--badge-accent", item.color);
+  const emoji = document.createElement("span");
+  emoji.className = "hattz-badge-emoji-inline";
+  emoji.textContent = roleGlyph(item);
+  emoji.setAttribute("aria-hidden", "true");
+  holder.append(emoji);
+  return holder;
+}
+
+// O perfil mostra três insígnias por linha. As demais linhas começam ocultas
+// e o botão +N revela uma de cada vez, até esgotar o inventário possuído.
+function renderBadgeStrip(items = []) {
+  const strip = document.createElement("div");
+  strip.className = "hattz-badge-strip";
+  strip.dataset.remoteEntitlement = "badge";
+  strip.setAttribute("aria-label", "Insígnias do perfil");
+  const ordered = sortCollectibles(items);
+  for (let offset = 0; offset < ordered.length; offset += 3) {
+    const row = document.createElement("div");
+    row.className = "hattz-badge-row";
+    row.hidden = offset >= 3;
+    for (const item of ordered.slice(offset, offset + 3)) row.append(createBadgeInlineItem(item));
+    strip.append(row);
+  }
+  if (ordered.length > 3) {
+    let remaining = ordered.length - 3;
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "hattz-badge-more";
+    more.dataset.badgeMore = "1";
+    more.textContent = `+${remaining}`;
+    more.setAttribute("aria-label", `Mostrar mais ${remaining} insígnias`);
+    more.addEventListener("click", () => {
+      const next = [...strip.querySelectorAll(".hattz-badge-row")].find((row) => row.hidden);
+      if (!next) { more.remove(); return; }
+      next.hidden = false;
+      remaining = Math.max(0, remaining - next.querySelectorAll(".hattz-badge-inline-item").length);
+      if (remaining > 0) more.textContent = `+${remaining}`;
+      else more.remove();
+    });
+    strip.querySelector(".hattz-badge-row").append(more);
+  }
+  return strip;
+}
+
 function renderServerRoles() {
   const host = $("serverRoles");
   if (!host) return;
@@ -956,25 +1014,11 @@ async function loadProfileEntitlements() {
     const badges = $("badges");
     badges.querySelectorAll("[data-remote-entitlement]").forEach(node => node.remove());
     renderServerRoles();
-    // Insígnias no Share: apenas o símbolo, lado a lado, como no Discord.
-    // Sem prateleira, rótulo, contador ou detalhe expandível.
-    const strip = document.createElement("div");
-    strip.className = "hattz-badge-strip";
-    strip.dataset.remoteEntitlement = "badge";
-    strip.setAttribute("aria-label", "Insígnias do perfil");
-    for (const item of (data.badges || [])) {
-      const holder = document.createElement("span");
-      holder.className = "hattz-badge-inline-item";
-      holder.dataset.rarityLevel = String(badgeRarityLevel(item));
-      holder.title = item.name || "Insígnia";
-      if (item.color && /^#[0-9a-f]{6}$/i.test(item.color)) holder.style.setProperty("--badge-accent", item.color);
-      const emoji = document.createElement("span");
-      emoji.className = "hattz-badge-emoji-inline";
-      emoji.textContent = roleGlyph(item);
-      emoji.setAttribute("aria-hidden", "true");
-      holder.append(emoji);
-      strip.append(holder);
-    }
+    // Inventário completo fica no modal; no perfil aparecem só as insígnias
+    // mais raras, em linhas de três com botão +N para revelar as próximas.
+    window.HATTZ_INVENTORY_BADGES = sortCollectibles(data.badges || []);
+    window.HATTZ_INVENTORY_FRAMES = sortCollectibles(data.frames || []);
+    const strip = renderBadgeStrip(window.HATTZ_INVENTORY_BADGES);
     if (strip.children.length) badges.append(strip);
     window.HATTZ_CORE?.setConnectionState?.("online");
   } catch (error) {
@@ -3264,6 +3308,147 @@ function closeShareManager() {
   if (!$("editorModal").classList.contains("open")) document.body.style.overflow = "";
 }
 
+/* Inventário do Share: o mesmo catálogo de insígnias e molduras possuídas pelo
+   perfil, disponível tanto para o dono quanto para quem abre o link público.
+   A aba de molduras não volta ao cartão do perfil — ela vive só neste modal. */
+const INVENTORY_RARITY_LABELS = ["Comum", "Rara", "Épica", "Lendária", "Limitada"];
+let inventoryTab = "badges";
+let inventoryLoading = false;
+
+function inventoryRarityText(item) {
+  return String(item?.rarityLabel || INVENTORY_RARITY_LABELS[badgeRarityLevel(item) - 1] || "Comum");
+}
+
+function inventoryFrameSource(frame) {
+  let asset = {};
+  try {
+    asset = typeof frame?.asset_json === "string" ? JSON.parse(frame.asset_json) : (frame?.asset || {});
+  } catch { asset = {}; }
+  const source = String(asset?.imageData || "");
+  return /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(source) ? source : "";
+}
+
+function createInventoryBadgeCard(item) {
+  const card = document.createElement("article");
+  card.className = "inventory-card";
+  card.dataset.inventoryBadge = String(item?.id || "");
+  if (/^#[0-9a-f]{6}$/i.test(String(item?.color || ""))) card.style.setProperty("--inventory-accent", item.color);
+  const glyph = document.createElement("span");
+  glyph.className = "inventory-glyph";
+  glyph.setAttribute("aria-hidden", "true");
+  glyph.textContent = roleGlyph(item || {});
+  const copy = document.createElement("span");
+  const title = document.createElement("strong");
+  title.textContent = String(item?.name || item?.id || "Insígnia");
+  const meta = document.createElement("small");
+  meta.textContent = `${inventoryRarityText(item)} · insígnia`;
+  copy.append(title, meta);
+  card.append(glyph, copy);
+  return card;
+}
+
+function createInventoryFrameCard(frame) {
+  const card = document.createElement("article");
+  card.className = "inventory-card";
+  card.dataset.inventoryFrame = String(frame?.id || "");
+  const source = inventoryFrameSource(frame);
+  let art;
+  if (source) {
+    art = document.createElement("img");
+    art.className = "inventory-frame-image";
+    art.src = source;
+    art.alt = "";
+  } else {
+    art = document.createElement("span");
+    art.className = "inventory-frame-placeholder";
+    art.setAttribute("aria-hidden", "true");
+    art.textContent = "🖼️";
+  }
+  const copy = document.createElement("span");
+  const title = document.createElement("strong");
+  title.textContent = String(frame?.name || frame?.id || "Moldura");
+  const meta = document.createElement("small");
+  meta.textContent = `${inventoryRarityText(frame)} · moldura`;
+  copy.append(title, meta);
+  card.append(art, copy);
+  return card;
+}
+
+function renderInventory() {
+  const badges = $("inventoryBadges");
+  const frames = $("inventoryFrames");
+  if (!badges || !frames) return;
+  badges.replaceChildren();
+  frames.replaceChildren();
+  const badgeItems = sortCollectibles(window.HATTZ_INVENTORY_BADGES || []);
+  const frameItems = sortCollectibles(window.HATTZ_INVENTORY_FRAMES || []);
+  for (const item of badgeItems) badges.append(createInventoryBadgeCard(item));
+  for (const frame of frameItems) frames.append(createInventoryFrameCard(frame));
+  if (!badgeItems.length) {
+    const empty = document.createElement("p");
+    empty.className = "inventory-empty";
+    empty.textContent = "Nenhuma insígnia disponível neste perfil.";
+    badges.append(empty);
+  }
+  if (!frameItems.length) {
+    const empty = document.createElement("p");
+    empty.className = "inventory-empty";
+    empty.textContent = "Nenhuma moldura disponível neste perfil.";
+    frames.append(empty);
+  }
+}
+
+function setInventoryTab(tab) {
+  inventoryTab = tab === "frames" ? "frames" : "badges";
+  document.querySelectorAll("[data-inventory-tab]").forEach((button) => {
+    button.setAttribute("aria-selected", String(button.dataset.inventoryTab === inventoryTab));
+  });
+  const badges = $("inventoryBadges");
+  const frames = $("inventoryFrames");
+  if (badges) badges.hidden = inventoryTab !== "badges";
+  if (frames) frames.hidden = inventoryTab !== "frames";
+}
+
+async function ensureInventory() {
+  if (Array.isArray(window.HATTZ_INVENTORY_BADGES) && Array.isArray(window.HATTZ_INVENTORY_FRAMES)) return;
+  if (inventoryLoading) return;
+  inventoryLoading = true;
+  try {
+    const api = getShareApiBase();
+    const response = await fetch(api ? `${api}/api/catalog` : "/api/catalog", { cache: "no-store" });
+    if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
+    const data = await response.json();
+    window.HATTZ_INVENTORY_BADGES = Array.isArray(data.badges) ? data.badges : [];
+    window.HATTZ_INVENTORY_FRAMES = Array.isArray(data.frames) ? data.frames : [];
+  } catch (error) {
+    window.HATTZ_INVENTORY_BADGES ||= [];
+    window.HATTZ_INVENTORY_FRAMES ||= [];
+    window.HATTZ_CORE?.reportError?.(error, "share:inventory");
+  } finally {
+    inventoryLoading = false;
+  }
+}
+
+async function openInventory() {
+  const modal = $("inventoryModal");
+  if (!modal) return;
+  setInventoryTab(inventoryTab);
+  renderInventory();
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  await ensureInventory();
+  renderInventory();
+}
+
+function closeInventory() {
+  const modal = $("inventoryModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+  if (!$("shareModal")?.classList.contains("open") && !$("editorModal")?.classList.contains("open")) document.body.style.overflow = "";
+}
+
 async function shareApiRequest(path, options = {}, ownerToken = "") {
   const apiBase = getShareApiBase();
   if (!apiBase || apiBase.includes("YOUR-WORKER")) {
@@ -3448,9 +3633,18 @@ function setupEvents() {
   $("copyShareOwnerToken").addEventListener("click", () => copyShareValue("shareOwnerTokenOutput", "Chave privada"));
   $("openSharedProfile").addEventListener("click", openSharedProfileByCode);
   $("unpublishProfileButton").addEventListener("click", unpublishProfile);
+  $("openInventory").addEventListener("click", openInventory);
+  $("closeInventoryModal").addEventListener("click", closeInventory);
+  $("inventoryModal").addEventListener("click", (event) => {
+    if (event.target === $("inventoryModal")) closeInventory();
+  });
+  document.querySelectorAll("[data-inventory-tab]").forEach((button) => {
+    button.addEventListener("click", () => setInventoryTab(button.dataset.inventoryTab));
+  });
   $("toggleCaptureMode").addEventListener("click", () => setCaptureMode(true));
   $("exitCaptureMode").addEventListener("click", () => setCaptureMode(false));
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && $("inventoryModal")?.classList.contains("open")) { closeInventory(); return; }
     if (event.key === "Escape" && $("shareModal")?.classList.contains("open")) { closeShareManager(); return; }
     if (event.key === "Escape" && document.body.classList.contains("capture-mode")) {
       setCaptureMode(false);
@@ -3737,6 +3931,7 @@ function setupEvents() {
     const { action, panel } = event.detail || {};
     if (action === "editor" && !IS_PUBLIC_VIEW) { openEditor(); return; }
     if (action === "share" && !IS_PUBLIC_VIEW) { openShareManager(); return; }
+    if (action === "inventory") { openInventory(); return; }
     if (action === "capture") { setCaptureMode(true); return; }
     if (action === "other-profile" && !IS_PUBLIC_VIEW) { openOtherProfile(); return; }
     const targets = { badges: "badges", cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
