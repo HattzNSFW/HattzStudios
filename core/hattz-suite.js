@@ -13,7 +13,7 @@
   const history = () => window.HATTZ_HISTORY;
   const liquid = () => window.HattzLiquidGlass;
 
-  let modal, body, tabsEl, dock, toastTimer = 0;
+  let modal, body, tabsEl, toastTimer = 0;
   let activeTab = "historico";
   const BASE_TABS = [
     ["historico", "Histórico"],
@@ -403,14 +403,46 @@
   }
 
   function build() {
-    dock = document.createElement("button");
-    dock.type = "button";
-    dock.className = "hattz-suite-dock";
-    dock.setAttribute("aria-label", "Abrir central de ferramentas Hättz");
-    dock.title = "Ferramentas Hättz (?)";
-    dock.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.8l1.7 5.1 5.1 1.7-5.1 1.7L12 16.4l-1.7-5.1L5.2 9.6l5.1-1.7L12 2.8z" fill="currentColor"/><path d="M18.7 15.2l.8 2.3 2.3.8-2.3.8-.8 2.3-.8-2.3-2.3-.8 2.3-.8.8-2.3z" fill="currentColor" opacity=".7"/></svg>';
-    dock.addEventListener("click", () => open());
-    document.body.appendChild(dock);
+    /* Estilo mínimo apenas para tornar o modal utilizável. A aparência das
+       páginas continua sendo a camada visual original (design tokens + CSS base). */
+    const style = document.createElement("style");
+    style.textContent = `
+      .hattz-suite-modal{width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden;border-radius:var(--hattz-radius-lg,18px);background:var(--hattz-glass-bg,rgba(20,18,27,.94));border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));box-shadow:var(--hattz-shadow-panel,0 18px 55px rgba(0,0,0,.3));color:var(--hattz-text-strong,#f8f4fc);font-family:var(--hattz-font-sans,sans-serif)}
+      .hattz-suite-modal .modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--hattz-glass-border,rgba(255,255,255,.12))}
+      .hattz-suite-modal .modal-header h2{margin:0;font-size:18px;font-weight:700}
+      .hattz-suite-modal .modal-header .eyebrow{margin:0 0 4px}
+      .hattz-suite-modal .close-button{width:34px;height:34px;line-height:1;font-size:20px;border-radius:10px;border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));background:transparent;color:inherit;cursor:pointer}
+      .hattz-suite-tabs{display:flex;gap:6px;overflow:auto;padding:10px 14px;border-bottom:1px solid var(--hattz-glass-border,rgba(255,255,255,.1))}
+      .hattz-suite-tabs button{flex:0 0 auto;min-height:36px;padding:8px 12px;border-radius:10px;border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));background:transparent;color:var(--hattz-text-soft,#c8bfd5);cursor:pointer}
+      .hattz-suite-tabs button[data-active="true"]{background:rgba(var(--lg-tint,183,178,255),.18);color:var(--hattz-text-strong,#f8f4fc)}
+      .hattz-suite-body{padding:14px 16px 18px;overflow:auto}
+      .hattz-suite-panel{display:none}
+      .hattz-suite-panel.is-active{display:block}
+      .hattz-suite-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+      .hattz-suite-timeline{display:grid;gap:6px;width:100%}
+      .hattz-suite-timeline > div{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.035)}
+      .hattz-suite-hint{display:block;margin:6px 0;color:var(--hattz-text-soft,#c8bfd5);line-height:1.5}
+      .hattz-suite-code{display:block;max-height:220px;overflow:auto;padding:10px;border-radius:10px;background:rgba(0,0,0,.3);font:12px/1.5 monospace;white-space:pre-wrap;word-break:break-all}
+      .hattz-suite-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:10px 0}
+      .hattz-suite-preview > div{display:grid;gap:4px;padding:10px;border-radius:10px;background:rgba(255,255,255,.035)}
+      .hattz-suite-preview span{color:var(--hattz-text-soft,#c8bfd5);font-size:11px}
+      .hattz-suite-preview b{font-size:16px}
+      .hattz-suite-toast{position:fixed;left:50%;bottom:20px;z-index:11000;max-width:min(90vw,520px);padding:10px 14px;border-radius:10px;background:var(--hattz-glass-bg,rgba(20,18,27,.94));border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));color:var(--hattz-text-strong,#f8f4fc);font-size:12px;opacity:0;pointer-events:none;transform:translate(-50%,10px);transition:opacity .18s ease,transform .18s ease}
+      .hattz-suite-toast.is-visible{opacity:1;transform:translate(-50%,0)}
+      .hattz-media-preflight{margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);color:var(--hattz-text-soft,#c8bfd5);font-size:11px}
+      .hattz-admin-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+      .hattz-admin-form > textarea{grid-column:1/-1;min-height:84px;resize:vertical}
+      .hattz-suite-modal input,.hattz-suite-modal select,.hattz-suite-modal textarea{min-height:36px;padding:8px 10px;border-radius:10px;border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));background:rgba(0,0,0,.25);color:var(--hattz-text-strong,#f8f4fc)}
+      .hattz-suite-modal button{min-height:36px;padding:8px 12px;border-radius:10px;border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));background:rgba(255,255,255,.05);color:var(--hattz-text-strong,#f8f4fc);cursor:pointer}
+      .hattz-suite-modal button.primary{background:rgba(var(--lg-tint,183,178,255),.22)}
+      .hattz-admin-table-wrap{max-height:280px;overflow:auto;border:1px solid var(--hattz-glass-border,rgba(255,255,255,.14));border-radius:10px}
+      .hattz-admin-table{width:100%;border-collapse:collapse;font-size:11.5px}
+      .hattz-admin-table th,.hattz-admin-table td{padding:8px 10px;text-align:left;vertical-align:top;word-break:break-word;border-bottom:1px solid rgba(255,255,255,.08)}
+      .hattz-admin-table th{position:sticky;top:0;background:rgba(20,18,27,.96);color:var(--hattz-text-strong,#f8f4fc)}
+      @media(max-width:820px){.hattz-suite-modal{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:14px}.hattz-suite-tabs button,.hattz-admin-form button{min-height:44px}}
+      @media(prefers-reduced-motion:reduce){.hattz-suite-toast{transition:none}}
+    `;
+    document.head.appendChild(style);
 
     const backdrop = document.createElement("div");
     backdrop.className = "hattz-suite-modal-backdrop";
@@ -479,7 +511,7 @@
   function close() {
     if (!modal) return;
     modal._backdrop.hidden = true;
-    dock?.focus();
+    document.activeElement?.blur?.();
   }
 
   function checkBackupNotice() {
