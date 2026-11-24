@@ -268,6 +268,7 @@ tbody td{border-bottom-color:rgba(255,255,255,.05)}
 .field-hint{display:block;font:700 10px Manrope,sans-serif;letter-spacing:.14em;color:#a99bc4;text-transform:uppercase}
 .check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)}
 .badge-tabs{margin-top:16px}
+.text-link{display:inline;padding:0;border:0;background:none;color:rgb(var(--lg-tint));font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .advanced-fields{margin-top:12px;padding-top:10px;border-top:1px solid rgba(var(--lg-tint),.14)}
 .advanced-fields summary{cursor:pointer;font-size:12px;color:#cbbde4;min-height:44px;display:flex;align-items:center}
 .advanced-fields[open]{display:grid;gap:10px;padding-bottom:2px}

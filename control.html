@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9o">
-  <link rel="stylesheet" href="control.css?v=e7c4a9o">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9o">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9p">
+  <link rel="stylesheet" href="control.css?v=e7c4a9p">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9p">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -46,6 +46,7 @@
           <button class="nav-item" data-view="ecosystem"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M10.4 13.6 6.6 16M13.6 13.6l3.8 2.4"/></svg></span> Ecossistema</button>
           <button class="nav-item" data-view="roles"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 2.4 3.8-.4 1.2 3.6 3 2.4-2 3.2 1 3.8-3.6 1.4L16 23l-4-1.6L8 23l-2.4-4.6L2 17l1-3.8-2-3.2 3-2.4 1.2-3.6 3.8.4L12 2Z"/></svg></span> Cargos e VIP</button>
           <button class="nav-item" data-view="badges"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-2.5 5 2.5-1.5-8"/></svg></span> Insígnias</button>
+          <button class="nav-item" data-view="frames"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 3v18M17 3v18M3 7h18M3 17h18"/></svg></span> Molduras</button>
           <button class="nav-item" data-view="storage"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg></span> Armazenamento</button>
           <button class="nav-item" data-view="maintenance"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 21l-3 0-3.5-3.5"/><path d="M14.7 6.3 17.7 3.3a2.1 2.1 0 0 1 3 3l-3 3"/><path d="M14.7 6.3 4 17l-1 4 4-1L18 8.3"/></svg></span> Manutenção</button>
           <button class="nav-item" data-view="ip"><span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span> IP Intelligence</button>
@@ -92,8 +93,18 @@
             <div class="view-hub">
               <button type="button" class="hub-card" data-open-view="roles"><span class="hub-emoji">👑</span><span class="hub-copy"><strong>Cargos e VIP</strong><small>Identidades, temas exclusivos, benefícios e acesso ao Studio.</small></span><span class="hub-arrow">↗</span></button>
               <button type="button" class="hub-card" data-open-view="badges"><span class="hub-emoji">🏅</span><span class="hub-copy"><strong>Insígnias</strong><small>Catálogo em emoji, coleções e concessões por perfil.</small></span><span class="hub-arrow">↗</span></button>
+              <button type="button" class="hub-card" data-open-view="frames"><span class="hub-emoji">🖼️</span><span class="hub-copy"><strong>Molduras</strong><small>Arquivos PNG, acesso por cargo ou VIP e concessão por perfil.</small></span><span class="hub-arrow">↗</span></button>
+            </div>
+            <div class="workspace-summary" id="ecosystemSummary">
+              <div class="summary-chip"><span>API</span><strong id="ecosystemApiStatus">—</strong></div>
+              <div class="summary-chip"><span>PERFIS</span><strong id="ecosystemProfileTotal">—</strong></div>
+              <div class="summary-chip"><span>INSÍGNIAS ATIVAS</span><strong id="ecosystemBadgeTotal">—</strong></div>
+              <div class="summary-chip"><span>MOLDURAS ATIVAS</span><strong id="ecosystemFrameTotal">—</strong></div>
             </div>
             <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">API HEALTH</p><h2>Saúde da API</h2></div><span class="status-pill" id="ecosystemApiPill">Verificando</span></div><p class="muted" id="ecosystemApiSummary">Consultando health e resumo do painel...</p><div class="table-wrap"><table><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody id="ecosystemApiTable"><tr><td colspan="2" class="empty">Consultando…</td></tr></tbody></table></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PROFILE SNAPSHOT</p><h2>Perfis em resumo</h2></div></div><p class="muted" id="ecosystemProfileSummary">Consultando perfis...</p><div class="table-wrap"><table><thead><tr><th>Estado</th><th>Perfis</th></tr></thead><tbody id="ecosystemProfileTable"><tr><td colspan="2" class="empty">Consultando…</td></tr></tbody></table></div></article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOG SNAPSHOT</p><h2>Catálogo e concessões</h2></div></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Ativos</th><th>Concedidos</th></tr></thead><tbody id="ecosystemCatalogSummaryTable"><tr><td colspan="3" class="empty">Consultando…</td></tr></tbody></table></div><div class="inline-actions"><button class="quiet-button" type="button" data-open-view="badges">Insígnias ↗</button><button class="quiet-button" type="button" data-open-view="frames">Molduras ↗</button></div></article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">BENEFIT CATALOGUE</p><h2>Catálogo de benefícios</h2><p class="muted">Benefícios independentes que podem ser concedidos diretamente, herdados por cargos ou revertidos por coleções.</p></div></div>
                 <div class="field"><label for="benefitId">ID único</label><input id="benefitId" maxlength="48" placeholder="ex.: storage-plus"></div>
                 <div class="field"><label for="benefitName">Nome</label><input id="benefitName" maxlength="64" placeholder="Nome do benefício"></div>
@@ -191,7 +202,7 @@
                   <button type="button" class="quiet-button" data-badge-preset="apoiador">🤝 Apoiador</button>
                 </div><small>Owner permanece reservado aos dois perfis oficiais.</small></div>
                 <div class="identity-preview" id="badgeIdentityPreview"><span class="preview-emoji" id="badgeEmojiPreview">✦</span><span class="preview-copy"><strong id="badgePreviewName">Nova insígnia</strong><small id="badgePreviewMeta">Símbolo, nome e descrição aparecem aqui</small></span></div>
-                <div class="field"><label for="catalogKind">Tipo</label><select id="catalogKind"><option value="badges">Insígnia</option><option value="frames">Moldura</option></select></div>
+                <input type="hidden" id="catalogKind" value="badges">
                 <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: vip"></div>
                 <div class="field"><label for="catalogName">Nome</label><input id="catalogName" maxlength="64" placeholder="Nome exibido"></div>
                 <div class="field"><label for="catalogDescription">Descrição</label><textarea id="catalogDescription" maxlength="240" rows="2"></textarea></div>
@@ -203,18 +214,18 @@
                     <label for="catalogIconFile">Substituir por PNG (opcional)</label><input id="catalogIconFile" type="file" accept="image/png"><small>PNG até 128 KB. A imagem substitui o símbolo.</small>
                   </details>
                 </div>
-                <div id="catalogFrameFields" hidden><label for="catalogFrameFile">Imagem PNG da moldura</label><input id="catalogFrameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small><div class="field"><label for="catalogFrameAccess">Acesso</label><select id="catalogFrameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div><div class="field" id="catalogFrameRoleField" hidden><label for="catalogFrameRole">Cargo exigido</label><select id="catalogFrameRole"><option value="">Carregando cargos...</option></select></div><div class="field"><label for="catalogFrameScale">Escala da imagem</label><input id="catalogFrameScale" type="range" min="25" max="200" value="100"></div><div class="field"><label for="catalogFrameX">Posição horizontal</label><input id="catalogFrameX" type="range" min="-100" max="100" value="0"></div><div class="field"><label for="catalogFrameY">Posição vertical</label><input id="catalogFrameY" type="range" min="-100" max="100" value="0"></div></div><button id="saveCatalogItem" class="primary">Salvar item</button>
+                <button id="saveCatalogItem" class="primary">Salvar insígnia</button>
               </article>
               <article class="panel glass">
-                <div class="panel-heading"><div><p class="eyebrow">GRANT COLLECTIBLES</p><h2>Conceder insígnias e molduras</h2><p class="muted">Escolha o perfil pelo código e conceda ou revogue itens do catálogo. Cada concessão é registrada na auditoria.</p></div></div>
+                <div class="panel-heading"><div><p class="eyebrow">GRANT COLLECTIBLES</p><h2>Conceder insígnias</h2><p class="muted">Escolha o perfil pelo código e conceda ou revogue insígnias. Molduras têm uma seção própria.</p></div></div>
                 <div class="field"><label for="badgeProfileCode">Código do perfil</label><input id="badgeProfileCode" placeholder="HTZ-ABCDE-FGHIJ"><small>O mesmo código usado no Share. As insígnias aparecem no perfil público.</small></div>
                 <div class="field"><label for="grantBadgeId">Insígnia</label><select id="grantBadgeId"></select><div class="inline-actions"><button id="grantBadge" class="secondary">Conceder insígnia</button><button id="revokeBadge" class="quiet-button">Revogar insígnia</button></div></div>
-                <div class="field"><label for="grantFrameId">Moldura</label><select id="grantFrameId"></select><div class="inline-actions"><button id="grantFrame" class="secondary">Conceder moldura</button><button id="revokeFrame" class="quiet-button">Revogar moldura</button></div><div class="inline-actions"><button id="loadProfileBadges" class="quiet-button" type="button">Ver itens do perfil</button></div></div>
+                <div class="field"><div class="inline-actions"><button id="loadProfileBadges" class="quiet-button" type="button">Ver insígnias do perfil</button></div></div>
                 <div id="profileBadgeList" class="role-list"><p class="empty">Informe um perfil para consultar insígnias, molduras e benefícios.</p></div>
               </article>
             </div>
             <div class="panel-grid">
-            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Insígnias e molduras disponíveis</h2></div></div><div class="catalog-toolbar"><input id="catalogSearch" class="search-input" type="search" placeholder="Buscar insígnia ou moldura" aria-label="Buscar no catálogo"><span id="catalogCount" class="catalog-count">— itens</span><span id="catalogSearchHint" class="search-hint" hidden>Nenhum item encontrado.</span></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div><button id="catalogMore" class="quiet-button catalog-more" type="button" hidden>Ver mais</button></article>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED CATALOGUE</p><h2>Insígnias publicadas</h2><p class="muted">Para criar ou conceder molduras, use a seção <button class="text-link" type="button" data-open-view="frames">Molduras</button>.</p></div></div><div class="catalog-toolbar"><input id="catalogSearch" class="search-input" type="search" placeholder="Buscar insígnia" aria-label="Buscar insígnia"><span id="catalogCount" class="catalog-count">— itens</span><span id="catalogSearchHint" class="search-hint" hidden>Nenhuma insígnia encontrada.</span></div><div id="ecosystemCatalog" class="audit-list"><p class="empty">Carregando catálogo...</p></div><button id="catalogMore" class="quiet-button catalog-more" type="button" hidden>Ver mais</button></article>
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">COLLECTION SETS</p><h2>Coleções e conjuntos</h2><p class="muted">Defina conjuntos de insígnias e a recompensa concedida automaticamente ao concluí-los.</p></div></div>
                 <div class="field"><label for="collectionId">ID único</label><input id="collectionId" maxlength="48" placeholder="ex.: fundadores"></div>
                 <div class="field"><label for="collectionName">Nome</label><input id="collectionName" maxlength="64" placeholder="Nome da coleção"></div>
@@ -233,6 +244,39 @@
                 <div id="badgePurgeList" class="audit-list"><p class="empty">Carregando insígnias...</p></div>
               </article>
             </div>
+          </section>
+
+          <section class="view" id="view-frames">
+            <div class="page-heading"><div><p class="eyebrow">PNG FRAMES</p><h1>Molduras</h1><p class="muted">Crie molduras PNG, defina o acesso e conceda aos perfis. Remover aqui desativa a moldura e preserva as concessões.</p></div><button id="reloadFrames" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="workspace-summary" id="frameSummary">
+              <div class="summary-chip"><span>ATIVAS</span><strong id="frameActiveCount">—</strong></div>
+              <div class="summary-chip"><span>PÚBLICAS</span><strong id="framePublicCount">—</strong></div>
+              <div class="summary-chip"><span>ACESSO RESTRITO</span><strong id="frameRestrictedCount">—</strong></div>
+              <div class="summary-chip"><span>CONCEDIDAS</span><strong id="frameGrantedCount">—</strong></div>
+            </div>
+            <div class="panel-grid">
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar moldura</h2><p class="muted">Envie um PNG com transparência, até 300 KB.</p></div></div>
+                <div class="field"><label for="frameId">ID único</label><input id="frameId" maxlength="48" placeholder="ex.: aurora"></div>
+                <div class="field"><label for="frameName">Nome</label><input id="frameName" maxlength="64" placeholder="Nome exibido"></div>
+                <div class="field"><label for="frameDescription">Descrição</label><textarea id="frameDescription" maxlength="240" rows="2"></textarea></div>
+                <div class="field"><label for="frameFile">Imagem PNG</label><input id="frameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small></div>
+                <div class="field"><label for="frameAccess">Acesso</label><select id="frameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div>
+                <div class="field" id="frameRoleField" hidden><label for="frameRole">Cargo exigido</label><select id="frameRole"><option value="">Carregando cargos...</option></select></div>
+                <details class="advanced-fields"><summary>Ajustes de imagem</summary>
+                  <label for="frameRarity">Raridade</label><select id="frameRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select>
+                  <label for="frameScale">Escala</label><input id="frameScale" type="range" min="25" max="200" value="100">
+                  <label for="frameX">Posição horizontal</label><input id="frameX" type="range" min="-100" max="100" value="0">
+                  <label for="frameY">Posição vertical</label><input id="frameY" type="range" min="-100" max="100" value="0">
+                </details>
+                <div class="inline-actions"><button id="saveFrame" class="primary" type="button">Salvar moldura</button><button id="newFrame" class="quiet-button" type="button">Nova moldura</button></div>
+              </article>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">GRANT FRAMES</p><h2>Conceder molduras</h2><p class="muted">Molduras VIP e de cargo exigem o benefício correspondente no perfil.</p></div></div>
+                <div class="field"><label for="frameProfileCode">Código do perfil</label><input id="frameProfileCode" placeholder="HTZ-ABCDE-FGHIJ"></div>
+                <div class="field"><label for="grantFrameId">Moldura</label><select id="grantFrameId"><option value="">Carregando molduras...</option></select><div class="inline-actions"><button id="grantFrame" class="secondary" type="button">Conceder moldura</button><button id="revokeFrame" class="quiet-button" type="button">Revogar moldura</button></div><div class="inline-actions"><button id="loadFrameProfile" class="quiet-button" type="button">Ver molduras do perfil</button></div></div>
+                <div id="frameProfileList" class="role-list"><p class="empty">Informe um perfil para consultar molduras.</p></div>
+              </article>
+            </div>
+            <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PUBLISHED FRAMES</p><h2>Molduras publicadas</h2></div></div><div class="catalog-toolbar"><input id="frameCatalogSearch" class="search-input" type="search" placeholder="Buscar moldura" aria-label="Buscar moldura"><span id="frameCatalogCount" class="catalog-count">— itens</span><span id="frameCatalogHint" class="search-hint" hidden>Nenhuma moldura encontrada.</span></div><div id="frameCatalogList" class="audit-list"><p class="empty">Carregando molduras...</p></div></article>
           </section>
 
           <section class="view" id="view-storage">
@@ -296,10 +340,10 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="share-config.js?v=e7c4a9o"></script>
-  <script defer src="core/hattz-core.js?v=e7c4a9o"></script>
-  <script defer src="core/local-history.js?v=e7c4a9o"></script>
-  <script defer src="control.js?v=e7c4a9o"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4a9o"></script>
+  <script defer src="share-config.js?v=e7c4a9p"></script>
+  <script defer src="core/hattz-core.js?v=e7c4a9p"></script>
+  <script defer src="core/local-history.js?v=e7c4a9p"></script>
+  <script defer src="control.js?v=e7c4a9p"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4a9p"></script>
 </body>
 </html>
