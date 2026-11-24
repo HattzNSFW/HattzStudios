@@ -862,6 +862,26 @@ body .hattz-collectible.rarity-elite {
   }
 }
 
+@media (max-width: 820px) {
+  body .profile-switch-button,
+  body .share-profile-button,
+  body .icon-button,
+  body .capture-mode-button,
+  body .close-button,
+  body button.primary,
+  body button.secondary,
+  body button.quiet-button,
+  body .studio-nav {
+    min-height: 44px;
+  }
+  body .icon-button,
+  body .close-button,
+  body .hatz-to-top {
+    min-width: 44px;
+    width: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .skeleton::after, .hattz-light::before, .hattz-breathe::after,
