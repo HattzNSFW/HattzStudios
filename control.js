@@ -514,8 +514,12 @@
     const icon = $('catalogIcon')?.value.trim();
     const description = $('catalogDescription')?.value.trim();
     const category = $('catalogCategory')?.value.trim();
+    const color = $('catalogColor')?.value || '#B8BCC8';
     const emoji = $('badgeEmojiPreview'), title = $('badgePreviewName'), meta = $('badgePreviewMeta');
-    if (emoji) emoji.textContent = icon && /[^\x00-\x7F]/.test(icon) ? icon : emojiFor({ id, name, category, icon });
+    if (emoji) {
+      emoji.textContent = icon && /[^\x00-\x7F]/.test(icon) ? icon : emojiFor({ id, name, category, icon });
+      emoji.style.setProperty('--preview-accent', color);
+    }
     if (title) title.textContent = name;
     if (meta) meta.textContent = description || 'Símbolo, nome e descrição aparecem aqui';
   }
@@ -615,7 +619,7 @@
       $('grantFrameId').innerHTML = frames.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">🖼️ ${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
       catalogItems = badges.map(x => {
         const term = `${x.id} ${x.name || ''} ${x.category || ''} Insígnia`;
-        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges">Excluir</button></div>`;
+        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges">Excluir</button></div>`;
         return { term: term.toLocaleLowerCase('pt-BR'), html };
       });
       catalogVisible = CATALOG_PAGE;
@@ -901,9 +905,9 @@
     }
   };
   const SERVER_BADGE_PRESETS = {
-    owner: { name: 'Owner', description: 'Insígnia reservada aos perfis oficiais do Hättz.', category: 'server', rarity: '5', icon: '👑' },
-    vip: { name: 'VIP', description: 'Apoio premium ao ecossistema Hättz.', category: 'server', rarity: '4', icon: '💎' },
-    apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝' }
+    owner: { name: 'Owner', description: 'Insígnia reservada aos perfis oficiais do Hättz.', category: 'server', rarity: '5', icon: '👑', color: '#F0B232' },
+    vip: { name: 'VIP', description: 'Apoio premium ao ecossistema Hättz.', category: 'server', rarity: '4', icon: '💎', color: '#43B581' },
+    apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝', color: '#5865F2' }
   };
   function applyRolePreset(id) {
     const preset = SERVER_ROLE_PRESETS[id];
@@ -925,6 +929,7 @@
     $('catalogName').value = preset.name;
     $('catalogDescription').value = preset.description;
     $('catalogRarity').value = preset.rarity;
+    $('catalogColor').value = preset.color;
     $('catalogCategory').value = preset.category;
     $('catalogIcon').value = preset.icon;
     $('catalogIsPublic').checked = true;
@@ -1007,6 +1012,7 @@
       name: $('catalogName').value,
       description: $('catalogDescription').value,
       rarityLevel: Number($('catalogRarity')?.value || 1),
+      color: $('catalogColor')?.value || '#B8BCC8',
       isPublic: $('catalogIsPublic')?.checked !== false,
       awardMode: 'manual'
     };
@@ -1354,7 +1360,7 @@
   $("previewModal").addEventListener("click", (event) => { if (event.target === $('previewModal')) closePreview(); });
   document.addEventListener("keydown", (event) => { if (event.key === 'Escape' && !$('previewModal').hidden) closePreview(); });
   ["roleDefinitionId", "roleDefinitionLabel", "roleDefinitionColor"].forEach(id => $(id).addEventListener("input", applyRolePreview));
-  ["catalogId", "catalogName", "catalogDescription", "catalogIcon", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", applyBadgePreview));
+  ["catalogId", "catalogName", "catalogDescription", "catalogIcon", "catalogColor", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", applyBadgePreview));
   $("catalogIconFile").addEventListener("change", () => { if ($("catalogIconFile").files?.length) { $("badgeEmojiPreview").textContent = "🖼️"; $("badgePreviewMeta").textContent = "PNG personalizado"; } else applyBadgePreview(); });
   $("saveCatalogItem").addEventListener("click", saveCatalogItem);
   $("frameAccess").addEventListener("change", syncFrameAccessFields);
@@ -1375,6 +1381,7 @@
     $("catalogName").value = button.dataset.catalogName || '';
     $("catalogDescription").value = button.dataset.catalogDescription || '';
     $("catalogRarity").value = button.dataset.catalogRarity || '1';
+    $("catalogColor").value = /^#[0-9a-f]{6}$/i.test(button.dataset.catalogColor || '') ? button.dataset.catalogColor : '#B8BCC8';
     $("catalogCategory").value = button.dataset.catalogCategory || 'server';
     $("catalogIsPublic").checked = button.dataset.catalogPublic !== '0';
     $("catalogIcon").value = button.dataset.catalogIcon || '✦';
