@@ -725,6 +725,15 @@ function roleGlyph(role) {
   return window.HattzEmoji?.badge?.(role || {}) || "✦";
 }
 
+// Intensidade do brilho das insígnias: 1 Comum, 2 Rara, 3 Épica, 4 Lendária, 5 Limitada.
+function badgeRarityLevel(badge) {
+  const raw = badge?.rarityLevel ?? badge?.rarity_level ?? badge?.rarity;
+  const direct = Number(raw);
+  if (Number.isFinite(direct) && direct >= 1 && direct <= 5) return Math.round(direct);
+  const labels = { comum: 1, rara: 2, "épica": 3, epica: 3, "lendária": 4, lendaria: 4, limitada: 5 };
+  return labels[String(raw || "").trim().toLowerCase()] || 1;
+}
+
 function renderServerRoles() {
   const host = $("serverRoles");
   if (!host) return;
@@ -956,6 +965,7 @@ async function loadProfileEntitlements() {
     for (const item of (data.badges || [])) {
       const holder = document.createElement("span");
       holder.className = "hattz-badge-inline-item";
+      holder.dataset.rarityLevel = String(badgeRarityLevel(item));
       holder.title = item.name || "Insígnia";
       if (item.color && /^#[0-9a-f]{6}$/i.test(item.color)) holder.style.setProperty("--badge-accent", item.color);
       const emoji = document.createElement("span");
