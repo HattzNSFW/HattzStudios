@@ -418,7 +418,7 @@ function normalizeProfileData(parsed) {
   normalized.dividerStyle = ["none", "minimal", "double", "dotted", "ornamental", "celestial", "gothic", "royal"].includes(parsed.dividerStyle) ? parsed.dividerStyle : "ornamental";
   normalized.dividerCustomColorEnabled = Boolean(parsed.dividerCustomColorEnabled);
   normalized.dividerColor = /^#[0-9a-f]{6}$/i.test(parsed.dividerColor || "") ? parsed.dividerColor : "#a78bfa";
-  if (!(window.HATTZ_PROFILE_CONTRACT?.isSafeFrameId(normalized.moldura) ?? (typeof normalized.moldura === "string" && /^[a-z0-9][a-z0-9_-]{1,47}$/i.test(normalized.moldura)))) normalized.moldura = "celestial";
+  if (!(window.HATTZ_PROFILE_CONTRACT?.isSafeFrameId(normalized.moldura) ?? (typeof normalized.moldura === "string" && /^[a-z0-9][a-z0-9_-]{1,47}$/i.test(normalized.moldura)))) normalized.moldura = "none";
   normalized.fundoPausado = Boolean(parsed.fundoPausado);
   normalized.cardBackgroundPausado = Boolean(parsed.cardBackgroundPausado);
   if (String(normalized.bannerTitulo || "").trim().toUpperCase() === "PERSONAL SPACE") normalized.bannerTitulo = "";
@@ -677,333 +677,10 @@ function getDetailIcon(label = "") {
   return match ? match.icon : "✦";
 }
 
-function svgStart(content) {
-  return `
-    <svg viewBox="0 0 190 190"
-         xmlns="http://www.w3.org/2000/svg"
-         fill="none"
-         aria-hidden="true">
-      ${content}
-    </svg>
-  `;
-}
-
-const FRAMES = {
-
-  none: "",
-  amethyst: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="82"/>
-    <g class="amethyst-gems">
-      <path d="M95 5 104 20 95 35 86 20Z"/><path d="M95 155 104 170 95 185 86 170Z"/>
-      <path d="M5 95 20 86 35 95 20 104Z"/><path d="M155 95 170 86 185 95 170 104Z"/>
-      <path d="M31 31 43 28 47 43 35 47Z"/><path d="M159 31 147 28 143 43 155 47Z"/>
-      <path d="M31 159 43 162 47 147 35 143Z"/><path d="M159 159 147 162 143 147 155 143Z"/>
-    </g>
-    <circle class="ornament" cx="95" cy="20" r="4"/><circle class="ornament" cx="95" cy="170" r="4"/>
-  `),
-
-  celestial: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="79"/>
-
-    <path class="fine-line" d="M95 8 L100 18 L95 28 L90 18Z"/>
-    <path class="fine-line" d="M95 162 L100 172 L95 182 L90 172Z"/>
-
-    <path class="fine-line" d="M8 95 L18 90 L28 95 L18 100Z"/>
-    <path class="fine-line" d="M162 95 L172 90 L182 95 L172 100Z"/>
-
-    <path class="ornament" d="M95 9 L98 16 L95 23 L92 16Z"/>
-    <path class="ornament" d="M95 167 L98 174 L95 181 L92 174Z"/>
-
-    <path class="ornament" d="M9 95 L16 92 L23 95 L16 98Z"/>
-    <path class="ornament" d="M167 95 L174 92 L181 95 L174 98Z"/>
-
-    <path class="fine-line" d="M42 42 L48 48 M148 42 L142 48 M42 148 L48 142 M148 148 L142 142"/>
-
-    <circle class="ornament" cx="45" cy="45" r="3"/>
-    <circle class="ornament" cx="145" cy="45" r="3"/>
-    <circle class="ornament" cx="45" cy="145" r="3"/>
-    <circle class="ornament" cx="145" cy="145" r="3"/>
-
-    <path class="fine-line" d="M67 17 Q95 2 123 17"/>
-    <path class="fine-line" d="M67 173 Q95 188 123 173"/>
-
-    <path class="ornament" d="M95 3 L98 8 L95 13 L92 8Z"/>
-    <path class="ornament" d="M95 177 L98 182 L95 187 L92 182Z"/>
-
-    <path class="fine-line" d="M51 29 Q63 14 79 20 Q70 24 66 34 Q60 28 51 29Z"/>
-    <path class="fine-line" d="M139 29 Q127 14 111 20 Q120 24 124 34 Q130 28 139 29Z"/>
-    <path class="fine-line" d="M51 161 Q63 176 79 170 Q70 166 66 156 Q60 162 51 161Z"/>
-    <path class="fine-line" d="M139 161 Q127 176 111 170 Q120 166 124 156 Q130 162 139 161Z"/>
-    <path class="ornament" d="M64 25 L68 30 L64 35 L60 30Z M126 25 L130 30 L126 35 L122 30Z M64 155 L68 160 L64 165 L60 160Z M126 155 L130 160 L126 165 L122 160Z"/>
-    <circle class="ornament" cx="95" cy="18" r="1.8"/>
-    <circle class="ornament" cx="95" cy="172" r="1.8"/>
-  `),
-
-  gothic: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="79"/>
-
-    <path class="fine-line" d="M95 8 C87 18 86 25 95 32 C104 25 103 18 95 8Z"/>
-    <path class="fine-line" d="M95 182 C87 172 86 165 95 158 C104 165 103 172 95 182Z"/>
-
-    <path class="fine-line" d="M8 95 C18 87 25 86 32 95 C25 104 18 103 8 95Z"/>
-    <path class="fine-line" d="M182 95 C172 87 165 86 158 95 C165 104 172 103 182 95Z"/>
-
-    <path class="ornament" d="M95 8 L99 19 L95 26 L91 19Z"/>
-    <path class="ornament" d="M95 182 L99 171 L95 164 L91 171Z"/>
-
-    <path class="fine-line" d="M34 34 L49 45 L42 51 L29 42Z"/>
-    <path class="fine-line" d="M156 34 L141 45 L148 51 L161 42Z"/>
-    <path class="fine-line" d="M34 156 L49 145 L42 139 L29 148Z"/>
-    <path class="fine-line" d="M156 156 L141 145 L148 139 L161 148Z"/>
-
-    <path class="ornament" d="M29 36 L36 43 L29 50 L22 43Z"/>
-    <path class="ornament" d="M161 36 L168 43 L161 50 L154 43Z"/>
-    <path class="ornament" d="M29 140 L36 147 L29 154 L22 147Z"/>
-    <path class="ornament" d="M161 140 L168 147 L161 154 L154 147Z"/>
-
-    <path class="fine-line" d="M62 18 Q73 9 82 17 Q76 24 69 25"/>
-    <path class="fine-line" d="M128 18 Q117 9 108 17 Q114 24 121 25"/>
-    <path class="fine-line" d="M62 172 Q73 181 82 173 Q76 166 69 165"/>
-    <path class="fine-line" d="M128 172 Q117 181 108 173 Q114 166 121 165"/>
-
-    <circle class="ornament" cx="95" cy="28" r="3"/>
-    <circle class="ornament" cx="95" cy="162" r="3"/>
-  `),
-
-  royal: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="79"/>
-
-    <path class="fine-line" d="M63 23 L56 10 L79 19 L95 5 L111 19 L134 10 L127 23"/>
-    <path class="fine-line" d="M63 23 L95 35 L127 23"/>
-
-    <path class="ornament" d="M95 4 L100 14 L95 23 L90 14Z"/>
-    <circle class="ornament" cx="58" cy="11" r="3.5"/>
-    <circle class="ornament" cx="132" cy="11" r="3.5"/>
-
-    <path class="fine-line" d="M28 72 Q10 95 28 118"/>
-    <path class="fine-line" d="M162 72 Q180 95 162 118"/>
-
-    <path class="ornament" d="M19 95 L27 86 L34 95 L27 104Z"/>
-    <path class="ornament" d="M171 95 L163 86 L156 95 L163 104Z"/>
-
-    <path class="fine-line" d="M63 167 L95 185 L127 167"/>
-    <path class="ornament" d="M95 176 L101 184 L95 190 L89 184Z"/>
-
-    <circle class="ornament" cx="45" cy="45" r="3.5"/>
-    <circle class="ornament" cx="145" cy="45" r="3.5"/>
-    <circle class="ornament" cx="45" cy="145" r="3.5"/>
-    <circle class="ornament" cx="145" cy="145" r="3.5"/>
-
-    <path class="fine-line" d="M37 45 L45 34 L53 45"/>
-    <path class="fine-line" d="M153 45 L145 34 L137 45"/>
-    <path class="fine-line" d="M37 145 L45 156 L53 145"/>
-    <path class="fine-line" d="M153 145 L145 156 L137 145"/>
-  `),
-
-  floral: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="79"/>
-
-    <g transform="translate(95 13)">
-      <path class="fine-line" d="M0 0 Q-17 -14 -19 1 Q-12 11 0 0 Q12 11 19 1 Q17 -14 0 0Z"/>
-      <circle class="ornament" cx="0" cy="0" r="4"/>
-    </g>
-
-    <g transform="translate(95 177)">
-      <path class="fine-line" d="M0 0 Q-17 -14 -19 1 Q-12 11 0 0 Q12 11 19 1 Q17 -14 0 0Z"/>
-      <circle class="ornament" cx="0" cy="0" r="4"/>
-    </g>
-
-    <g transform="translate(13 95) rotate(-90)">
-      <path class="fine-line" d="M0 0 Q-17 -14 -19 1 Q-12 11 0 0 Q12 11 19 1 Q17 -14 0 0Z"/>
-      <circle class="ornament" cx="0" cy="0" r="4"/>
-    </g>
-
-    <g transform="translate(177 95) rotate(90)">
-      <path class="fine-line" d="M0 0 Q-17 -14 -19 1 Q-12 11 0 0 Q12 11 19 1 Q17 -14 0 0Z"/>
-      <circle class="ornament" cx="0" cy="0" r="4"/>
-    </g>
-
-    <path class="fine-line" d="M38 42 Q24 28 29 19 Q43 23 47 37"/>
-    <path class="fine-line" d="M152 42 Q166 28 161 19 Q147 23 143 37"/>
-    <path class="fine-line" d="M38 148 Q24 162 29 171 Q43 167 47 153"/>
-    <path class="fine-line" d="M152 148 Q166 162 161 171 Q147 167 143 153"/>
-
-    <path class="ornament" d="M29 18 Q21 10 18 21 Q24 30 29 18Z"/>
-    <path class="ornament" d="M161 18 Q169 10 172 21 Q166 30 161 18Z"/>
-    <path class="ornament" d="M29 172 Q21 180 18 169 Q24 160 29 172Z"/>
-    <path class="ornament" d="M161 172 Q169 180 172 169 Q166 160 161 172Z"/>
-
-    <path class="fine-line" d="M61 18 Q72 29 81 23 M129 18 Q118 29 109 23"/>
-    <path class="fine-line" d="M61 172 Q72 161 81 167 M129 172 Q118 161 109 167"/>
-  `),
-
-  ornate: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="79"/>
-
-    <path class="fine-line" d="M95 13 C78 3 65 13 73 25 C80 34 91 29 95 21 C99 29 110 34 117 25 C125 13 112 3 95 13Z"/>
-    <path class="fine-line" d="M95 177 C78 187 65 177 73 165 C80 156 91 161 95 169 C99 161 110 156 117 165 C125 177 112 187 95 177Z"/>
-
-    <path class="fine-line" d="M13 95 C3 78 13 65 25 73 C34 80 29 91 21 95 C29 99 34 110 25 117 C13 125 3 112 13 95Z"/>
-    <path class="fine-line" d="M177 95 C187 78 177 65 165 73 C156 80 161 91 169 95 C161 99 156 110 165 117 C177 125 187 112 177 95Z"/>
-
-    <path class="ornament" d="M95 8 L100 17 L95 25 L90 17Z"/>
-    <path class="ornament" d="M95 182 L100 173 L95 165 L90 173Z"/>
-
-    <path class="fine-line" d="M39 39 Q55 26 61 42 Q59 54 47 52 Q41 50 39 39Z"/>
-    <path class="fine-line" d="M151 39 Q135 26 129 42 Q131 54 143 52 Q149 50 151 39Z"/>
-    <path class="fine-line" d="M39 151 Q55 164 61 148 Q59 136 47 138 Q41 140 39 151Z"/>
-    <path class="fine-line" d="M151 151 Q135 164 129 148 Q131 136 143 138 Q149 140 151 151Z"/>
-
-    <circle class="ornament" cx="48" cy="45" r="3"/>
-    <circle class="ornament" cx="142" cy="45" r="3"/>
-    <circle class="ornament" cx="48" cy="145" r="3"/>
-    <circle class="ornament" cx="142" cy="145" r="3"/>
-
-    <path class="fine-line" d="M64 17 Q77 8 85 17 M126 17 Q113 8 105 17"/>
-    <path class="fine-line" d="M64 173 Q77 182 85 173 M126 173 Q113 182 105 173"/>
-  `),
-
-  dark: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="79"/>
-
-    <path class="fine-line" d="M95 10 L102 27 L95 22 L88 27Z"/>
-    <path class="fine-line" d="M95 180 L102 163 L95 168 L88 163Z"/>
-
-    <path class="fine-line" d="M10 95 L27 88 L22 95 L27 102Z"/>
-    <path class="fine-line" d="M180 95 L163 88 L168 95 L163 102Z"/>
-
-    <path class="fine-line" d="M35 35 L51 44 L43 47 L46 57"/>
-    <path class="fine-line" d="M155 35 L139 44 L147 47 L144 57"/>
-    <path class="fine-line" d="M35 155 L51 146 L43 143 L46 133"/>
-    <path class="fine-line" d="M155 155 L139 146 L147 143 L144 133"/>
-
-    <path class="ornament" d="M95 6 L99 17 L95 25 L91 17Z"/>
-    <path class="ornament" d="M95 184 L99 173 L95 165 L91 173Z"/>
-
-    <path class="ornament" d="M6 95 L17 91 L25 95 L17 99Z"/>
-    <path class="ornament" d="M184 95 L173 91 L165 95 L173 99Z"/>
-
-    <path class="fine-line" d="M60 18 L70 28 L66 30 L58 26"/>
-    <path class="fine-line" d="M130 18 L120 28 L124 30 L132 26"/>
-    <path class="fine-line" d="M60 172 L70 162 L66 160 L58 164"/>
-    <path class="fine-line" d="M130 172 L120 162 L124 160 L132 164"/>
-
-    <circle class="ornament" cx="44" cy="44" r="3"/>
-    <circle class="ornament" cx="146" cy="44" r="3"/>
-    <circle class="ornament" cx="44" cy="146" r="3"/>
-    <circle class="ornament" cx="146" cy="146" r="3"/>
-  `),
-
-  halo: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="73"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="81"/>
-
-    <circle class="ornament" cx="95" cy="14" r="3"/>
-    <circle class="ornament" cx="95" cy="176" r="3"/>
-    <circle class="ornament" cx="14" cy="95" r="3"/>
-    <circle class="ornament" cx="176" cy="95" r="3"/>
-
-    <path class="fine-line" d="M95 3 L95 7 M95 183 L95 187 M3 95 L7 95 M183 95 L187 95"/>
-
-    <path class="fine-line" d="M38 38 L45 45 M152 38 L145 45 M38 152 L45 145 M152 152 L145 145"/>
-
-    <path class="ornament" d="M95 7 L98 13 L95 19 L92 13Z"/>
-    <path class="ornament" d="M95 171 L98 177 L95 183 L92 177Z"/>
-
-    <path class="fine-line" d="M70 18 Q95 8 120 18"/>
-    <path class="fine-line" d="M70 172 Q95 182 120 172"/>
-    <path class="fine-line" d="M18 70 Q8 95 18 120"/>
-    <path class="fine-line" d="M172 70 Q182 95 172 120"/>
-  `),
-
-  vintage: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="78"/>
-
-    <path class="fine-line" d="M95 9 Q78 9 78 23 Q78 34 95 36 Q112 34 112 23 Q112 9 95 9Z"/>
-    <path class="fine-line" d="M95 181 Q78 181 78 167 Q78 156 95 154 Q112 156 112 167 Q112 181 95 181Z"/>
-
-    <path class="ornament" d="M95 8 L100 18 L95 28 L90 18Z"/>
-    <path class="ornament" d="M95 182 L100 172 L95 162 L90 172Z"/>
-
-    <path class="fine-line" d="M9 95 Q9 78 23 78 Q34 78 36 95 Q34 112 23 112 Q9 112 9 95Z"/>
-    <path class="fine-line" d="M181 95 Q181 78 167 78 Q156 78 154 95 Q156 112 167 112 Q181 112 181 95Z"/>
-
-    <path class="ornament" d="M8 95 L18 90 L28 95 L18 100Z"/>
-    <path class="ornament" d="M182 95 L172 90 L162 95 L172 100Z"/>
-
-    <path class="fine-line" d="M38 38 Q50 28 59 38 Q59 49 48 52 Q39 50 38 38Z"/>
-    <path class="fine-line" d="M152 38 Q140 28 131 38 Q131 49 142 52 Q151 50 152 38Z"/>
-    <path class="fine-line" d="M38 152 Q50 162 59 152 Q59 141 48 138 Q39 140 38 152Z"/>
-    <path class="fine-line" d="M152 152 Q140 162 131 152 Q131 141 142 138 Q151 140 152 152Z"/>
-
-    <circle class="ornament" cx="48" cy="43" r="3"/>
-    <circle class="ornament" cx="142" cy="43" r="3"/>
-    <circle class="ornament" cx="48" cy="147" r="3"/>
-    <circle class="ornament" cx="142" cy="147" r="3"/>
-  `),
-
-  wings: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="73"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="82"/>
-    <path class="fine-line" d="M20 76 C7 59 10 36 31 23 C29 43 43 50 57 54 C42 57 34 66 31 81 C27 78 23 77 20 76Z"/>
-    <path class="fine-line" d="M170 76 C183 59 180 36 159 23 C161 43 147 50 133 54 C148 57 156 66 159 81 C163 78 167 77 170 76Z"/>
-    <path class="fine-line" d="M25 65 Q37 58 49 59 M29 53 Q39 48 47 49 M35 40 Q43 39 49 43"/>
-    <path class="fine-line" d="M165 65 Q153 58 141 59 M161 53 Q151 48 143 49 M155 40 Q147 39 141 43"/>
-    <path class="fine-line" d="M40 143 Q23 153 26 173 Q44 166 55 151 M150 143 Q167 153 164 173 Q146 166 135 151"/>
-    <path class="ornament" d="M95 5 L101 17 L95 29 L89 17Z"/>
-    <path class="ornament" d="M95 161 L100 171 L95 185 L90 171Z"/>
-    <circle class="ornament" cx="30" cy="82" r="3"/><circle class="ornament" cx="160" cy="82" r="3"/>
-  `),
-
-  skulls: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="81"/>
-    <path class="fine-line" d="M95 9 C83 20 81 34 95 42 C109 34 107 20 95 9Z"/>
-    <path class="fine-line" d="M95 181 C83 170 81 156 95 148 C109 156 107 170 95 181Z"/>
-    <g class="ornament" transform="translate(95 29)"><path d="M-8 -5 Q0 -13 8 -5 L7 5 Q0 12 -7 5Z"/><circle cx="-3" cy="0" r="1.8"/><circle cx="3" cy="0" r="1.8"/></g>
-    <g class="ornament" transform="translate(95 161)"><path d="M-8 -5 Q0 -13 8 -5 L7 5 Q0 12 -7 5Z"/><circle cx="-3" cy="0" r="1.8"/><circle cx="3" cy="0" r="1.8"/></g>
-    <path class="fine-line" d="M27 51 L42 58 L35 72 L21 65Z M163 51 L148 58 L155 72 L169 65Z M27 139 L42 132 L35 118 L21 125Z M163 139 L148 132 L155 118 L169 125Z"/>
-    <path class="ornament" d="M19 95 L28 88 L37 95 L28 102Z M171 95 L162 88 L153 95 L162 102Z"/>
-  `),
-
-  thorn: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="82"/>
-    <path class="fine-line" d="M28 45 C45 49 43 64 57 68 C45 75 42 85 48 95 C35 91 25 98 22 111 C14 93 18 75 28 45Z"/>
-    <path class="fine-line" d="M162 45 C145 49 147 64 133 68 C145 75 148 85 142 95 C155 91 165 98 168 111 C176 93 172 75 162 45Z"/>
-    <path class="fine-line" d="M28 145 C44 138 50 126 48 111 M162 145 C146 138 140 126 142 111"/>
-    <path class="ornament" d="M29 45 L20 25 L39 37Z M161 45 L170 25 L151 37Z M48 95 L28 88 L39 108Z M142 95 L162 88 L151 108Z"/>
-    <path class="fine-line" d="M65 20 Q78 33 95 26 Q112 33 125 20 M65 170 Q78 157 95 164 Q112 157 125 170"/>
-    <circle class="ornament" cx="95" cy="14" r="3"/><circle class="ornament" cx="95" cy="176" r="3"/>
-  `),
-
-  dragon: svgStart(`
-    <circle class="ring-main" cx="95" cy="95" r="72"/>
-    <circle class="ring-secondary" cx="95" cy="95" r="82"/>
-    <path class="fine-line" d="M35 55 C18 40 20 20 42 13 C40 31 55 35 67 38 C54 43 49 54 51 66 C44 62 39 59 35 55Z"/>
-    <path class="fine-line" d="M155 55 C172 40 170 20 148 13 C150 31 135 35 123 38 C136 43 141 54 139 66 C146 62 151 59 155 55Z"/>
-    <path class="fine-line" d="M39 51 L25 32 L47 39 M151 51 L165 32 L143 39"/>
-    <path class="ornament" d="M95 4 L102 18 L95 31 L88 18Z"/>
-    <path class="fine-line" d="M24 95 Q10 82 18 68 Q31 73 35 87 M166 95 Q180 82 172 68 Q159 73 155 87"/>
-    <path class="fine-line" d="M45 145 Q59 153 69 169 M145 145 Q131 153 121 169"/>
-    <path class="ornament" d="M18 68 L9 54 L27 60Z M172 68 L181 54 L163 60Z M95 169 L103 181 L95 188 L87 181Z"/>
-    <circle class="ornament" cx="45" cy="45" r="3"/><circle class="ornament" cx="145" cy="45" r="3"/>
-  `)
-};
-
 function renderFrame() {
   const frame = $("avatarFrame");
   const name = profile.moldura || "none";
 
-  const artwork = name;
   const remoteFrame = window.HATTZ_REMOTE_FRAMES?.[name];
   const localFrame = name === "moldura-custom" ? profile.customFrame : null;
   if (localFrame?.imageData) {
@@ -1027,37 +704,8 @@ function renderFrame() {
     return;
   }
 
-  const rarity = ["none", "common", "rare", "epic", "legendary", "elite"].includes(profile.raridadeMoldura)
-    ? profile.raridadeMoldura
-    : "none";
-  frame.className = `avatar-frame rarity-${rarity}`;
-
-  if (profile.molduraCorPersonalizada) {
-    frame.classList.add("custom-frame-color");
-    frame.style.setProperty("--frame-custom-color", profile.molduraCor || "#a78bfa");
-  } else {
-    frame.style.removeProperty("--frame-custom-color");
-  }
-
-  if (!FRAMES[artwork]) {
-    frame.innerHTML = "";
-    return;
-  }
-
-  const finishingDetails = `
-    <g class="frame-finishing-details">
-      <circle class="frame-detail-ring" cx="95" cy="95" r="86" />
-      <circle class="frame-detail-dots" cx="95" cy="95" r="66" />
-      <circle class="frame-detail-inner" cx="95" cy="95" r="75" />
-      <path class="frame-detail-ticks" d="M95 2v8 M95 180v8 M2 95h8 M180 95h8 M29 29l6 6 M155 155l6 6 M161 29l-6 6 M35 155l-6 6 M60 12l4 8 M130 12l-4 8 M60 178l4-8 M130 178l-4-8 M12 60l8 4 M12 130l8-4 M178 60l-8 4 M178 130l-8-4" />
-      <path class="frame-detail-filigree" d="M95 5 C84 16 84 25 95 32 C106 25 106 16 95 5Z M95 185 C84 174 84 165 95 158 C106 165 106 174 95 185Z M5 95 C16 84 25 84 32 95 C25 106 16 106 5 95Z M185 95 C174 84 165 84 158 95 C165 106 174 106 185 95Z M35 35 Q48 20 61 34 Q49 31 45 48 Q42 39 35 35Z M155 35 Q142 20 129 34 Q141 31 145 48 Q148 39 155 35Z M35 155 Q48 170 61 156 Q49 159 45 142 Q42 151 35 155Z M155 155 Q142 170 129 156 Q141 159 145 142 Q148 151 155 155Z" />
-      <path class="frame-detail-star" d="M95 1l2.2 6.8L104 10l-6.8 2.2L95 19l-2.2-6.8L86 10l6.8-2.2Z M10 95l2.2 6.8L19 104l-6.8 2.2L10 113l-2.2-6.8L1 104l6.8-2.2Z M180 95l2.2 6.8L189 104l-6.8 2.2L180 113l-2.2-6.8L171 104l6.8-2.2Z M30 30l1.5 4.5L36 36l-4.5 1.5L30 42l-1.5-4.5L24 36l4.5-1.5Z M160 30l1.5 4.5L166 36l-4.5 1.5L160 42l-1.5-4.5L156 36l4.5-1.5Z M30 160l1.5 4.5L36 166l-4.5 1.5L30 172l-1.5-4.5L24 166l4.5-1.5Z M160 160l1.5 4.5L166 166l-4.5 1.5L160 172l-1.5-4.5L156 166l4.5-1.5Z" />
-      <circle class="frame-detail-stone" cx="30" cy="30" r="2.6"/><circle class="frame-detail-stone" cx="160" cy="30" r="2.6"/><circle class="frame-detail-stone" cx="30" cy="160" r="2.6"/><circle class="frame-detail-stone" cx="160" cy="160" r="2.6"/>
-      <circle class="frame-detail-stone" cx="95" cy="18" r="1.8"/><circle class="frame-detail-stone" cx="95" cy="172" r="1.8"/><circle class="frame-detail-stone" cx="18" cy="95" r="1.8"/><circle class="frame-detail-stone" cx="172" cy="95" r="1.8"/>
-    </g>`;
-  frame.innerHTML = FRAMES[artwork].replace("</svg>", `${finishingDetails}</svg>`);
-
-  if (name !== "none") frame.classList.add(`frame-${name}`);
+  frame.className = "avatar-frame";
+  frame.replaceChildren();
 }
 
 function renderBannerHeading() {
@@ -1295,6 +943,7 @@ async function loadProfileEntitlements() {
     }
     if (data.profileTheme) applyColors(data.profileTheme);
     window.HATTZ_REMOTE_FRAMES = Object.fromEntries((data.frames || []).map(frame => { let asset={}; try { asset=JSON.parse(frame.asset_json||"{}"); } catch {} return [frame.id,asset]; }));
+    syncRemoteFrameOptions();
     window.HATTZ_REMOTE_BENEFITS = data.benefits || {};
     window.HATTZ_REMOTE_COLLECTIONS = data.collections || [];
     if (profile.moldura && window.HATTZ_REMOTE_FRAMES[profile.moldura]?.imageData) renderFrame();
@@ -2290,6 +1939,27 @@ function resetThemeColors() {
   showToast("Cores originais restauradas.");
 }
 
+function syncRemoteFrameOptions() {
+  const select = $("avatarFrameSelect");
+  if (!select) return;
+  let group = select.querySelector("#remoteFrameOptions");
+  if (!group) {
+    group = document.createElement("optgroup");
+    group.id = "remoteFrameOptions";
+    group.label = "Molduras PNG do catálogo";
+    select.append(group);
+  }
+  group.replaceChildren();
+  const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
+  for (const [id, asset] of Object.entries(window.HATTZ_REMOTE_FRAMES || {})) {
+    if (!asset?.imageData) continue;
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = `Moldura PNG · ${escape(id)}`;
+    group.append(option);
+  }
+}
+
 function resetFrameAppearance() {
   profile.moldura = DEFAULT_PROFILE.moldura;
   profile.raridadeMoldura = DEFAULT_PROFILE.raridadeMoldura;
@@ -2901,6 +2571,7 @@ function fillEditor() {
   $("dividerCustomColorEnabled").checked = Boolean(profile.dividerCustomColorEnabled);
   $("dividerColor").value = profile.dividerColor || "#a78bfa";
   $("dividerColor").disabled = !profile.dividerCustomColorEnabled;
+  syncRemoteFrameOptions();
   $("avatarFrameSelect").value = profile.moldura;
   $("frameRarity").value = profile.raridadeMoldura || "none";
   $("customFrameColorEnabled").checked = Boolean(profile.molduraCorPersonalizada);
@@ -3015,7 +2686,7 @@ function saveChanges() {
   applyCropSettings();
   applyDividerSettings();
   applyMediaOpacitySettings();
-  profile.moldura = $("avatarFrameSelect").value;
+  profile.moldura = $("avatarFrameSelect").value || profile.moldura;
   profile.raridadeMoldura = $("frameRarity").value;
   profile.molduraCorPersonalizada = $("customFrameColorEnabled").checked;
   profile.molduraCor = $("customFrameColor").value;

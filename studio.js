@@ -196,7 +196,6 @@
       return;
     }
     profile.moldura = btn.dataset.frame;
-    if (btn.dataset.frame === "amethyst") profile.raridadeMoldura = "elite";
     document.querySelectorAll("[data-frame]").forEach(x => x.classList.toggle("selected", x === btn));
     save(false);
   }));
@@ -375,8 +374,8 @@
     for (const frame of catalogFrames) {
       if (!frame.asset_json || document.querySelector(`[data-frame="${CSS.escape(frame.id)}"]`)) continue;
       const asset = parseAsset(frame.asset_json);
-      if (!asset.imageData && asset.accessMode !== "public") continue;
-      if (asset.imageData && !owned.has(frame.id)) continue;
+      if (!asset.imageData) continue;
+      if (!owned.has(frame.id)) continue;
       const button = document.createElement("button");
       button.className = "frame-option";
       button.dataset.frame = frame.id;

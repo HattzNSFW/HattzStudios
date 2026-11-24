@@ -413,13 +413,6 @@ button {
   transform: translate(-50%, -50%);
 }
 
-.avatar-frame svg {
-  width: 100%;
-  height: 100%;
-
-  display: block;
-  overflow: visible;
-}
 
 .identity-info {
   flex: 1;
@@ -815,251 +808,6 @@ button {
   letter-spacing: .5px;
 }
 
-.avatar-frame .ring-main {
-  transform-origin: 95px 95px;
-  animation: frame-glow 5s ease-in-out infinite;
-}
-
-.avatar-frame .ring-secondary {
-  transform-origin: 95px 95px;
-  animation: frame-orbit 42s linear infinite;
-}
-
-.avatar-frame .ornament {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: frame-shimmer 4.5s ease-in-out infinite;
-}
-
-.avatar-frame .fine-line {
-  transition: stroke .4s ease, opacity .4s ease;
-}
-
-@keyframes frame-glow {
-  0%, 100% {
-    opacity: .85;
-    filter: drop-shadow(0 0 1px currentColor);
-  }
-
-  50% {
-    opacity: 1;
-    filter: drop-shadow(0 0 3px currentColor);
-  }
-}
-
-@keyframes frame-orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes frame-shimmer {
-  0%, 100% { opacity: .82; }
-  50% { opacity: 1; }
-}
-
-.frame-celestial .ring-main {
-  stroke: #d9dce8;
-  stroke-width: 1.8;
-}
-
-.frame-celestial .ring-secondary {
-  stroke: #aeb5cb;
-  stroke-width: 1;
-  stroke-dasharray: 1.5 4;
-}
-
-.frame-celestial .ornament {
-  fill: #e8e9f3;
-  stroke: #9ba4bd;
-  stroke-width: 1;
-}
-
-.frame-celestial .fine-line {
-  fill: none;
-  stroke: #b8bfd2;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-}
-
-.frame-gothic .ring-main {
-  stroke: #a99aaa;
-  stroke-width: 2.2;
-}
-
-.frame-gothic .ring-secondary {
-  stroke: #66566a;
-  stroke-width: 1.3;
-}
-
-.frame-gothic .ornament {
-  fill: #c7b8c8;
-  stroke: #55465b;
-  stroke-width: 1.2;
-}
-
-.frame-gothic .fine-line {
-  fill: none;
-  stroke: #a99aaa;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.frame-royal .ring-main {
-  stroke: #d5ad62;
-  stroke-width: 2.3;
-}
-
-.frame-royal .ring-secondary {
-  stroke: #8c6939;
-  stroke-width: 1;
-  stroke-dasharray: 2 4;
-}
-
-.frame-royal .ornament {
-  fill: #e5c37e;
-  stroke: #87602f;
-  stroke-width: 1.2;
-}
-
-.frame-royal .fine-line {
-  fill: none;
-  stroke: #d5ad62;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.frame-floral .ring-main {
-  stroke: #b995aa;
-  stroke-width: 1.6;
-}
-
-.frame-floral .ring-secondary {
-  stroke: #775d72;
-  stroke-width: 1;
-  stroke-dasharray: 2 4;
-}
-
-.frame-floral .ornament {
-  fill: #d6afc4;
-  stroke: #8b6683;
-  stroke-width: 1;
-}
-
-.frame-floral .fine-line {
-  fill: none;
-  stroke: #a77f9b;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.frame-ornate .ring-main {
-  stroke: #c2a77c;
-  stroke-width: 1.8;
-}
-
-.frame-ornate .ring-secondary {
-  stroke: #806a4d;
-  stroke-width: 1;
-  stroke-dasharray: 1 3;
-}
-
-.frame-ornate .ornament {
-  fill: #ddc69e;
-  stroke: #856c4c;
-  stroke-width: 1.1;
-}
-
-.frame-ornate .fine-line {
-  fill: none;
-  stroke: #c2a77c;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.frame-dark .ring-main {
-  stroke: #8c8296;
-  stroke-width: 2;
-}
-
-.frame-dark .ring-secondary {
-  stroke: #4e4558;
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-}
-
-.frame-dark .ornament {
-  fill: #aaa0b4;
-  stroke: #51485a;
-  stroke-width: 1.3;
-}
-
-.frame-dark .fine-line {
-  fill: none;
-  stroke: #92869c;
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-.frame-halo .ring-main {
-  stroke: #d4c9ff;
-  stroke-width: 2;
-}
-
-.frame-halo .ring-secondary {
-  stroke: #a99adf;
-  stroke-width: 1;
-  stroke-dasharray: 1 5;
-}
-
-.frame-halo .ornament {
-  fill: #e5ddff;
-  stroke: #a99adf;
-  stroke-width: 1;
-}
-
-.frame-halo .fine-line {
-  fill: none;
-  stroke: #c3b5f2;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-}
-
-.frame-vintage .ring-main {
-  stroke: #c59b70;
-  stroke-width: 2.5;
-}
-
-.frame-vintage .ring-secondary {
-  stroke: #806047;
-  stroke-width: 1;
-}
-
-.frame-vintage .ornament {
-  fill: #d8b38c;
-  stroke: #806047;
-  stroke-width: 1.2;
-}
-
-.frame-vintage .fine-line {
-  fill: none;
-  stroke: #b78c62;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-}
-
-.avatar-frame .frame-highlight {
-  opacity: .75;
-  animation: frame-highlight 6s ease-in-out infinite;
-}
-
-@keyframes frame-highlight {
-  0%, 100% { opacity: .35; }
-  50% { opacity: .9; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -1071,12 +819,6 @@ button {
     transition-duration: .01ms !important;
   }
 
-  .avatar-frame .ring-main,
-  .avatar-frame .ring-secondary,
-  .avatar-frame .ornament,
-  .avatar-frame .frame-highlight {
-    animation: none !important;
-  }
 }
 
 .toast {
@@ -1934,22 +1676,6 @@ input[type="range"] {
   }
 }
 
-.frame-wings .ring-main { stroke: #d8e4f5; stroke-width: 1.5; }
-.frame-wings .fine-line { fill: none; stroke: #c4d3e9; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.frame-wings .ornament { fill: #f0f4ff; stroke: #9eafca; stroke-width: 1.2; }
-
-.frame-skulls .ring-main { stroke: #b9aabf; stroke-width: 1.5; }
-.frame-skulls .ring-secondary { stroke: #746278; stroke-width: 1; stroke-dasharray: 2 4; }
-.frame-skulls .fine-line { fill: none; stroke: #c2b4c9; stroke-width: 1.8; stroke-linecap: round; }
-.frame-skulls .ornament { fill: #d8cedd; stroke: #6c5b73; stroke-width: 1.1; }
-
-.frame-thorn .ring-main { stroke: #9b829f; stroke-width: 1.6; }
-.frame-thorn .fine-line { fill: none; stroke: #b49ab5; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.frame-thorn .ornament { fill: #c4a9c5; stroke: #604d67; stroke-width: 1.2; }
-
-.frame-dragon .ring-main { stroke: #c69a72; stroke-width: 1.8; }
-.frame-dragon .fine-line { fill: none; stroke: #bd8d66; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
-.frame-dragon .ornament { fill: #e0b58a; stroke: #79553d; stroke-width: 1.2; }
 
 .owner-mark {
   display: inline-flex;
@@ -2008,59 +1734,6 @@ input[type="range"] {
   isolation: isolate;
 }
 
-.avatar-frame::before {
-  content: "";
-  position: absolute;
-  inset: 7px;
-  z-index: -1;
-  border-radius: 50%;
-  padding: 2px;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg 35deg,
-    color-mix(in srgb, var(--accent) 35%, transparent) 65deg,
-    #ffffff 92deg,
-    var(--accent) 125deg,
-    transparent 165deg 245deg,
-    color-mix(in srgb, var(--accent) 70%, #ffffff) 285deg,
-    transparent 325deg 360deg
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: .78;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 55%, transparent));
-  animation: frame-border-spin 7s linear infinite;
-}
-
-.avatar-frame .ring-main {
-  animation: frame-glow 3.8s ease-in-out infinite;
-}
-
-.avatar-frame .ring-secondary {
-  stroke-dasharray: 2 5;
-  animation: frame-orbit 22s linear infinite;
-  transform-origin: 95px 95px;
-}
-
-.avatar-frame .ornament {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: frame-shimmer 3.2s ease-in-out infinite;
-}
-
-@keyframes frame-border-spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .avatar-frame::before,
-  .avatar-frame .ring-main,
-  .avatar-frame .ring-secondary,
-  .avatar-frame .ornament {
-    animation: none !important;
-  }
-}
 
 .profile-meta {
   display: flex;
@@ -2170,26 +1843,6 @@ input[type="range"] {
   font-weight: 600;
 }
 
-.avatar-frame:empty::before { display: none; }
-.avatar-frame.rarity-common::before { opacity: .42; filter: drop-shadow(0 0 2px var(--accent)); }
-.avatar-frame.rarity-rare::before {
-  opacity: .78;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, #66baff 75%, transparent));
-}
-.avatar-frame.rarity-epic::before {
-  opacity: .95;
-  background: conic-gradient(from 0deg, #9b7cff, #e2a8ff, #70d9ff, #9b7cff);
-  filter: drop-shadow(0 0 7px #a77cffaa);
-  animation-duration: 5s;
-}
-.avatar-frame.rarity-legendary::before {
-  opacity: 1;
-  background: conic-gradient(from 0deg, #f6d77b, #fff2c2, #d69a42, #fff1ad, #f6d77b);
-  filter: drop-shadow(0 0 5px #e9c46aaa) drop-shadow(0 0 12px #e9c46a66);
-  animation-duration: 3.5s;
-}
-.avatar-frame.rarity-legendary .ornament { filter: drop-shadow(0 0 4px currentColor); }
-.avatar-frame.rarity-epic .ring-main { filter: drop-shadow(0 0 4px currentColor); }
 
 .profile-card.effects-enabled .banner-overlay::after {
   content: "";
@@ -2282,48 +1935,9 @@ body.has-animated-background { background: transparent; }
 .identity-section { margin-top: -50px; }
 .identity-info { padding-top: 12px; }
 
-.avatar-frame::before {
-  animation: frame-border-spin 12s linear infinite, frame-common-pulse 5s ease-in-out infinite;
-}
-.avatar-frame.rarity-common::before {
-  opacity: .48;
-  animation-duration: 22s, 6s;
-}
-.avatar-frame.rarity-rare::before {
-  opacity: .82;
-  background: conic-gradient(from 0deg, transparent, #69bfff, #e6f8ff, #438ce7, transparent 78%);
-  filter: drop-shadow(0 0 5px #66baffaa);
-  animation-duration: 12s, 3.6s;
-}
-.avatar-frame.rarity-epic::before {
-  opacity: .96;
-  background: conic-gradient(from 0deg, #8e6bff, #f0b4ff, #70d9ff, #8e6bff);
-  filter: drop-shadow(0 0 7px #a77cffbb) drop-shadow(0 0 13px #70d9ff55);
-  animation-duration: 8s, 2.8s;
-}
-.avatar-frame.rarity-legendary::before {
-  opacity: 1;
-  background: conic-gradient(from 0deg, #f6d77b, #fff8d9, #d69a42, #fff1ad, #f6d77b);
-  filter: drop-shadow(0 0 7px #e9c46aaa) drop-shadow(0 0 15px #e9c46a77);
-  animation-duration: 5s, 2s;
-}
-.avatar-frame.rarity-common .ring-main { animation: frame-common-pulse 5s ease-in-out infinite; }
-.avatar-frame.rarity-rare .ring-main { animation: frame-rare-pulse 3.6s ease-in-out infinite; }
-.avatar-frame.rarity-epic .ring-main { animation: frame-epic-pulse 2.8s ease-in-out infinite; filter: drop-shadow(0 0 5px currentColor); }
-.avatar-frame.rarity-legendary .ring-main { animation: frame-legendary-pulse 2s ease-in-out infinite; filter: drop-shadow(0 0 7px currentColor); }
-.avatar-frame.rarity-rare .ornament { animation-duration: 2.8s; }
-.avatar-frame.rarity-epic .ornament { animation-duration: 2.2s; filter: drop-shadow(0 0 4px currentColor); }
-.avatar-frame.rarity-legendary .ornament { animation-duration: 1.7s; filter: drop-shadow(0 0 5px currentColor); }
-@keyframes frame-common-pulse { 0%,100% { opacity: .42; } 50% { opacity: .68; } }
-@keyframes frame-rare-pulse { 0%,100% { opacity: .72; stroke-width: 1.4; } 50% { opacity: 1; stroke-width: 2.2; } }
-@keyframes frame-epic-pulse { 0%,100% { opacity: .72; } 50% { opacity: 1; } }
-@keyframes frame-legendary-pulse { 0%,100% { opacity: .76; } 50% { opacity: 1; } }
 @media (max-width: 650px) {
   .identity-section { margin-top: -36px; }
   .identity-info { padding-top: 14px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .avatar-frame::before, .avatar-frame .ring-main, .avatar-frame .ornament { animation: none !important; }
 }
 
 @media (max-width: 900px) {
@@ -2339,31 +1953,6 @@ body.has-animated-background { background: transparent; }
 .card-background img,
 .card-background video { object-fit: cover; }
 
-.avatar-frame.rarity-none::before {
-  opacity: 0;
-  animation: none !important;
-  filter: none !important;
-}
-.avatar-frame.rarity-none .ring-main,
-.avatar-frame.rarity-none .ring-secondary,
-.avatar-frame.rarity-none .ornament {
-  animation: none !important;
-  filter: none !important;
-}
-
-.avatar-frame.custom-frame-color .ring-main,
-.avatar-frame.custom-frame-color .ring-secondary,
-.avatar-frame.custom-frame-color .fine-line {
-  stroke: var(--frame-custom-color) !important;
-}
-.avatar-frame.custom-frame-color .ornament {
-  fill: color-mix(in srgb, var(--frame-custom-color) 34%, transparent) !important;
-  stroke: var(--frame-custom-color) !important;
-}
-.avatar-frame.custom-frame-color::before {
-  background: conic-gradient(from 0deg, transparent, var(--frame-custom-color), transparent, var(--frame-custom-color), transparent) !important;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--frame-custom-color) 70%, transparent)) !important;
-}
 .frame-color-toggle { margin-top: 14px; }
 .frame-color-picker {
   display: flex !important;
@@ -2399,139 +1988,6 @@ body.has-animated-background { background: transparent; }
   .profile-content { padding-left: clamp(28px, 6vw, 90px); padding-right: clamp(28px, 6vw, 90px); }
 }
 
-.avatar-frame {
-  --frame-metal: color-mix(in srgb, var(--accent) 76%, #ffffff);
-  --frame-shadow: color-mix(in srgb, var(--accent) 42%, #17121f);
-}
-.avatar-frame .frame-detail-ring {
-  fill: none;
-  stroke: var(--frame-metal);
-  stroke-width: .8;
-  stroke-dasharray: 1 3.4;
-  opacity: .72;
-}
-.avatar-frame .frame-detail-inner {
-  fill: none;
-  stroke: var(--frame-metal);
-  stroke-width: .55;
-  stroke-dasharray: 9 2 1 2;
-  opacity: .42;
-}
-.avatar-frame .frame-detail-filigree {
-  fill: none;
-  stroke: var(--frame-metal);
-  stroke-width: .9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: .78;
-  filter: drop-shadow(0 0 1.8px var(--frame-shadow));
-}
-.avatar-frame .frame-detail-dots {
-  fill: none;
-  stroke: var(--frame-metal);
-  stroke-width: .65;
-  stroke-dasharray: .7 5.4;
-  opacity: .48;
-}
-.avatar-frame .frame-detail-ticks {
-  fill: none;
-  stroke: var(--frame-metal);
-  stroke-width: 1.15;
-  stroke-linecap: round;
-  opacity: .86;
-}
-.avatar-frame .frame-detail-star {
-  fill: var(--frame-metal);
-  stroke: color-mix(in srgb, var(--frame-metal) 72%, #ffffff);
-  stroke-width: .45;
-  opacity: .9;
-  filter: drop-shadow(0 0 3px var(--frame-shadow));
-}
-.avatar-frame .frame-detail-stone {
-  fill: var(--frame-metal);
-  stroke: color-mix(in srgb, var(--frame-metal) 45%, #ffffff);
-  stroke-width: .8;
-  filter: drop-shadow(0 0 3px var(--frame-shadow));
-}
-.avatar-frame .frame-finishing-details { pointer-events: none; }
-.avatar-frame .ring-main {
-  stroke-width: 1.65;
-  filter: drop-shadow(0 1px 2px #0009);
-}
-.avatar-frame .ring-secondary {
-  stroke-width: .9;
-  opacity: .76;
-}
-.avatar-frame .fine-line {
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 1px 1px #0008);
-}
-.avatar-frame .ornament {
-  stroke-width: 1.1;
-  filter: drop-shadow(0 1px 2px #0009);
-}
-
-.frame-celestial, .frame-wings, .frame-halo {
-  --frame-metal: #d9e8ff;
-  --frame-shadow: #83b9ff99;
-}
-.frame-celestial .frame-detail-star,
-.frame-wings .frame-detail-star,
-.frame-halo .frame-detail-star { opacity: 1; }
-.frame-gothic, .frame-skulls, .frame-dark {
-  --frame-metal: #c6b4d2;
-  --frame-shadow: #9872b899;
-}
-.frame-royal, .frame-dragon {
-  --frame-metal: #f1d49a;
-  --frame-shadow: #d99a4c99;
-}
-.frame-floral {
-  --frame-metal: #e8b9d0;
-  --frame-shadow: #c879a899;
-}
-.frame-ornate, .frame-vintage {
-  --frame-metal: #dbc6a6;
-  --frame-shadow: #b18b5b99;
-}
-.frame-thorn {
-  --frame-metal: #c4a0c9;
-  --frame-shadow: #9561a899;
-}
-
-.frame-wings .fine-line { stroke: #dceaff; }
-.frame-wings .ornament { fill: #f4f8ff; stroke: #9eb9df; }
-.frame-skulls .fine-line { stroke: #c9b8d2; }
-.frame-skulls .ornament { fill: #e5d9eb; stroke: #76617f; }
-.frame-thorn .fine-line { stroke: #b99bc1; }
-.frame-thorn .ornament { fill: #d3b0d9; stroke: #654b70; }
-.frame-dragon .fine-line { stroke: #d8a875; }
-.frame-dragon .ornament { fill: #f1c68f; stroke: #80562f; }
-
-.avatar-frame.custom-frame-color {
-  --frame-metal: var(--frame-custom-color);
-  --frame-shadow: color-mix(in srgb, var(--frame-custom-color) 58%, transparent);
-}
-.avatar-frame.custom-frame-color .frame-detail-ring,
-.avatar-frame.custom-frame-color .frame-detail-dots,
-.avatar-frame.custom-frame-color .frame-detail-ticks {
-  stroke: var(--frame-custom-color) !important;
-}
-.avatar-frame.custom-frame-color .frame-detail-star,
-.avatar-frame.custom-frame-color .frame-detail-stone {
-  fill: var(--frame-custom-color) !important;
-  stroke: color-mix(in srgb, var(--frame-custom-color) 55%, #ffffff) !important;
-}
-.avatar-frame.rarity-none::before { display: none; }
-.avatar-frame.rarity-none .frame-detail-star,
-.avatar-frame.rarity-none .frame-detail-stone { filter: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  .avatar-frame .frame-detail-star,
-  .avatar-frame .frame-detail-stone { filter: none; }
-}
 
 .section-config-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .section-config-grid > .field-group { margin:0; }
@@ -2613,38 +2069,12 @@ body.has-animated-background { background: transparent; }
   cursor: pointer;
 }
 
-.frame-celestial .ring-main { stroke-width: 1.9; filter: drop-shadow(0 0 2px currentColor); }
-.frame-celestial .ring-secondary { stroke-width: 1.05; stroke-dasharray: 1.5 3.2; opacity: .88; }
-.frame-celestial .fine-line { stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
-.frame-celestial .ornament { stroke-width: 1.15; filter: drop-shadow(0 0 2px currentColor); }
-.frame-celestial .frame-detail-ring { stroke-width: .9; opacity: .72; }
-.frame-celestial .frame-detail-dots { stroke-dasharray: .5 5; opacity: .9; }
-.frame-celestial .frame-detail-star { filter: drop-shadow(0 0 3px currentColor); }
-.frame-gothic .ring-main,
-.frame-royal .ring-main,
-.frame-floral .ring-main,
-.frame-ornate .ring-main,
-.frame-dark .ring-main,
-.frame-halo .ring-main,
-.frame-vintage .ring-main { stroke-width: 1.8; }
-.frame-gothic .fine-line,
-.frame-royal .fine-line,
-.frame-floral .fine-line,
-.frame-ornate .fine-line,
-.frame-dark .fine-line,
-.frame-halo .fine-line,
-.frame-vintage .fine-line { stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-
 @media (max-width: 650px) {
   .banner { height: var(--banner-height, 184px); }
   .banner-actions { inset: 14px 15px auto; }
   .banner-heading { max-width: calc(100% - 48px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-}
-.frame-celestial .fine-line { opacity: .96; }
-.frame-celestial .ornament { filter: drop-shadow(0 0 2.5px currentColor); }
 
 .banner {
   height: var(--banner-height, 355px) !important;
@@ -2823,15 +2253,6 @@ body.has-animated-background { background: transparent; }
   .theme-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
 
-.profile-card:not(.effects-enabled) .avatar-frame::before,
-.profile-card:not(.effects-enabled) .avatar-frame .ring-main,
-.profile-card:not(.effects-enabled) .avatar-frame .ring-secondary,
-.profile-card:not(.effects-enabled) .avatar-frame .ornament,
-.profile-card:not(.effects-enabled) .avatar-frame .frame-highlight,
-.profile-card:not(.effects-enabled) .avatar-frame .frame-detail-star,
-.profile-card:not(.effects-enabled) .avatar-frame .frame-detail-stone {
-  animation: none !important;
-}
 
 .crop-safe-window[hidden] { display: none !important; }
 
@@ -2933,7 +2354,6 @@ body.has-animated-background:not(.has-card-background) .card-background-overlay 
 @media (prefers-reduced-motion: reduce) {
   .profile-card.effects-enabled .banner-overlay::after,
   .profile-card.effects-enabled .avatar-photo::after { animation: none !important; }
-  .avatar-frame::before, .avatar-frame .ring-main, .avatar-frame .ornament { animation: none !important; }
 }
 
 
@@ -3921,15 +3341,8 @@ body.has-animated-background:not(.has-card-background) .card-background-overlay 
   border-color: color-mix(in srgb, var(--accent) calc(var(--studio-border, .45) * 100%), var(--border));
   box-shadow: 0 12px 32px rgba(0,0,0,calc(.12 + var(--studio-depth, .42) * .18)), inset 0 1px 0 rgba(255,255,255,calc(var(--studio-reflection, .42) * .18)), 0 0 22px color-mix(in srgb, var(--accent) calc(var(--card-glass-glow, var(--studio-glow, .28)) * 18%), transparent);
 }
-.avatar-frame.frame-amethyst::before { opacity: var(--studio-frame-lighting, .65); padding: var(--studio-frame-thickness, 2px); background: conic-gradient(#e5d5ff,#8f58d7,#f5eaff,#6336a5,#c5a3ff,#e5d5ff); filter: drop-shadow(0 0 9px rgba(170,120,255,.8)); }
-.avatar-frame.frame-amethyst .amethyst-gems path { fill: #8d55d1; stroke: #e8d7ff; stroke-width: 1.8; filter: drop-shadow(0 0 4px #a978ed); }
-.avatar-frame.frame-amethyst .ring-main { stroke: #d9bdff; stroke-width: 2.8; filter: drop-shadow(0 0 6px #9d68e8); }
-.avatar-frame.frame-amethyst .ring-secondary { stroke: #8b5bc4; stroke-width: 1.5; }
 .hattz-vip-badge{border-color:#d6b36c!important;background:linear-gradient(120deg,rgba(133,95,43,.28),rgba(232,204,137,.12))!important;color:#f0d69a!important;box-shadow:0 0 12px rgba(211,173,100,.18)}
 .hattz-collectible.rarity-premium{border-color:#8f78c7!important;color:#c9b5f3!important}.hattz-collectible.rarity-elite{border-color:#d6b36c!important;color:#f0d69a!important;box-shadow:0 0 12px rgba(211,173,100,.16)}
-.avatar-frame.rarity-elite::before { opacity: .98; filter: drop-shadow(0 0 9px #c8a1ff) drop-shadow(0 0 16px rgba(164,105,235,.5)); }
-.avatar-frame.rarity-elite .ring-main { filter: drop-shadow(0 0 8px #c79bff); }
-.avatar-frame.rarity-elite .ornament { filter: drop-shadow(0 0 6px #e7d2ff); }
 
 
 /* Identidade oficial: selo distinto do VIP e do verificado. */
