@@ -195,6 +195,7 @@ let musicBarBackgroundURL = null;
 let musicPlayerResizeObserver = null;
 let musicPlayerResizeTimer = null;
 let musicCoverURL = null;
+const cropSourceFiles = { avatar: null, banner: null, background: null, cardBackground: null, musicBarBackground: null };
 let currentMusicCoverFile = null;
 let musicMediaType = "audio";
 let toastTimer = null;
@@ -311,10 +312,62 @@ function showToast(message) {
   }, 2500);
 }
 
+const PROFILE_HISTORY_KEY = `profile:${ACTIVE_PROFILE_ID}`;
+const EDITOR_DRAFT_KEY = `editor:${ACTIVE_PROFILE_ID}`;
+const LAST_PROFILE_SAVE_KEY = `hattz2:last-profile-save:${ACTIVE_PROFILE_ID}`;
+let savedProfileSnapshot = null;
+let applyingHistory = false;
+let applyingDraft = false;
+
+function rememberProfileBaseline() {
+  try { savedProfileSnapshot = JSON.parse(JSON.stringify(profile)); }
+  catch { savedProfileSnapshot = structuredClone(profile); }
+}
+
 function saveProfile() {
   if (IS_PUBLIC_VIEW) return false;
+  if (!applyingHistory) {
+    if (savedProfileSnapshot) window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, savedProfileSnapshot, { coalesceMs: 500 });
+    try { sessionStorage.setItem(LAST_PROFILE_SAVE_KEY, String(Date.now())); } catch {}
+    rememberProfileBaseline();
+  }
   localStorage.setItem(getProfileStorageKey(), JSON.stringify(profile));
   updateProfileSwitcher();
+}
+
+function applyProfileSnapshot(snapshot, message) {
+  applyingHistory = true;
+  try {
+    if (!window.HATTZ_CORE?.setProfile?.(ACTIVE_PROFILE_ID, snapshot)) {
+      localStorage.setItem(getProfileStorageKey(), JSON.stringify(snapshot));
+    }
+    profile = normalizeProfileData(snapshot);
+    rememberProfileBaseline();
+    renderProfile();
+    fillEditor();
+    updateProfileSwitcher();
+    showToast(message);
+  } finally {
+    applyingHistory = false;
+  }
+}
+
+function collectEditorDraft() {
+  const values = {};
+  $("editorModal").querySelectorAll("input[id], textarea[id], select[id]").forEach((element) => {
+    if (["file", "button", "submit", "reset"].includes(element.type)) return;
+    values[element.id] = ["checkbox", "radio"].includes(element.type) ? element.checked : element.value;
+  });
+  return values;
+}
+
+function applyEditorDraft(values) {
+  for (const [id, value] of Object.entries(values || {})) {
+    const element = $(id);
+    if (!element || ["file", "button", "submit", "reset"].includes(element.type)) continue;
+    if (["checkbox", "radio"].includes(element.type)) element.checked = Boolean(value);
+    else element.value = String(value ?? "");
+  }
 }
 
 function normalizeUsername(value) {
@@ -430,6 +483,9 @@ async function loadSharedProfile() {
   }
   if (code.length !== 10) throw new Error("Código de perfil inválido.");
 
+  const sharedState = { code, ok: false, at: Date.now() };
+  window.HATTZ_SHARED_PROFILE_STATE = sharedState;
+
   const response = await fetch(`${apiBase}/api/profiles/${encodeURIComponent(code)}`, {
     method: "GET",
     headers: { "Accept": "application/json" },
@@ -440,6 +496,7 @@ async function loadSharedProfile() {
   profile = normalizeProfileData(data.profile);
   sharedMediaManifest = Array.isArray(data.media) ? data.media : [];
   sharedProfileLoaded = true;
+  sharedState.ok = true;
 }
 
 function createSharedMediaReference(entry) {
@@ -1981,6 +2038,8 @@ function updateCropPreview(key, file) {
   const empty = $(`${key}CropEmpty`);
   if (!image || !video || !empty) return;
 
+  cropSourceFiles[key] = file || null;
+
   image.hidden = true;
   video.hidden = true;
   [image.dataset.previewUrl, video.dataset.previewUrl].filter(Boolean).forEach(revokeURL);
@@ -1989,6 +2048,9 @@ function updateCropPreview(key, file) {
   image.removeAttribute("src");
   video.pause();
   video.removeAttribute("src");
+
+  // O modal de recorte começa escondido: não cria blob URLs nem decodifica mídia até ser aberto.
+  if (!$("editorModal")?.classList.contains("open")) return;
 
   const selection = document.querySelector(`[data-crop="${key}"] .crop-safe-window`);
   if (!file) {
@@ -2014,6 +2076,10 @@ function updateCropPreview(key, file) {
   }
   empty.hidden = true;
   applyCropPreviewStyle(key);
+}
+
+function refreshCropPreviews() {
+  for (const key of Object.keys(cropSourceFiles)) updateCropPreview(key, cropSourceFiles[key]);
 }
 
 function updateCropPreviewGeometry(key, media) {
@@ -2115,7 +2181,7 @@ function applyMediaPlayback() {
     if (!element) return;
     registerVisualVideo(element, config);
   });
-  syncVisualVideoPlayback();
+  queueVisualVideoSync();
 }
 
 function setMediaAnimation(enabled) {
@@ -2360,7 +2426,7 @@ function displayMusic(file) {
   video.load();
 
   if (isVideo) {
-    video.preload = "auto";
+    video.preload = "none";
     video.src = musicURL;
     video.loop = true;
     video.load();
@@ -2393,6 +2459,7 @@ async function toggleMusic() {
   try {
     if (media.paused) {
       media.loop = true;
+      if (media.tagName === "VIDEO") media.preload = "auto";
       await media.play();
     } else {
       media.pause();
@@ -2825,8 +2892,19 @@ function openEditor() {
   if (IS_PUBLIC_VIEW) return;
   fillEditor();
 
+  const draft = window.HATTZ_HISTORY?.restoreDraft(EDITOR_DRAFT_KEY);
+  let lastSavedAt = 0;
+  try { lastSavedAt = Number(sessionStorage.getItem(LAST_PROFILE_SAVE_KEY)) || 0; } catch {}
+  if (draft && draft.savedAt > lastSavedAt) {
+    applyingDraft = true;
+    applyEditorDraft(draft.values);
+    applyingDraft = false;
+    showToast("Rascunho recuperado.");
+  }
+
   $("editorModal").classList.add("open");
   $("editorModal").setAttribute("aria-hidden", "false");
+  refreshCropPreviews();
 
   document.body.style.overflow = "hidden";
 }
@@ -2902,6 +2980,7 @@ function saveChanges() {
   saveProfile();
   renderProfile();
   closeEditor();
+  window.HATTZ_HISTORY?.clearDraft(EDITOR_DRAFT_KEY);
 
   showToast("Alterações salvas com sucesso.");
 }
@@ -2973,6 +3052,7 @@ async function resetProfile() {
   renderProfile();
   await loadProfileEntitlements();
   fillEditor();
+  window.HATTZ_HISTORY?.clearDraft(EDITOR_DRAFT_KEY);
 
   showToast("Perfil restaurado. VIP, cargos e tags foram preservados.");
 }
@@ -3672,6 +3752,30 @@ function setupEvents() {
     }
   });
 
+  for (const type of ["input", "change"]) {
+    $("editorModal").addEventListener(type, () => {
+      if (applyingDraft || IS_PUBLIC_VIEW) return;
+      window.HATTZ_HISTORY?.saveDraft(EDITOR_DRAFT_KEY, collectEditorDraft());
+    });
+  }
+
+  window.HATTZ_HISTORY?.bindShortcut({
+    priority: 0,
+    isActive: () => !IS_PUBLIC_VIEW && !document.body.classList.contains("capture-mode") && !window.HattzLiquidGlass?.isOpen?.(),
+    onUndo: () => {
+      const snapshot = window.HATTZ_HISTORY.undo(PROFILE_HISTORY_KEY);
+      if (!snapshot) return false;
+      applyProfileSnapshot(snapshot, "Alterações desfeitas.");
+      return true;
+    },
+    onRedo: () => {
+      const snapshot = window.HATTZ_HISTORY.redo(PROFILE_HISTORY_KEY);
+      if (!snapshot) return false;
+      applyProfileSnapshot(snapshot, "Alterações refeitas.");
+      return true;
+    }
+  });
+
   document.addEventListener("keydown", (event) => {
     if (
       event.key === "Escape" &&
@@ -3910,7 +4014,8 @@ async function init() {
   if (IS_PUBLIC_VIEW) {
     activateReadOnlyView();
     try {
-      await loadSharedProfile();
+      window.HATTZ_SHARED_PROFILE_PROMISE = loadSharedProfile();
+      await window.HATTZ_SHARED_PROFILE_PROMISE;
     } catch (error) {
       console.error("Não foi possível carregar o perfil compartilhado:", error);
       profile = structuredClone(DEFAULT_PROFILE);
@@ -3919,6 +4024,7 @@ async function init() {
     }
   } else {
     loadProfile();
+    rememberProfileBaseline();
   }
 
   try {

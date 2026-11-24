@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9f">
-  <link rel="stylesheet" href="style.css?v=e7c4a9f">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9f">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4a9g">
+  <link rel="stylesheet" href="style.css?v=e7c4a9g">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4a9g">
 </head>
 
 <body>
@@ -251,8 +251,8 @@
                 <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
               </div>
               <div class="crop-preview crop-preview-avatar">
-                <img id="avatarCropPreview" alt="Prévia do enquadramento de avatar" hidden>
-                <video id="avatarCropPreviewVideo" muted playsinline loop hidden></video>
+                <img id="avatarCropPreview" loading="lazy" decoding="async" alt="Prévia do enquadramento de avatar" hidden>
+                <video id="avatarCropPreviewVideo" preload="none" muted playsinline loop hidden></video>
                 <div class="crop-preview-empty" id="avatarCropEmpty">Adicione uma mídia para ajustar</div>
                 <div class="crop-safe-window"></div>
               </div>
@@ -293,8 +293,8 @@
                 <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
               </div>
               <div class="crop-preview crop-preview-banner">
-                <img id="bannerCropPreview" alt="Prévia do enquadramento de banner" hidden>
-                <video id="bannerCropPreviewVideo" muted playsinline loop hidden></video>
+                <img id="bannerCropPreview" loading="lazy" decoding="async" alt="Prévia do enquadramento de banner" hidden>
+                <video id="bannerCropPreviewVideo" preload="none" muted playsinline loop hidden></video>
                 <div class="crop-preview-empty" id="bannerCropEmpty">Adicione uma mídia para ajustar</div>
                 <div class="crop-safe-window"></div>
               </div>
@@ -347,8 +347,8 @@
                 <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
               </div>
               <div class="crop-preview crop-preview-cardBackground">
-                <img id="cardBackgroundCropPreview" alt="Prévia do enquadramento de fundo do cartão" hidden>
-                <video id="cardBackgroundCropPreviewVideo" muted playsinline loop hidden></video>
+                <img id="cardBackgroundCropPreview" loading="lazy" decoding="async" alt="Prévia do enquadramento de fundo do cartão" hidden>
+                <video id="cardBackgroundCropPreviewVideo" preload="none" muted playsinline loop hidden></video>
                 <div class="crop-preview-empty" id="cardBackgroundCropEmpty">Adicione uma mídia para ajustar</div>
                 <div class="crop-safe-window"></div>
               </div>
@@ -394,8 +394,8 @@
                 <span>A moldura clara marca exatamente o recorte que aparecerá no perfil</span>
               </div>
               <div class="crop-preview crop-preview-background">
-                <img id="backgroundCropPreview" alt="Prévia do enquadramento de fundo da página" hidden>
-                <video id="backgroundCropPreviewVideo" muted playsinline loop hidden></video>
+                <img id="backgroundCropPreview" loading="lazy" decoding="async" alt="Prévia do enquadramento de fundo da página" hidden>
+                <video id="backgroundCropPreviewVideo" preload="none" muted playsinline loop hidden></video>
                 <div class="crop-preview-empty" id="backgroundCropEmpty">Adicione uma mídia para ajustar</div>
                 <div class="crop-safe-window"></div>
               </div>
@@ -504,8 +504,8 @@
                 <span>Ajuste qual parte da imagem, GIF ou vídeo aparece na janela flutuante</span>
               </div>
               <div class="crop-preview crop-preview-musicBarBackground">
-                <img id="musicBarBackgroundCropPreview" alt="Prévia do enquadramento do fundo da faixa" hidden>
-                <video id="musicBarBackgroundCropPreviewVideo" muted playsinline loop hidden></video>
+                <img id="musicBarBackgroundCropPreview" loading="lazy" decoding="async" alt="Prévia do enquadramento do fundo da faixa" hidden>
+                <video id="musicBarBackgroundCropPreviewVideo" preload="none" muted playsinline loop hidden></video>
                 <div class="crop-preview-empty" id="musicBarBackgroundCropEmpty">Adicione uma mídia para ajustar</div>
                 <div class="crop-safe-window"></div>
               </div>
@@ -867,11 +867,12 @@
     </section>
   </div>
 
-  <script src="share-config.js?v=e7c4a9f"></script>
-  <script src="core/hattz-core.js?v=e7c4a9f"></script>
-  <script src="core/profile-contract.js"></script>
-  <script src="maintenance.js"></script>
-  <script src="script.js?v=e7c4a9f"></script>
-  <script src="core/liquid-glass.js?v=e7c4a9f"></script>
+  <script defer src="share-config.js?v=e7c4a9g"></script>
+  <script defer src="core/hattz-core.js?v=e7c4a9g"></script>
+  <script defer src="core/local-history.js?v=e7c4a9g"></script>
+  <script defer src="core/profile-contract.js"></script>
+  <script defer src="maintenance.js"></script>
+  <script defer src="script.js?v=e7c4a9g"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4a9g"></script>
 </body>
 </html>

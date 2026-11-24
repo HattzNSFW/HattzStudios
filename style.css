@@ -2892,7 +2892,8 @@ body.has-animated-background:not(.has-card-background) .card-background-overlay 
 .music-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .music-actions button:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 650px) {
-  .editor-modal { width: calc(100vw - 12px) !important; max-height: 96dvh !important; }
+  .modal-backdrop { overflow-y: auto; overscroll-behavior: contain; }
+  .editor-modal { width: 100% !important; height: calc(96dvh - 16px) !important; max-height: calc(96dvh - 16px) !important; border-radius: 14px; }
   .modal-body { padding: 14px 12px !important; }
   .editor-tabs { display: flex; overflow-x: auto; overscroll-behavior-x: contain; gap: 7px; scrollbar-width: thin; }
   .editor-tabs > * { flex: 0 0 auto; }

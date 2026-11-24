@@ -156,7 +156,13 @@ body:not(.capture-mode) .summary-chip::after {
 .chart-canvas svg { overflow: visible; }
 .chart-canvas svg text { fill: var(--hattz-text-soft, #c8bfd5); font-size: 10px; }
 .chart-canvas svg .grid line { stroke: rgba(var(--lg-border), .07); }
-.table-wrap { border: 1px solid var(--hattz-hairline); border-radius: 16px; overflow: hidden; }
+.table-wrap {
+  border: 1px solid var(--hattz-hairline);
+  border-radius: 16px;
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
 .table-wrap table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
 .table-wrap thead th {
   padding: 11px 14px;
@@ -839,6 +845,21 @@ body .hattz-collectible.rarity-premium { border-color: color-mix(in srgb, var(--
 body .hattz-collectible.rarity-elite {
   border-color: color-mix(in srgb, var(--badge-accent, #d6b36c) 68%, transparent) !important;
   box-shadow: 0 0 18px color-mix(in srgb, var(--badge-accent, #d6b36c) 22%, transparent), inset 0 1px rgba(255, 255, 255, .2) !important;
+}
+
+/* Toque: alvos de 44px em telas sensíveis ao toque, sem alterar layout desktop. */
+@media (pointer: coarse) {
+  body .nav-item, .studio-nav, .selection-toolbar button, .pagination button,
+  .profile-reset, .role-access-option, .maintenance-profile-choice,
+  body .editor-tabs .tab-button, .close-button, .share-profile-button {
+    min-height: 44px;
+  }
+  .close-button, .share-profile-button, .hatz-to-top, .capture-exit-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -21,6 +21,9 @@
   let catalogVisible = 12;
   let previewUrl = "";
   const loadedViews = new Set();
+  let dashboardCache = null;
+  let dashboardPromise = null;
+  let rolesLoaded = false;
   const CATALOG_PAGE = 12;
   const statusLabels = { idle: "Pronto", online: "Sincronizado", offline: "Sem conexão", syncing: "Sincronizando…", degraded: "Serviço instável", error: "Falha" };
 
@@ -189,9 +192,18 @@
     if (name === "audit") loadAudit();
     if (name === "security") loadCredential();
   }
-  async function loadOverview() {
+  function getDashboard(force = false) {
+    if (force) dashboardCache = null;
+    if (dashboardCache) return Promise.resolve(dashboardCache);
+    if (dashboardPromise) return dashboardPromise;
+    dashboardPromise = api("/api/admin/dashboard")
+      .then((data) => { dashboardCache = data; return data; })
+      .finally(() => { dashboardPromise = null; });
+    return dashboardPromise;
+  }
+  async function loadOverview(force = false) {
     try {
-      const data = await api("/api/admin/dashboard");
+      const data = await getDashboard(force);
       const storage = data.storage || {};
       const profiles = data.profiles || {};
       const media = data.media || {};
@@ -284,7 +296,7 @@
     try {
       const result = await api(`/api/admin/profiles/${encodeURIComponent(code)}/reset`, { method: "POST", body: JSON.stringify({ confirmation: "RESTAURAR" }) });
       notify(`Perfil restaurado. ${Number(result.mediaRemoved || 0)} mídias removidas; benefícios preservados.`);
-      await Promise.all([loadProfiles(), loadStorage(), loadOverview()]);
+      await Promise.all([loadProfiles(), loadStorage(), loadOverview(true)]);
     } catch (error) { notify(error.message); if (button) button.disabled = false; }
   }
 
@@ -315,7 +327,7 @@
     try {
       const result = await api("/api/admin/profiles", { method: "DELETE", body: JSON.stringify({ codes, confirmation }) });
       notify(`${result.deletedCount} perfil(is) excluído(s). ${formatBytes(result.releasedBytes)} liberados.`);
-      await Promise.all([loadProfiles(), loadStorage(), loadOverview()]);
+      await Promise.all([loadProfiles(), loadStorage(), loadOverview(true)]);
     } catch (error) { notify(error.message); await loadProfiles(); }
     finally { updateSelection(); }
   }
@@ -396,7 +408,7 @@
       maintenanceTextareaCodes = new Set(data.allowlist || allowlist);
       $("maintenanceAllowlist").value = (data.allowlist || allowlist).join("\n");
       notify(data.enabled ? "Modo de manutenção ativado." : "Modo de manutenção desativado.");
-      await loadOverview();
+      await loadOverview(true);
     } catch (error) { notify(error.message); }
   }
   function updateMaintenanceRangeLabels() {
@@ -539,6 +551,7 @@
   /* Cada aba busca apenas o que usa. O catálogo é paginado para não transformar
      a lista publicada numa parede de 3000px. */
   async function ensureRoles() {
+    if (rolesLoaded) return;
     try {
       const data = await api('/api/admin/roles');
       const roles = data.roles || [];
@@ -553,6 +566,7 @@
       updateRoleSummary();
       applyRolePreview();
       filterList('roleDefinitionList', $('roleDefinitionSearch')?.value, 'roleSearchHint');
+      rolesLoaded = true;
     } catch (error) { notify(error.message); }
   }
 
@@ -856,6 +870,7 @@
       await api(editing ? `/api/admin/roles/${encodeURIComponent(id)}` : '/api/admin/roles', { method: editing ? 'PUT' : 'POST', body: JSON.stringify(body) });
       notify(editing ? 'Cargo e tema atualizados.' : 'Cargo especial criado.');
       resetRoleDefinition();
+      rolesLoaded = false;
       await ensureRoles();
     } catch (error) { notify(error.message); }
   }
@@ -904,6 +919,7 @@
       await api(`/api/admin/roles/${encodeURIComponent(id)}`, { method: 'DELETE' });
       notify('Cargo desativado. As atribuições foram preservadas.');
       resetRoleDefinition();
+      rolesLoaded = false;
       await Promise.all([ensureRoles(), loadRoleAssignments()]);
     } catch (error) { notify(error.message); }
   }
@@ -1040,7 +1056,8 @@
 
   async function loadCredential() {
     try {
-      const [credential, overview] = await Promise.all([api("/api/admin/credential"), api("/api/admin/dashboard")]);
+      const credential = await api("/api/admin/credential");
+      const overview = dashboardCache || await getDashboard();
       const labels = { local: "Runtime local", database: "Banco de dados (D1)", environment: "Secret do Worker", unconfigured: "Não configurada" };
       $("credentialSource").textContent = labels[credential.source] || credential.source || "—";
       $("credentialSource").classList.toggle("warning", credential.configured === false);

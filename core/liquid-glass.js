@@ -332,6 +332,29 @@
   ].join("\n");
 
   var panel, code, toggle, currentPreset = "padrao";
+  var restoringTheme = false;
+  var THEME_HISTORY_KEY = "liquid:" + scope;
+
+  // Snapshot antes de qualquer mutação: nada de rede e nada de mídia binária.
+  function pushThemeHistory() {
+    if (restoringTheme || !window.HATTZ_HISTORY) return;
+    window.HATTZ_HISTORY.push(THEME_HISTORY_KEY, clone(store), { coalesceMs: 500 });
+  }
+
+  function restoreStore(next) {
+    if (!next || typeof next !== "object") return false;
+    restoringTheme = true;
+    try {
+      SCOPES.forEach(function (name) { store[name] = sanitize(next[name]); });
+      state = store[scope];
+      apply(state);
+      save();
+      if (panel) render();
+      return true;
+    } finally {
+      restoringTheme = false;
+    }
+  }
 
   function updateFill(input) {
     var min = Number(input.min), max = Number(input.max);
@@ -358,6 +381,7 @@
   }
 
   function commit() {
+    pushThemeHistory();
     store[scope] = state;
     apply(state);
     save();
@@ -441,6 +465,7 @@
       var target = event.target;
       if (target.dataset.lgRange) {
         var range = ranges.filter(function (item) { return item[0] === target.dataset.lgRange; })[0];
+        pushThemeHistory();
         state[range[0]] = Number(target.value) / range[6];
         currentPreset = null;
         updateFill(target);
@@ -453,21 +478,23 @@
         save();
       } else if (target.dataset.lgColor) {
         var rgb = hexToRgb(target.value);
-        if (rgb) { currentPreset = null; state[target.dataset.lgColor] = rgb; commit(); }
+        if (rgb) { pushThemeHistory(); currentPreset = null; state[target.dataset.lgColor] = rgb; commit(); }
       }
     });
 
     panel.addEventListener("click", function (event) {
       var preset = event.target.dataset && event.target.dataset.lgPreset;
       if (preset) {
+        pushThemeHistory();
         currentPreset = preset;
         state = sanitize(presets[preset]);
         commit();
         return;
       }
       var action = event.target.dataset && event.target.dataset.lgAction;
-      if (action === "reset") { currentPreset = "padrao"; state = clone(defaults); commit(); }
+      if (action === "reset") { pushThemeHistory(); currentPreset = "padrao"; state = clone(defaults); commit(); }
       if (action === "all") {
+        pushThemeHistory();
         SCOPES.forEach(function (name) { store[name] = clone(state); });
         save();
         buttonFeedback(event.target, "Aplicado");
@@ -480,6 +507,7 @@
       if (action === "paste") {
         try {
           var parsed = JSON.parse(code.value);
+          pushThemeHistory();
           currentPreset = null;
           state = sanitize(parsed);
           commit();
@@ -491,6 +519,23 @@
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && !panel.hidden) closePanel();
+    });
+
+    window.HATTZ_HISTORY?.bindShortcut({
+      priority: 10,
+      isActive: function () { return Boolean(panel && !panel.hidden) && !document.body.classList.contains("capture-mode"); },
+      onUndo: function () {
+        var previous = window.HATTZ_HISTORY.undo(THEME_HISTORY_KEY);
+        if (!previous) return false;
+        restoreStore(previous);
+        return true;
+      },
+      onRedo: function () {
+        var next = window.HATTZ_HISTORY.redo(THEME_HISTORY_KEY);
+        if (!next) return false;
+        restoreStore(next);
+        return true;
+      }
     });
 
     if (window.MutationObserver) {
@@ -642,20 +687,23 @@
     isOpen: function () { return Boolean(panel && !panel.hidden); },
     get: function (target) { return clone(target ? store[target] : state); },
     getStore: function () { return clone(store); },
+    restoreStore: restoreStore,
     set: function (partial, target) {
       var name = target || scope;
+      pushThemeHistory();
       Object.keys(partial || {}).forEach(function (key) { if (key in defaults) store[name][key] = partial[key]; });
       if (name === scope) { state = store[name]; apply(state); if (panel) render(); }
       save();
     },
     reset: function (target) {
       var name = target || scope;
+      pushThemeHistory();
       store[name] = clone(defaults);
       if (name === scope) { state = store[name]; apply(state); if (panel) render(); }
       save();
     },
     apply: function () { apply(state); },
-    applyToAll: function () { SCOPES.forEach(function (name) { store[name] = clone(state); }); save(); }
+    applyToAll: function () { pushThemeHistory(); SCOPES.forEach(function (name) { store[name] = clone(state); }); save(); }
   };
 
   apply(state);

@@ -13,6 +13,19 @@
   try { profile = JSON.parse(localStorage.getItem(storageKey) || (profileId === "perfil-1" ? localStorage.getItem("meuPerfil") : "null") || "null") || {}; }
   catch { profile = {}; }
   profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio(profile.studio) || structuredClone(defaults);
+
+  const STUDIO_HISTORY_KEY = `studio:${profileId}`;
+  let savedStudioSnapshot = null;
+  let applyingStudioHistory = false;
+  function studioSnapshot() {
+    return JSON.parse(JSON.stringify({
+      studio: profile.studio,
+      moldura: profile.moldura,
+      raridadeMoldura: profile.raridadeMoldura
+    }));
+  }
+  savedStudioSnapshot = studioSnapshot();
+
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
   $("backToProfile").href = `./index.html?profile=${profileId}`;
   $("profilePreview").src = `./index.html?profile=${profileId}&studioPreview=${Date.now()}`;
@@ -74,12 +87,57 @@
       previewStatusTimer = setTimeout(() => { $("previewState").textContent = "Atualizado"; }, 180);
     });
   }
-  function save(show = true) {
+  function writeProfile(show = false) {
     if (window.HATTZ_CORE?.setProfile) window.HATTZ_CORE.setProfile(profileId, profile);
     else localStorage.setItem(storageKey, JSON.stringify(profile));
     applyPreview();
     if (show) toast("Personalização salva neste perfil.");
   }
+
+  function save(show = true) {
+    if (!applyingStudioHistory && savedStudioSnapshot) {
+      window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, savedStudioSnapshot, { coalesceMs: 500 });
+    }
+    savedStudioSnapshot = studioSnapshot();
+    writeProfile(show);
+  }
+
+  function applyStudioSnapshot(snapshot, message) {
+    applyingStudioHistory = true;
+    try {
+      profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio?.(snapshot.studio) || snapshot.studio;
+      profile.moldura = snapshot.moldura || "none";
+      profile.raridadeMoldura = snapshot.raridadeMoldura || "none";
+      savedStudioSnapshot = studioSnapshot();
+      renderGlass();
+      renderAvatar();
+      renderCard();
+      document.querySelectorAll("[data-frame]").forEach((button) => {
+        button.classList.toggle("selected", button.dataset.frame === (profile.moldura || "none"));
+      });
+      writeProfile(false);
+      if (message) toast(message);
+    } finally {
+      applyingStudioHistory = false;
+    }
+  }
+
+  window.HATTZ_HISTORY?.bindShortcut({
+    priority: 5,
+    isActive: () => !window.HattzLiquidGlass?.isOpen?.(),
+    onUndo: () => {
+      const snapshot = window.HATTZ_HISTORY.undo(STUDIO_HISTORY_KEY);
+      if (!snapshot) return false;
+      applyStudioSnapshot(snapshot, "Personalização desfeita.");
+      return true;
+    },
+    onRedo: () => {
+      const snapshot = window.HATTZ_HISTORY.redo(STUDIO_HISTORY_KEY);
+      if (!snapshot) return false;
+      applyStudioSnapshot(snapshot, "Personalização refeita.");
+      return true;
+    }
+  });
 
   document.querySelectorAll(".studio-nav[data-panel]").forEach(btn => btn.addEventListener("click", () => {
     document.querySelectorAll(".studio-nav").forEach(x => x.classList.toggle("active", x === btn));
@@ -121,6 +179,22 @@
 
   let themeAllowed = false;
   let profileCode = "";
+  let entitlementsInfo = null;
+  let entitlementsPromise = null;
+  function fetchEntitlements(normalized) {
+    if (entitlementsInfo) return Promise.resolve(entitlementsInfo);
+    if (entitlementsPromise) return entitlementsPromise;
+    entitlementsPromise = fetch(`${API}/api/profiles/${normalized}/entitlements`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Não foi possível verificar os cargos deste perfil.");
+        entitlementsInfo = await response.json();
+        window.HATTZ_REMOTE_BENEFITS = entitlementsInfo.benefits || {};
+        window.HATTZ_REMOTE_COLLECTIONS = entitlementsInfo.collections || [];
+        return entitlementsInfo;
+      })
+      .finally(() => { entitlementsPromise = null; });
+    return entitlementsPromise;
+  }
   async function loadThemeAccess() {
     profileCode = window.HATTZ_CORE?.publicCodeKey?.(profileId)
       ? localStorage.getItem(window.HATTZ_CORE.publicCodeKey(profileId)) || ""
@@ -130,13 +204,9 @@
     if (!API || !normalized) { nav.hidden = true; panel.hidden = true; return; }
     try {
       window.HATTZ_CORE?.setConnectionState?.("syncing", "Permissões do Studio");
-      const response = await fetch(`${API}/api/profiles/${normalized}/entitlements`, { cache: "no-store" });
-      if (!response.ok) throw new Error("Não foi possível verificar os cargos deste perfil.");
-      const info = await response.json();
+      const info = await fetchEntitlements(normalized);
       themeAllowed = info.studioThemeAllowed === true;
       nav.hidden = !themeAllowed; panel.hidden = !themeAllowed;
-      window.HATTZ_REMOTE_BENEFITS = info.benefits || {};
-      window.HATTZ_REMOTE_COLLECTIONS = info.collections || [];
       if (themeAllowed) {
         const theme = info.profileTheme || {};
         document.querySelectorAll("[data-theme]").forEach(input => { input.value = theme[input.dataset.theme] || input.value; });
@@ -261,10 +331,7 @@
       const normalized = window.HATTZ_CORE?.normalizeCode?.(publicCode);
       let info = { badges: [], frames: [], benefits: {}, collections: [] };
       if (normalized) {
-        try {
-          const entitlements = await fetch(`${API}/api/profiles/${normalized}/entitlements`, { cache: "no-store" });
-          if (entitlements.ok) info = await entitlements.json();
-        } catch {}
+        try { info = await fetchEntitlements(normalized); } catch {}
       }
       window.HATTZ_REMOTE_BENEFITS = info.benefits || {};
       window.HATTZ_REMOTE_COLLECTIONS = info.collections || [];

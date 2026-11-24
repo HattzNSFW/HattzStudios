@@ -66,7 +66,17 @@
       }
 
       // Um perfil liberado (oficial ou allowlist) continua acessível porque a própria API autoriza a leitura.
+      // O Share já buscou este código; reaproveita o resultado em vez de repetir o GET.
       if (activeCode) {
+        const normalized = String(activeCode).toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^HTZ/, "");
+        const shared = window.HATTZ_SHARED_PROFILE_STATE;
+        if (shared?.code === normalized) {
+          if (shared.ok) return;
+          try {
+            await window.HATTZ_SHARED_PROFILE_PROMISE;
+            if (window.HATTZ_SHARED_PROFILE_STATE?.ok) return;
+          } catch {}
+        }
         const profileResponse = await fetch(`${apiBase}/api/profiles/${encodeURIComponent(activeCode)}`, { cache: "no-store" });
         if (profileResponse.ok) return;
       }

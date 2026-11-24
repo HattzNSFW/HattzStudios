@@ -66,19 +66,61 @@
     return () => listeners.delete(listener);
   };
 
+  const DIAGNOSTICS_KEY = "hattz2:diagnostics";
+
+  const diagnosticsEnabled = () => {
+    try {
+      if (new URLSearchParams(window.location.search || "").get("diag") === "1") return true;
+      return sessionStorage.getItem(DIAGNOSTICS_KEY) === "1";
+    } catch { return false; }
+  };
+
+  const scrub = (value) => String(value ?? "")
+    .replace(/HTZ-[A-Z0-9-]{6,}/gi, "[redacted]")
+    .replace(/\b[A-HJ-NP-Z2-9]{10}\b/g, "[redacted]")
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]")
+    .replace(/data:[^\s"'<>)]+/gi, "data:[redacted]")
+    .replace(/[?&][^=&#\s]+=[^&#\s]*/g, "[redacted]");
+
   const reportError = (error, context = "geral") => {
     const entry = Object.freeze({
-      context: String(context).slice(0, 64),
-      message: String(error?.message || error || "Erro desconhecido").slice(0, 300),
+      context: scrub(context).slice(0, 64),
+      message: scrub(error?.message || error || "Erro desconhecido").slice(0, 300),
       at: Date.now()
     });
     errors.push(entry);
     if (errors.length > 20) errors.shift();
-    if (typeof console !== "undefined" && typeof console.warn === "function") console.warn(`[Hättz ${release()}] ${entry.context}: ${entry.message}`);
+    if (diagnosticsEnabled() && typeof console !== "undefined" && typeof console.warn === "function") {
+      try { console.warn(`[Hättz ${release()}] ${entry.context}: ${entry.message}`); } catch {}
+    }
     return entry;
   };
   const getErrors = () => [...errors];
   const clearErrors = () => { errors.length = 0; };
+
+  let globalHookInstalled = false;
+  function installGlobalErrorHook() {
+    if (globalHookInstalled || typeof window === "undefined" || typeof window.addEventListener !== "function") return false;
+    globalHookInstalled = true;
+    window.addEventListener("error", (event) => {
+      try {
+        const target = event.target;
+        const isResource = target && target !== window &&
+          (typeof document === "undefined" || target !== document) &&
+          ["SCRIPT", "LINK", "IMG"].includes(target.tagName);
+        if (isResource) {
+          reportError(`Falha ao carregar ${target.tagName.toLowerCase()}: ${target.src || target.href || "recurso"}`, "resource:error");
+          return;
+        }
+        reportError(event.error || event.message || "Erro de execução", "window:error");
+      } catch {}
+    }, true);
+    window.addEventListener("unhandledrejection", (event) => {
+      try { reportError(event.reason || "Promessa rejeitada", "promise:rejection"); } catch {}
+    });
+    return true;
+  }
+  installGlobalErrorHook();
 
   const request = async (path, options = {}) => {
     const base = apiBase();
@@ -188,6 +230,7 @@
     reportError,
     getErrors,
     clearErrors,
+    installGlobalErrorHook,
     createBackup,
     validateBackup,
     restoreBackup
