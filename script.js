@@ -756,8 +756,8 @@ function createBadgeInlineItem(item) {
   return holder;
 }
 
-// O perfil mostra três insígnias por linha. As demais linhas começam ocultas
-// e o botão +N revela uma de cada vez, até esgotar o inventário possuído.
+// O perfil mostra três insígnias por linha. As demais começam ocultas; o
+// botão +N revela todas e, ao clicar de novo, volta ao estado original.
 function renderBadgeStrip(items = []) {
   const strip = document.createElement("div");
   strip.className = "hattz-badge-strip";
@@ -772,20 +772,24 @@ function renderBadgeStrip(items = []) {
     strip.append(row);
   }
   if (ordered.length > 3) {
-    let remaining = ordered.length - 3;
+    const hidden = ordered.length - 3;
+    const extraRows = [...strip.querySelectorAll(".hattz-badge-row")].filter((row) => row.hidden);
     const more = document.createElement("button");
     more.type = "button";
     more.className = "hattz-badge-more";
     more.dataset.badgeMore = "1";
-    more.textContent = `+${remaining}`;
-    more.setAttribute("aria-label", `Mostrar mais ${remaining} insígnias`);
+    more.textContent = `+${hidden}`;
+    more.setAttribute("aria-label", `Mostrar mais ${hidden} insígnias`);
+    more.setAttribute("aria-expanded", "false");
+    let expanded = false;
     more.addEventListener("click", () => {
-      const next = [...strip.querySelectorAll(".hattz-badge-row")].find((row) => row.hidden);
-      if (!next) { more.remove(); return; }
-      next.hidden = false;
-      remaining = Math.max(0, remaining - next.querySelectorAll(".hattz-badge-inline-item").length);
-      if (remaining > 0) more.textContent = `+${remaining}`;
-      else more.remove();
+      expanded = !expanded;
+      for (const row of extraRows) row.hidden = !expanded;
+      more.textContent = expanded ? `−${hidden}` : `+${hidden}`;
+      more.setAttribute("aria-label", expanded
+        ? `Ocultar ${hidden} insígnias adicionais`
+        : `Mostrar mais ${hidden} insígnias`);
+      more.setAttribute("aria-expanded", String(expanded));
     });
     strip.querySelector(".hattz-badge-row").append(more);
   }
