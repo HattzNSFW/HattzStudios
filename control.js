@@ -2,6 +2,7 @@
   "use strict";
   const API = String(window.HATTZ_CORE?.apiBase?.() || window.HATTZ_SHARE_CONFIG?.apiBase || "https://hattz-share-api.kl-santdev.workers.dev").replace(/\/+$/, "");
   const $ = (id) => document.getElementById(id);
+  const FRAME_PNG_LIMIT = 2 * 1024 * 1024;
   const tokenKey = "hattz_control_session";
   let token = sessionStorage.getItem(tokenKey) || "";
   let page = 1;
@@ -19,6 +20,7 @@
   let studioRoleIds = new Set();
   let catalogItems = [];
   let catalogVisible = 12;
+  let frameAdjustImageData = "";
   let previewUrl = "";
   const loadedViews = new Set();
   let dashboardCache = null;
@@ -1027,6 +1029,23 @@
     } catch (error) { notify(error.message); }
   }
 
+  function updateFrameAdjustPreview() {
+    const img = $('frameAdjustImage');
+    if (!img) return;
+    if (frameAdjustImageData) {
+      img.src = frameAdjustImageData;
+      img.hidden = false;
+      const scale = Number($('frameScale').value || 100) / 100;
+      const x = Number($('frameX').value || 0);
+      const y = Number($('frameY').value || 0);
+      img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    } else {
+      img.removeAttribute('src');
+      img.hidden = true;
+      img.style.transform = '';
+    }
+  }
+
   function resetFrameForm() {
     ['frameId', 'frameName', 'frameDescription'].forEach((id) => { $(id).value = ''; });
     $('frameId').readOnly = false;
@@ -1037,6 +1056,8 @@
     $('frameScale').value = '100';
     $('frameX').value = '0';
     $('frameY').value = '0';
+    frameAdjustImageData = '';
+    updateFrameAdjustPreview();
     syncFrameAccessFields();
     $('frameId').focus();
   }
@@ -1054,6 +1075,8 @@
     $('frameScale').value = String(asset.scale || 100);
     $('frameX').value = String(asset.x || 0);
     $('frameY').value = String(asset.y || 0);
+    frameAdjustImageData = asset.imageData || '';
+    updateFrameAdjustPreview();
     syncFrameAccessFields();
     $('frameName').focus();
     $('frameName').scrollIntoView({ block: 'center' });
@@ -1068,7 +1091,13 @@
     const requiredRoleId = accessMode === 'role' ? $('frameRole').value : '';
     if (accessMode === 'role' && !requiredRoleId) { notify('Selecione o cargo exigido por esta moldura.'); return; }
     let imageData;
-    try { imageData = await readPngFile($('frameFile').files?.[0], 300 * 1024); }
+    try {
+      const file = $('frameFile').files?.[0];
+      imageData = file ? await readPngFile(file, FRAME_PNG_LIMIT) : frameAdjustImageData;
+      if (!imageData) throw new Error('Envie um PNG para salvar a moldura.');
+      frameAdjustImageData = imageData;
+      updateFrameAdjustPreview();
+    }
     catch (error) { notify(error.message); return; }
     const body = {
       name,
@@ -1364,6 +1393,19 @@
   $("catalogIconFile").addEventListener("change", () => { if ($("catalogIconFile").files?.length) { $("badgeEmojiPreview").textContent = "🖼️"; $("badgePreviewMeta").textContent = "PNG personalizado"; } else applyBadgePreview(); });
   $("saveCatalogItem").addEventListener("click", saveCatalogItem);
   $("frameAccess").addEventListener("change", syncFrameAccessFields);
+  $("frameFile").addEventListener("change", async () => {
+    const file = $("frameFile").files?.[0];
+    if (!file) { frameAdjustImageData = ''; updateFrameAdjustPreview(); return; }
+    try {
+      frameAdjustImageData = await readPngFile(file, FRAME_PNG_LIMIT);
+      updateFrameAdjustPreview();
+    } catch (error) {
+      frameAdjustImageData = '';
+      updateFrameAdjustPreview();
+      notify(error.message);
+    }
+  });
+  ["frameScale", "frameX", "frameY"].forEach((id) => $(id).addEventListener("input", updateFrameAdjustPreview));
   $("saveFrame").addEventListener("click", saveFrame);
   $("newFrame").addEventListener("click", resetFrameForm);
   $("frameCatalogSearch").addEventListener("input", renderFrameCatalog);

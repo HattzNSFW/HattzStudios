@@ -180,7 +180,7 @@ O projeto não tenta inferir nome civil, endereço residencial, telefone, contas
 - O Hättz Control permite selecionar vários cargos que liberam a edição do tema exclusivo no Studio.
 - O servidor valida o cargo ativo e a chave privada do próprio perfil antes de salvar o tema. Um usuário não pode editar o tema de outro perfil.
 - A v11 introduziu oito níveis de raridade; a v12 normaliza os catálogos para cinco níveis por meio da migration 0013.
-- O Control aceita ícones PNG (até 128 KB) e molduras PNG (até 300 KB), além de emoji.
+- O Control aceita ícones PNG (até 128 KB) e molduras PNG (até 2 MB), além de emoji. Os ajustes de escala e posição mostram uma referência vazia da foto do perfil.
 - O Studio oferece escala e deslocamento da moldura PNG sobre o avatar.
 
 ## Estado atual — v12

@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa0">
-  <link rel="stylesheet" href="control.css?v=e7c4aa0">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa0">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa1">
+  <link rel="stylesheet" href="control.css?v=e7c4aa1">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa1">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -256,15 +256,20 @@
               <div class="summary-chip"><span>CONCEDIDAS</span><strong id="frameGrantedCount">—</strong></div>
             </div>
             <div class="panel-grid">
-              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar moldura</h2><p class="muted">Envie um PNG com transparência, até 300 KB.</p></div></div>
+              <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Criar moldura</h2><p class="muted">Envie um PNG com transparência, até 2 MB.</p></div></div>
                 <div class="field"><label for="frameId">ID único</label><input id="frameId" maxlength="48" placeholder="ex.: aurora"></div>
                 <div class="field"><label for="frameName">Nome</label><input id="frameName" maxlength="64" placeholder="Nome exibido"></div>
                 <div class="field"><label for="frameDescription">Descrição</label><textarea id="frameDescription" maxlength="240" rows="2"></textarea></div>
-                <div class="field"><label for="frameFile">Imagem PNG</label><input id="frameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 300 KB.</small></div>
+                <div class="field"><label for="frameFile">Imagem PNG</label><input id="frameFile" type="file" accept="image/png"><small>PNG com transparência recomendado · até 2 MB.</small></div>
                 <div class="field"><label for="frameAccess">Acesso</label><select id="frameAccess"><option value="public">Pública — qualquer perfil</option><option value="vip">VIP — exige VIP e concessão</option><option value="role">Cargo — exige cargo ativo e concessão</option></select></div>
                 <div class="field"><label for="frameRarity">Raridade</label><select id="frameRarity"><option value="1">Comum</option><option value="2">Rara</option><option value="3">Épica</option><option value="4">Lendária</option><option value="5">Limitada</option></select></div>
                 <div class="field" id="frameRoleField" hidden><label for="frameRole">Cargo exigido</label><select id="frameRole"><option value="">Carregando cargos...</option></select></div>
                 <details class="advanced-fields"><summary>Ajustes de imagem</summary>
+                  <div class="frame-adjust-preview" aria-label="Referência vazia da foto do perfil">
+                    <span class="frame-adjust-photo" aria-hidden="true"></span>
+                    <img id="frameAdjustImage" class="frame-adjust-image" alt="" hidden>
+                  </div>
+                  <p class="frame-adjust-hint">Referência vazia da foto do perfil. Envie um PNG para ajustar a moldura sobre ela.</p>
                   <label for="frameScale">Escala</label><input id="frameScale" type="range" min="25" max="200" value="100">
                   <label for="frameX">Posição horizontal</label><input id="frameX" type="range" min="-100" max="100" value="0">
                   <label for="frameY">Posição vertical</label><input id="frameY" type="range" min="-100" max="100" value="0">
@@ -341,10 +346,10 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="share-config.js?v=e7c4aa0"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa0"></script>
-  <script defer src="core/local-history.js?v=e7c4aa0"></script>
-  <script defer src="control.js?v=e7c4aa0"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa0"></script>
+  <script defer src="share-config.js?v=e7c4aa1"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa1"></script>
+  <script defer src="core/local-history.js?v=e7c4aa1"></script>
+  <script defer src="control.js?v=e7c4aa1"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa1"></script>
 </body>
 </html>
