@@ -26,8 +26,9 @@
   }
   window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { label: "Studio carregado" });
 
+  const profileHref = `./index.html?profile=${profileId}`;
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
-  $("backToProfile").href = `./index.html?profile=${profileId}`;
+  if ($("backToProfile")) $("backToProfile").href = profileHref;
   $("profilePreview").src = `./index.html?profile=${profileId}&studioPreview=${Date.now()}`;
   // Molduras só entram no catálogo pelo Control; remove qualquer PNG local antigo.
   if (profile.moldura === "moldura-custom") profile.moldura = "none";
@@ -191,7 +192,7 @@
   $("profilePreview").addEventListener("load", () => {
     try { $("profilePreview").contentWindow.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH", frames: frameAssets }, location.origin); } catch {}
   });
-  $("saveStudio").addEventListener("click", () => save(true));
+  $("saveStudio")?.addEventListener("click", () => save(true));
 
   let themeAllowed = false;
   let profileCode = "";
@@ -384,6 +385,20 @@
       window.HATTZ_REMOTE_BENEFITS = info.benefits || {};
       window.HATTZ_REMOTE_COLLECTIONS = info.collections || [];
       renderFrameCatalog(data.frames || [], info);
+      const pickerHost = $("badgeSelfPicker");
+      if (pickerHost && window.HattzBadgePicker) {
+        const pickerState = await window.HattzBadgePicker.load(profileId).catch(() => ({ available: false, badges: [], selected: [] }));
+        window.HattzBadgePicker.render(pickerHost, pickerState, {
+          profileId,
+          saveLabel: "Salvar minhas insígnias",
+          onSaved: async () => {
+            entitlementsInfo = null;
+            toast("Insígnias atualizadas.");
+            try { $("profilePreview")?.contentWindow?.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH" }, location.origin); } catch {}
+            await loadCatalog();
+          }
+        });
+      }
       const earned = new Map((info.badges || []).map(item => [item.id, item]));
       root.innerHTML = (data.badges || []).map(b => {
         const award = earned.get(b.id);
@@ -415,6 +430,8 @@
       return;
     }
     if (action === "theme") $("openThemeCustomizer")?.click();
+    if (action === "save") save(true);
+    if (action === "back") window.location.href = profileHref;
   });
   setupStatus();
   renderGlass(); renderAvatar(); renderCard();

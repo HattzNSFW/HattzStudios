@@ -5,13 +5,13 @@
   <meta name="theme-color" content="#09090d"><title>Hättz Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa2"><link rel="stylesheet" href="studio.css?v=e7c4aa2">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa2">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa3"><link rel="stylesheet" href="studio.css?v=e7c4aa3">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa3">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <main class="studio-shell">
-    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><div class="top-right"><button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button><span id="blocksState" class="blocks-chip" data-state="local">8 blocos · salvo localmente</span><span id="activeProfileLabel">Perfil 1</span><button id="saveStudio" class="primary"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Salvar alterações</button><a class="quiet" id="backToProfile" href="./index.html"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>Voltar ao perfil</a></div></header>
+    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><div class="top-right"><button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button><span id="blocksState" class="blocks-chip" data-state="local">8 blocos · salvo localmente</span><span id="activeProfileLabel">Perfil 1</span></div></header>
     <div class="studio-layout">
       <aside class="studio-sidebar glass">
         <p class="eyebrow">WORKSPACE</p>
@@ -74,7 +74,8 @@
         </section>
         <section class="studio-panel" id="panel-badges">
           <div class="heading"><div><p class="eyebrow">COLLECTIBLES</p><h1>Insígnias</h1><p>Consulte a coleção disponível no catálogo do Hättz.</p></div><button id="reloadCatalog" class="secondary">Atualizar catálogo</button></div>
-          <article class="glass editor-card"><div id="badgeCatalog" class="catalog-grid"><p class="muted">Carregando catálogo...</p></div><p class="muted">A concessão e revogação de insígnias são operações administrativas no Hättz Control.</p></article>
+          <article class="glass editor-card"><h2>Minhas insígnias livres</h2><div id="badgeSelfPicker" class="hattz-badge-picker"><p class="muted">Carregando insígnias disponíveis...</p></div></article>
+          <article class="glass editor-card"><h2>Catálogo completo</h2><div id="badgeCatalog" class="catalog-grid"><p class="muted">Carregando catálogo...</p></div><p class="muted">Insígnias de VIP, cargos especiais e conquistas são concedidas pelo Hättz Control.</p></article>
         </section>
         <section class="studio-panel" id="panel-collections">
           <div class="heading"><div><p class="eyebrow">8 BLOCOS · COLECIONÁVEIS</p><h1>Coleções</h1><p>Conjuntos temáticos calculados a partir das insígnias do perfil, com recompensa ao completar.</p></div><span class="live-chip" id="blocksIdentity">IDENTIDADE LOCAL</span></div>
@@ -94,6 +95,8 @@
       <p class="hattz-menu-group">SHARE</p>
       <button type="button" data-menu-href="./index.html" data-keywords="share perfil público ver perfil publicar">Ver perfil no Share</button>
       <p class="hattz-menu-group">STUDIO</p>
+      <button type="button" data-menu-action="save" data-keywords="salvar alterações aplicarStudio">Salvar alterações</button>
+      <button type="button" data-menu-action="back" data-keywords="voltar perfil share sair studio">Voltar ao perfil</button>
       <button type="button" data-menu-panel="cards" data-keywords="vidro cartões transparência glass">Vidro dos cartões</button>
       <button type="button" data-menu-panel="avatar" data-keywords="avatar foto posição iluminação">Avatar Lab</button>
       <button type="button" data-menu-panel="frames" data-keywords="molduras png catálogo disponível bloqueada">Molduras</button>
@@ -106,6 +109,6 @@
     <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4aa2"></script>
-  <script defer src="share-config.js?v=e7c4aa2"></script><script defer src="core/hattz-core.js?v=e7c4aa2"></script><script defer src="core/local-history.js?v=e7c4aa2"></script><script defer src="core/profile-contract.js?v=e7c4aa2"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4aa2"></script><script defer src="core/liquid-glass.js?v=e7c4aa2"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4aa3"></script>
+  <script defer src="share-config.js?v=e7c4aa3"></script><script defer src="core/hattz-core.js?v=e7c4aa3"></script><script defer src="core/local-history.js?v=e7c4aa3"></script><script defer src="core/profile-contract.js?v=e7c4aa3"></script><script defer src="core/hattz-badge-picker.js?v=e7c4aa3"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4aa3"></script><script defer src="core/liquid-glass.js?v=e7c4aa3"></script>
 </body></html>

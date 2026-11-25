@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa2">
-  <link rel="stylesheet" href="control.css?v=e7c4aa2">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa2">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa3">
+  <link rel="stylesheet" href="control.css?v=e7c4aa3">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa3">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -147,11 +147,13 @@
               <div class="panel-heading"><div><p class="eyebrow">SPECIAL IDENTITIES</p><h2>Cargos especiais e temas exclusivos</h2><p class="muted">Crie cargos personalizados com identidade visual própria. Depois, conceda-os individualmente pelo código do perfil.</p></div></div>
                 <div class="identity-preview" id="roleIdentityPreview"><span class="preview-emoji" id="roleEmojiPreview">✦</span><span class="preview-copy"><strong id="rolePreviewName">Novo cargo</strong><small id="rolePreviewMeta">Nome e cor aparecem aqui</small></span></div>
               <div class="field"><span class="field-hint">Modelos de servidor</span><div class="inline-actions">
+                <button type="button" class="quiet-button" data-role-preset="curator">🛡️ Moderador</button>
+                <button type="button" class="quiet-button" data-role-preset="supporter">🎧 Suporte</button>
+                <button type="button" class="quiet-button" data-role-preset="contributor">💻 Desenvolvedor</button>
+                <button type="button" class="quiet-button" data-role-preset="designer">🎨 Designer</button>
                 <button type="button" class="quiet-button" data-role-preset="booster">💜 Booster</button>
                 <button type="button" class="quiet-button" data-role-preset="veteran">🏅 Veterano</button>
-                <button type="button" class="quiet-button" data-role-preset="contributor">🛠️ Colaborador</button>
                 <button type="button" class="quiet-button" data-role-preset="partner">🤝 Parceiro</button>
-                <button type="button" class="quiet-button" data-role-preset="curator">🌿 Curador</button>
                 <button type="button" class="quiet-button" data-role-preset="musician">🎵 Músico</button>
               </div><small>Preenchem o formulário; use “Salvar cargo especial” para publicar.</small></div>
               <div class="role-design-grid">
@@ -205,7 +207,15 @@
                   <button type="button" class="quiet-button" data-badge-preset="genesis">✧ Gênese</button>
                   <button type="button" class="quiet-button" data-badge-preset="event-pass">🎟️ Evento</button>
                   <button type="button" class="quiet-button" data-badge-preset="creative-flare">✨ Faísca</button>
-                </div><small>Owner permanece reservado aos dois perfis oficiais. As insígnias automáticas são liberadas por critério.</small></div>
+                  <button type="button" class="quiet-button" data-badge-preset="dev">💻 Dev</button>
+                  <button type="button" class="quiet-button" data-badge-preset="support">🎧 Suporte</button>
+                  <button type="button" class="quiet-button" data-badge-preset="gamer">🎮 Gamer</button>
+                  <button type="button" class="quiet-button" data-badge-preset="member">👤 Membro</button>
+                  <button type="button" class="quiet-button" data-badge-preset="music">🎵 Música</button>
+                  <button type="button" class="quiet-button" data-badge-preset="art">🎨 Arte</button>
+                  <button type="button" class="quiet-button" data-badge-preset="reader">📚 Leitura</button>
+                  <button type="button" class="quiet-button" data-badge-preset="night-owl">🦉 Madrugador</button>
+                </div><small>Owner permanece reservado aos perfis oficiais. Insígnias públicas criadas aqui ficam disponíveis para escolha livre no Studio.</small></div>
                 <div class="identity-preview" id="badgeIdentityPreview"><span class="preview-emoji" id="badgeEmojiPreview">✦</span><span class="preview-copy"><strong id="badgePreviewName">Nova insígnia</strong><small id="badgePreviewMeta">Símbolo, nome e descrição aparecem aqui</small></span></div>
                 <input type="hidden" id="catalogKind" value="badges">
                 <div class="field"><label for="catalogId">ID único</label><input id="catalogId" maxlength="48" placeholder="ex.: vip"></div>
@@ -351,10 +361,10 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="share-config.js?v=e7c4aa2"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa2"></script>
-  <script defer src="core/local-history.js?v=e7c4aa2"></script>
-  <script defer src="control.js?v=e7c4aa2"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa2"></script>
+  <script defer src="share-config.js?v=e7c4aa3"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa3"></script>
+  <script defer src="core/local-history.js?v=e7c4aa3"></script>
+  <script defer src="control.js?v=e7c4aa3"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa3"></script>
 </body>
 </html>

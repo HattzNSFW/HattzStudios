@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa2">
-  <link rel="stylesheet" href="style.css?v=e7c4aa2">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa2">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa3">
+  <link rel="stylesheet" href="style.css?v=e7c4aa3">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa3">
 </head>
 
 <body>
@@ -41,26 +41,6 @@
           </div>
           <div class="banner-tool-actions">
             <button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button>
-            <button class="profile-switch-button" id="openOtherProfile" type="button" title="Abrir o outro perfil em uma nova aba">
-              <span class="profile-switch-icon" aria-hidden="true">↗</span>
-              <span id="openOtherProfileLabel">Criar perfil 2</span>
-            </button>
-            <button class="share-profile-button" id="openShareManager" type="button" title="Compartilhar ou abrir perfil por código">
-              <span aria-hidden="true">↗</span><span>Compartilhar</span>
-            </button>
-            <button class="icon-button inventory-open-button" id="openInventory" type="button" aria-label="Ver inventário de insígnias e molduras" title="Inventário"><span aria-hidden="true">✦</span></button>
-            <button class="icon-button capture-mode-button" id="toggleCaptureMode" type="button" aria-label="Ativar modo captura" aria-pressed="false" title="Modo captura">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-              </svg>
-            </button>
-            <button class="icon-button" id="openStudio" type="button" aria-label="Abrir Hättz Studio" title="Hättz Studio"><span aria-hidden="true">✧</span></button>
-            <button class="icon-button" id="openEditor" aria-label="Editar perfil" title="Personalizar perfil">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 4 1-4Z"></path>
-              </svg>
-            </button>
           </div>
         </div>
       </header>
@@ -875,6 +855,20 @@
     </section>
   </div>
 
+  <div class="modal-backdrop badge-onboarding-backdrop" id="badgeOnboardingModal" aria-hidden="true">
+    <section class="badge-onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="badgeOnboardingTitle">
+      <header class="badge-onboarding-header">
+        <div><p class="eyebrow">HÄTTZ SHARE</p><h2 id="badgeOnboardingTitle">Escolha suas insígnias</h2></div>
+        <button class="close-button" id="closeBadgeOnboarding" type="button" aria-label="Fechar">×</button>
+      </header>
+      <p class="muted">Selecione as insígnias livres que combinam com você. Insígnias de VIP, cargos especiais e conquistas continuam sendo concedidas pelo Hättz.</p>
+      <div class="hattz-badge-picker" id="badgeOnboardingPicker"></div>
+      <footer class="badge-onboarding-footer">
+        <button class="text-button" id="skipBadgeOnboarding" type="button">Agora não</button>
+      </footer>
+    </section>
+  </div>
+
   <div class="hattz-menu-backdrop" id="hattzMenuBackdrop" hidden></div>
   <aside class="hattz-menu glass" id="hattzMenu" aria-label="Menu Hättz" hidden>
     <div class="hattz-menu-head"><div><p class="eyebrow">MENU ÚNICO</p><h2>Hättz</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
@@ -886,26 +880,24 @@
       <button type="button" data-menu-action="inventory" data-keywords="inventário insígnias molduras possuídas perfil">Inventário</button>
       <button type="button" data-menu-action="capture" data-keywords="modo captura screenshot imagem">Modo captura</button>
       <button type="button" data-menu-action="other-profile" data-keywords="perfil 2 alternar outro">Abrir outro perfil</button>
+      <button type="button" data-menu-action="badges" data-keywords="insígnias livres escolher questionário catálogo">Escolher insígnias livres</button>
       <p class="hattz-menu-group">STUDIO</p>
       <button type="button" data-menu-href="./studio.html" data-keywords="studio editor cartões avatar molduras insígnias coleções tema">Abrir Studio</button>
-      <button type="button" data-menu-panel="cards" data-keywords="vidro cartões transparência glass">Vidro dos cartões</button>
-      <button type="button" data-menu-panel="avatar" data-keywords="avatar foto posição iluminação">Avatar Lab</button>
       <button type="button" data-menu-href="./studio.html#frames" data-keywords="molduras png catálogo disponível bloqueada studio">Molduras (Studio)</button>
-      <button type="button" data-menu-panel="badges" data-keywords="insígnias emoji coleção catálogo">Insígnias</button>
-      <button type="button" data-menu-panel="collections" data-keywords="coleções conjuntos conquistas">Coleções</button>
       <p class="hattz-menu-group">CONTROL</p>
       <button type="button" data-menu-href="./control.html" data-keywords="control administrador senha catálogo molduras criar">Abrir Control</button>
     </nav>
     <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4aa2"></script>
-  <script defer src="share-config.js?v=e7c4aa2"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa2"></script>
-  <script defer src="core/local-history.js?v=e7c4aa2"></script>
-  <script defer src="core/profile-contract.js?v=e7c4aa2"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4aa3"></script>
+  <script defer src="share-config.js?v=e7c4aa3"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa3"></script>
+  <script defer src="core/local-history.js?v=e7c4aa3"></script>
+  <script defer src="core/profile-contract.js?v=e7c4aa3"></script>
+  <script defer src="core/hattz-badge-picker.js?v=e7c4aa3"></script>
   <script defer src="maintenance.js"></script>
-  <script defer src="script.js?v=e7c4aa2"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa2"></script>
+  <script defer src="script.js?v=e7c4aa3"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa3"></script>
 </body>
 </html>

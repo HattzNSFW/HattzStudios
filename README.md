@@ -32,6 +32,8 @@ Para usar outra porta: `HATTZ_PORT=4300 node server.mjs`.
 - `studio.html`, `studio.css`, `studio.js`: Hättz Studio com Card Lab, Avatar Lab, prévia ao vivo e catálogo.
 - `control.html`, `control.css`, `control.js`: painel administrativo com visão geral analítica (6 KPIs, 4 gráficos SVG e 4 tabelas), perfis, armazenamento, manutenção, auditoria em tabela, VIP, cargos, tags e troca de credencial.
 - `core/hattz-core.js`: contrato comum para API, validação e armazenamento local.
+- `core/hattz-menu.js`: menu único do Share/Studio; ações repetidas no topo foram removidas.
+- `core/hattz-badge-picker.js`: seletor/questionário de insígnias livres, usado no Share e no Studio.
 - `core/blocks.js`: camada dos 8 blocos — identidade local, coleções e estados salvo/sincronizado/publicado.
 - `core/design-tokens.css`: tokens visuais compartilhados.
 - `server.mjs`: runtime local — servidor estático + API Share/Control com persistência JSON e chave admin gerada.
@@ -57,18 +59,21 @@ Antes de substituir os arquivos publicados, abra a versão original no navegador
 
 - Card Lab: Liquid Glass global e sobrescritas individuais por cartão.
 - Avatar Lab: tamanho, espessura, deslocamento e iluminação.
-- Hättz Frames: moldura Amethyst vetorial integrada e molduras preexistentes do editor.
-- Catálogo de insígnias consultado pela API.
+- Molduras: moldura Amethyst vetorial integrada e molduras preexistentes do editor.
+- Catálogo de insígnias consultado pela API, com seletor de insígnias livres no Studio.
 - As configurações novas são persistidas dentro de `profile.studio`, sem substituir os campos antigos do perfil.
 - A moldura Amethyst exige concessão ao perfil no Control; o Worker valida isso antes de aceitar uma atualização publicada.
 
 ## Hättz Control e benefícios
 
-- Catálogo com 11 insígnias e 10 cargos administráveis pelo Control, incluindo insígnias automáticas por marco e manualmente concedidas. O administrador pode editar/desativar os itens disponíveis.
-- Concessão e revogação individual de cargos, insígnias e molduras, com listagem dos perfis que receberam cada cargo/insígnia.
+- Catálogo com 19 insígnias e cargos administráveis pelo Control, incluindo insígnias automáticas por marco e manualmente concedidas. Dessas insígnias, 8 são livres (`is_free=1`) e podem ser escolhidas pelo próprio perfil. O administrador pode editar/desativar os itens disponíveis.
+- Cargos com aparência estilo Discord: `Moderador` (`#ED4245`), `Músico` (`#1ABC9C`), `Desenvolvedor` (`#57F287`) e `Suporte` (`#5865F2`) mantêm os IDs antigos (`curator`, `musician`, `contributor`, `supporter`) para não quebrar concessões nem regras de moldura.
+- Concessão e revogação individual de cargos, insígnias e molduras, com listagem dos perfis que receberam cada cargo/insígnia. A desativação de moldura preserva as concessões; não há exclusão permanente de moldura.
 - VIP individual com validade opcional e registro de auditoria.
 - Benefício VIP implementado no backend: cota de mídia do perfil passa de 250 MiB para 500 MiB enquanto o VIP estiver ativo. O limite global lógico continua sendo 900.000.000 bytes.
-- `Gênese` é concedida automaticamente na criação do perfil; `Conectado`, `Resonância` e `Pulso` seguem critérios automáticos. Insígnias do JSON editável do perfil são ignoradas; as demais vêm das concessões feitas no Control.
+- `Gênese` é concedida automaticamente na criação do perfil; `Conectado`, `Resonância` e `Pulso` seguem critérios automáticos. Insígnias do JSON editável do perfil são ignoradas; as demais vêm das concessões feitas no Control ou da escolha livre do dono.
+- Escolha livre: o seletor aparece uma vez no Share quando há código público e token local, e pode ser reaberto pelo Menu ou pelo Studio. O limite é de 6 insígnias `self` por perfil; VIP, cargos especiais, conquistas automáticas e itens da deny list não podem ser escolhidos. Concessões `system`/`admin` nunca são removidas por essa escolha.
+- Inventário completo de insígnias e molduras fica disponível no Menu para o dono e para visitantes do link público; o Share não exibe catálogo sobre o perfil.
 - Restaurar o perfil padrão apaga personalizações e mídias do perfil, mas preserva VIP, cargos, tags e molduras gerenciados separadamente pelo Control.
 
 O monitoramento de armazenamento é baseado nos bytes e metadados registrados no D1 durante os uploads gerenciados pelo Worker. Não é uma varredura independente de todo o bucket Supabase; confira também o painel do Supabase para uso externo ou alterações manuais.
@@ -86,12 +91,12 @@ A visão geral do Control é alimentada por `GET /api/admin/dashboard`, que agre
 
 Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas `GET`/`PUT /api/admin/credential` informam a origem da senha e permitem rotacioná-la; a troca exige `confirmation: "TROCAR"`, no mínimo 16 caracteres e revoga todas as sessões. No runtime local a chave é gravada em `data/admin-key.txt`; no Worker, em `admin_credential` (D1).
 
-**Estado desta entrega:** dashboard, rotação e credencial no D1 estão aplicados no Worker público. A migration 0014 foi executada no D1 remoto, o Worker foi publicado e `HATTZ_ADMIN_PASSWORD` foi removido; a senha ativa é a gravada em `admin_credential`. O frontend do Control foi publicado no GitHub Pages preservando coleções, benefícios e o status de conexão já existentes.
+**Estado desta entrega:** dashboard, rotação e credencial no D1 estão aplicados no Worker público. As 18 migrações estão no pacote; as migrações 0014, 0015, 0017 e 0018 foram aplicadas ao D1 remoto (`wrangler d1 migrations list hattz-share --remote` não indica pendências). `HATTZ_ADMIN_PASSWORD` foi removido; a senha ativa é a gravada em `admin_credential`. O Worker está publicado na versão `567ddc5e-71fa-4cce-b8b1-a917e4bd690c`, com `/api/health` respondendo `ok`, `/api/catalog` devolvendo 19 insígnias (8 livres) e `/api/profiles/:code/entitlements` incluindo `awardedBy`/`selfBadgeIds`. O frontend do Share, do Studio e do Control está publicado no GitHub Pages preservando coleções, benefícios e o status de conexão já existentes.
 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
-A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada (`0d5a61d`). Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa3`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
 
 ### Liquid Glass personalizável
 
@@ -142,6 +147,16 @@ O backup do D1 e a aplicação das migrações no remoto foram executados nesta 
 
 `backend/migrations/0015_discord_style_catalog.sql` semeia o catálogo com cargos comunitários (Membro, Apoiador, Colaborador, Designer, Artista, Booster, Veterano e Parceiro) e insígnias colecionáveis por categoria/raridade. É aditiva: usa `INSERT OR IGNORE`, não apaga perfis nem atribuições e pode ser editada ou desativada pelo Control. A migration foi aplicada ao D1 remoto após backup e validada por consulta direta e por `/api/catalog`.
 
+## Banco D1 — migrações 0017 e 0018 (catálogo ampliado e insígnias livres)
+
+`backend/migrations/0017_more_badges_and_roles.sql` amplia o catálogo para 19 insígnias e ajusta cargos sem trocar IDs. `backend/migrations/0018_discord_roles_and_free_badges.sql` adiciona `is_free` ao catálogo, marca 8 insígnias como livres (`dev`, `support`, `member`, `art`, `gamer`, `reader`, `night-owl`, `music`) e renomeia/reestiliza os cargos `curator`, `musician`, `contributor` e `supporter` para o padrão Discord. Ambas são aditivas e preservam perfis, concessões, temas e itens existentes; a desativação de moldura continua sem exclusão permanente.
+
+As duas migrations foram aplicadas ao D1 remoto e registradas em `d1_migrations`; `wrangler d1 migrations list hattz-share --remote` reporta `No migrations to apply!`. A consulta remota confirma `badges=19`, `free=8` e os cargos com os rótulos/cores esperados.
+
+### Escolha livre de insígnias
+
+`POST /api/profiles/:code/badges/self` usa `Authorization: Bearer <ownerToken>` e o corpo `{ "badgeIds": [...] }`. O backend valida `enabled=1 AND is_public=1 AND is_free=1`, aplica a deny list (`owner`, `vip`, `apoiador`, `event-pass`, `creative-flare`, `community-anchor`, `chronicle`) e rejeita insígnias automáticas. O limite é 6 itens com `awardedBy='self'`; a gravação substitui apenas esses itens e nunca apaga concessões `system`/`admin`. A resposta é `{ updated, selfSelected, limit }`. O mesmo contrato existe no runtime local em `server.mjs`, com seeds atualizados para `catalogVersion: 4`.
+
 ## Testes locais executados
 
 ```bash
@@ -154,7 +169,7 @@ node --check backend/src/index.js
 node --check backend/tests/worker.test.js
 ```
 
-A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **135 testes, todos aprovados**. As 17 migrações estão presentes no pacote; a 0014, a 0015 e a 0017 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **137 testes, todos aprovados**, incluindo os testes do endpoint `POST /api/profiles/:code/badges/self` e da preservação de concessões `system`/`admin`. As 18 migrações estão presentes no pacote; a 0014, a 0015, a 0017 e a 0018 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
 
 ## Implantação e segurança
 

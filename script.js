@@ -3623,9 +3623,57 @@ function activateReadOnlyView() {
   if (captureButton) captureButton.hidden = false;
 }
 
+async function openBadgeOnboarding() {
+  if (IS_PUBLIC_VIEW || !window.HattzBadgePicker) return;
+  const modal = $("badgeOnboardingModal");
+  const host = $("badgeOnboardingPicker");
+  if (!modal || !host) return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  host.innerHTML = '<p class="muted">Carregando insígnias livres...</p>';
+  try {
+    const state = await window.HattzBadgePicker.load(ACTIVE_PROFILE_ID);
+    if (!state.available || !state.token) {
+      host.innerHTML = '<p class="muted">Publique este perfil para escolher insígnias livres.</p>';
+      return;
+    }
+    window.HattzBadgePicker.render(host, state, {
+      profileId: ACTIVE_PROFILE_ID,
+      saveLabel: "Salvar insígnias",
+      onSaved: async () => {
+        window.HattzBadgePicker.markOnboarded(ACTIVE_PROFILE_ID);
+        await loadProfileEntitlements();
+        closeBadgeOnboarding();
+        showToast("Insígnias atualizadas.");
+      }
+    });
+  } catch (error) {
+    host.textContent = error.message || "Não foi possível carregar as insígnias.";
+  }
+}
+
+function closeBadgeOnboarding() {
+  const modal = $("badgeOnboardingModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+  if (!$("editorModal")?.classList.contains("open") && !$("shareModal")?.classList.contains("open") && !$("inventoryModal")?.classList.contains("open")) {
+    document.body.style.overflow = "";
+  }
+}
+
+async function maybePromptBadgeOnboarding() {
+  if (IS_PUBLIC_VIEW || !window.HattzBadgePicker || window.HattzBadgePicker.isOnboarded(ACTIVE_PROFILE_ID)) return;
+  if (!localStorage.getItem(SHARE_PUBLIC_CODE_KEY) || !localStorage.getItem(SHARE_OWNER_TOKEN_KEY)) return;
+  const state = await window.HattzBadgePicker.load(ACTIVE_PROFILE_ID).catch(() => null);
+  if (!state?.available || !state.badges.length) return;
+  await openBadgeOnboarding();
+}
+
 function setupEvents() {
-  $("openOtherProfile").addEventListener("click", openOtherProfile);
-  $("openShareManager").addEventListener("click", openShareManager);
+  $("openOtherProfile")?.addEventListener("click", openOtherProfile);
+  $("openShareManager")?.addEventListener("click", openShareManager);
   $("closeShareModal").addEventListener("click", closeShareManager);
   $("shareModal").addEventListener("click", (event) => {
     if (event.target === $("shareModal")) closeShareManager();
@@ -3636,7 +3684,7 @@ function setupEvents() {
   $("copyShareOwnerToken").addEventListener("click", () => copyShareValue("shareOwnerTokenOutput", "Chave privada"));
   $("openSharedProfile").addEventListener("click", openSharedProfileByCode);
   $("unpublishProfileButton").addEventListener("click", unpublishProfile);
-  $("openInventory").addEventListener("click", openInventory);
+  $("openInventory")?.addEventListener("click", openInventory);
   $("closeInventoryModal").addEventListener("click", closeInventory);
   $("inventoryModal").addEventListener("click", (event) => {
     if (event.target === $("inventoryModal")) closeInventory();
@@ -3644,9 +3692,18 @@ function setupEvents() {
   document.querySelectorAll("[data-inventory-tab]").forEach((button) => {
     button.addEventListener("click", () => setInventoryTab(button.dataset.inventoryTab));
   });
-  $("toggleCaptureMode").addEventListener("click", () => setCaptureMode(true));
+  $("closeBadgeOnboarding")?.addEventListener("click", closeBadgeOnboarding);
+  $("badgeOnboardingModal")?.addEventListener("click", (event) => {
+    if (event.target === $("badgeOnboardingModal")) closeBadgeOnboarding();
+  });
+  $("skipBadgeOnboarding")?.addEventListener("click", () => {
+    window.HattzBadgePicker?.markOnboarded(ACTIVE_PROFILE_ID);
+    closeBadgeOnboarding();
+  });
+  $("toggleCaptureMode")?.addEventListener("click", () => setCaptureMode(true));
   $("exitCaptureMode").addEventListener("click", () => setCaptureMode(false));
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && $("badgeOnboardingModal")?.classList.contains("open")) { closeBadgeOnboarding(); return; }
     if (event.key === "Escape" && $("inventoryModal")?.classList.contains("open")) { closeInventory(); return; }
     if (event.key === "Escape" && $("shareModal")?.classList.contains("open")) { closeShareManager(); return; }
     if (event.key === "Escape" && document.body.classList.contains("capture-mode")) {
@@ -3658,8 +3715,8 @@ function setupEvents() {
       setCaptureMode(!document.body.classList.contains("capture-mode"));
     }
   });
-  $("openStudio").addEventListener("click", () => { if (!IS_PUBLIC_VIEW) window.location.href = `studio.html?profile=${encodeURIComponent(ACTIVE_PROFILE_ID)}`; });
-  $("openEditor").addEventListener("click", openEditor);
+  $("openStudio")?.addEventListener("click", () => { if (!IS_PUBLIC_VIEW) window.location.href = `studio.html?profile=${encodeURIComponent(ACTIVE_PROFILE_ID)}`; });
+  $("openEditor")?.addEventListener("click", openEditor);
   $("closeEditor").addEventListener("click", closeEditor);
 
   $("editorModal").addEventListener("click", (event) => {
@@ -3937,7 +3994,8 @@ function setupEvents() {
     if (action === "inventory") { openInventory(); return; }
     if (action === "capture") { setCaptureMode(true); return; }
     if (action === "other-profile" && !IS_PUBLIC_VIEW) { openOtherProfile(); return; }
-    const targets = { badges: "badges", cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
+    if (action === "badges" && !IS_PUBLIC_VIEW) { openBadgeOnboarding(); return; }
+    const targets = { cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
     const target = panel && $(targets[panel]);
     if (target) {
       target.hidden = false;
@@ -3997,6 +4055,7 @@ async function init() {
   }
   if (!IS_PUBLIC_VIEW) fillEditor();
   setMediaAnimation(profile.animarMidia);
+  await maybePromptBadgeOnboarding();
 }
 
 window.addEventListener("message", (event) => {
@@ -4012,6 +4071,7 @@ window.addEventListener("message", (event) => {
     applyMusicPlayerSize();
     applyMusicPlayerPosition();
     renderProfile();
+    loadProfileEntitlements();
     fillEditor();
     setMediaAnimation(profile.animarMidia);
   } catch (error) { console.warn("Falha ao atualizar a prévia do Studio."); }

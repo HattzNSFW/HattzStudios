@@ -889,29 +889,45 @@
   }
   const ROLE_THEME_FIELDS = { background: 'roleThemeBackground', gradient: 'roleThemeGradient', card: 'roleThemeCard', accent: 'roleThemeAccent', text: 'roleThemeText', border: 'roleThemeBorder' };
   const SERVER_ROLE_PRESETS = {
+    member: {
+      label: 'Membro', color: '#99AAB5', description: 'Parte da comunidade Hättz.',
+      theme: { background: '#0b0a10', gradient: '#292333', card: '#14121b', accent: '#99aab5', text: '#f4f0fa', border: '#302a3a' }
+    },
+    supporter: {
+      label: 'Suporte', color: '#5865F2', description: 'Acolhe e ajuda outros perfis da comunidade.',
+      theme: { background: '#080a14', gradient: '#1e2547', card: '#111528', accent: '#8ea1ff', text: '#f2f4ff', border: '#2c3766' }
+    },
+    contributor: {
+      label: 'Desenvolvedor', color: '#57F287', description: 'Constrói e melhora o Hättz.',
+      theme: { background: '#07100a', gradient: '#153b24', card: '#0d1d13', accent: '#7ef2aa', text: '#eafff1', border: '#245c38' }
+    },
+    designer: {
+      label: 'Designer', color: '#E91E63', description: 'Cria identidades visuais e personalizações para perfis.',
+      theme: { background: '#12070d', gradient: '#4a142c', card: '#1d0e16', accent: '#ff8ab8', text: '#fff0f6', border: '#6b2140' }
+    },
+    artist: {
+      label: 'Artista', color: '#F472B6', description: 'Compartilha trabalhos artísticos originais.',
+      theme: { background: '#110a11', gradient: '#41223f', card: '#1c111b', accent: '#ffaddb', text: '#fff2fb', border: '#65355f' }
+    },
     booster: {
       label: 'Booster', color: '#FF73FA', description: 'Impulsiona o servidor e desbloqueia benefícios de apoio.',
-      theme: { background: '#120b16', gradient: '#4a214f', card: '#1c1424', accent: '#ff9bf8', text: '#fdf3ff', border: '#5b2a61' }
+      theme: { background: '#120812', gradient: '#4a1c49', card: '#1d0f1c', accent: '#ffa8ff', text: '#fff0ff', border: '#6c2c69' }
     },
     veteran: {
       label: 'Veterano', color: '#F0B232', description: 'Presente desde os primeiros dias da comunidade.',
-      theme: { background: '#120f09', gradient: '#4d3a17', card: '#1d1810', accent: '#f7c968', text: '#fff7e6', border: '#5b461f' }
-    },
-    contributor: {
-      label: 'Colaborador', color: '#5865F2', description: 'Contribui com ideias, código ou organização da comunidade.',
-      theme: { background: '#0b0a10', gradient: '#292333', card: '#14121b', accent: '#a78bfa', text: '#f4f0fa', border: '#302a3a' }
+      theme: { background: '#110d06', gradient: '#493313', card: '#1d160b', accent: '#ffd06b', text: '#fff8e8', border: '#6a4d1f' }
     },
     partner: {
       label: 'Parceiro', color: '#FAA61A', description: 'Parceiro reconhecido do Hättz.',
-      theme: { background: '#130d08', gradient: '#52300f', card: '#1f1710', accent: '#ffc46b', text: '#fff4e6', border: '#63411d' }
+      theme: { background: '#120c06', gradient: '#4a2f0e', card: '#1d150a', accent: '#ffc46b', text: '#fff4e6', border: '#63411d' }
     },
     curator: {
-      label: 'Curador', color: '#3BA55D', description: 'Organiza coleções e destaques da comunidade.',
-      theme: { background: '#0a100c', gradient: '#1d3a28', card: '#111d16', accent: '#7ee2a8', text: '#effff5', border: '#2c5a3e' }
+      label: 'Moderador', color: '#ED4245', description: 'Organiza a comunidade e mantém tudo em ordem.',
+      theme: { background: '#120809', gradient: '#4a1719', card: '#1d0e0f', accent: '#ff8587', text: '#fff0f1', border: '#6b2527' }
     },
     musician: {
-      label: 'Músico', color: '#E67E22', description: 'Compartilha trilhas e identificações sonoras.',
-      theme: { background: '#120c08', gradient: '#4a2a12', card: '#1d150e', accent: '#ffb26b', text: '#fff5e8', border: '#5b3a1f' }
+      label: 'Músico', color: '#1ABC9C', description: 'Compartilha trilhas e identificações sonoras.',
+      theme: { background: '#06110f', gradient: '#123a33', card: '#0b1c19', accent: '#6be3c8', text: '#eafff9', border: '#205a4e' }
     }
   };
   const SERVER_BADGE_PRESETS = {
@@ -920,7 +936,15 @@
     apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝', color: '#5865F2' },
     genesis: { name: 'Gênese', description: 'Concedida automaticamente ao criar um perfil no Hättz.', category: 'milestone', rarity: '1', icon: '✧', color: '#B8BCC8' },
     'event-pass': { name: 'Participante de Evento', description: 'Participou de um evento oficial da comunidade.', category: 'event', rarity: '2', icon: '🎟️', color: '#43B581' },
-    'creative-flare': { name: 'Faísca Criativa', description: 'Destaque em criações visuais da comunidade.', category: 'achievement', rarity: '3', icon: '✨', color: '#C18BE8' }
+    'creative-flare': { name: 'Faísca Criativa', description: 'Destaque em criações visuais da comunidade.', category: 'achievement', rarity: '3', icon: '✨', color: '#C18BE8' },
+    dev: { name: 'Dev', description: 'Quem constrói, testa e melhora o Hättz.', category: 'community', rarity: '2', icon: '💻', color: '#57F287' },
+    support: { name: 'Suporte', description: 'Acolhe e ajuda outros perfis da comunidade.', category: 'community', rarity: '2', icon: '🎧', color: '#5865F2' },
+    gamer: { name: 'Gamer', description: 'Vive jogos, desafios e boas partidas por aqui.', category: 'hobby', rarity: '1', icon: '🎮', color: '#E67E22' },
+    member: { name: 'Membro', description: 'Parte da comunidade Hättz.', category: 'community', rarity: '1', icon: '👤', color: '#99AAB5' },
+    music: { name: 'Música', description: 'Compartilha trilhas e descobertas sonoras.', category: 'hobby', rarity: '1', icon: '🎵', color: '#1DB954' },
+    art: { name: 'Arte', description: 'Cria e aprecia artes visuais.', category: 'hobby', rarity: '1', icon: '🎨', color: '#E91E63' },
+    reader: { name: 'Leitura', description: 'Sempre com uma boa história por perto.', category: 'hobby', rarity: '1', icon: '📚', color: '#F0B232' },
+    'night-owl': { name: 'Madrugador', description: 'Aparece quando a cidade dorme.', category: 'hobby', rarity: '1', icon: '🦉', color: '#9B59B6' }
   };
   function applyRolePreset(id) {
     const preset = SERVER_ROLE_PRESETS[id];
@@ -1027,6 +1051,7 @@
       rarityLevel: Number($('catalogRarity')?.value || 1),
       color: $('catalogColor')?.value || '#B8BCC8',
       isPublic: $('catalogIsPublic')?.checked !== false,
+      isFree: $('catalogIsPublic')?.checked !== false,
       awardMode: 'manual'
     };
     try {
