@@ -64,11 +64,11 @@ Antes de substituir os arquivos publicados, abra a versão original no navegador
 
 ## Hättz Control e benefícios
 
-- Catálogo de tags iniciado com 12 entradas pela migration 0011; cargos e molduras permanecem administráveis pelo Control. O administrador pode editar/desativar os itens disponíveis.
-- Concessão e revogação individual de cargos, tags e molduras, com listagem dos perfis que receberam cada cargo/tag.
+- Catálogo com 11 insígnias e 10 cargos administráveis pelo Control, incluindo insígnias automáticas por marco e manualmente concedidas. O administrador pode editar/desativar os itens disponíveis.
+- Concessão e revogação individual de cargos, insígnias e molduras, com listagem dos perfis que receberam cada cargo/insígnia.
 - VIP individual com validade opcional e registro de auditoria.
 - Benefício VIP implementado no backend: cota de mídia do perfil passa de 250 MiB para 500 MiB enquanto o VIP estiver ativo. O limite global lógico continua sendo 900.000.000 bytes.
-- Nenhuma tag, cargo ou moldura é concedida automaticamente. Tags do JSON editável do perfil são ignoradas; as tags públicas vêm apenas das concessões feitas no Control.
+- `Gênese` é concedida automaticamente na criação do perfil; `Conectado`, `Resonância` e `Pulso` seguem critérios automáticos. Insígnias do JSON editável do perfil são ignoradas; as demais vêm das concessões feitas no Control.
 - Restaurar o perfil padrão apaga personalizações e mídias do perfil, mas preserva VIP, cargos, tags e molduras gerenciados separadamente pelo Control.
 
 O monitoramento de armazenamento é baseado nos bytes e metadados registrados no D1 durante os uploads gerenciados pelo Worker. Não é uma varredura independente de todo o bucket Supabase; confira também o painel do Supabase para uso externo ou alterações manuais.
@@ -154,7 +154,7 @@ node --check backend/src/index.js
 node --check backend/tests/worker.test.js
 ```
 
-A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **113 testes, todos aprovados**. As 15 migrações estão presentes no pacote; a 0014 e a 0015 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **135 testes, todos aprovados**. As 17 migrações estão presentes no pacote; a 0014, a 0015 e a 0017 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
 
 ## Implantação e segurança
 

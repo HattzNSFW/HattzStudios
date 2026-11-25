@@ -904,12 +904,23 @@
     partner: {
       label: 'Parceiro', color: '#FAA61A', description: 'Parceiro reconhecido do Hättz.',
       theme: { background: '#130d08', gradient: '#52300f', card: '#1f1710', accent: '#ffc46b', text: '#fff4e6', border: '#63411d' }
+    },
+    curator: {
+      label: 'Curador', color: '#3BA55D', description: 'Organiza coleções e destaques da comunidade.',
+      theme: { background: '#0a100c', gradient: '#1d3a28', card: '#111d16', accent: '#7ee2a8', text: '#effff5', border: '#2c5a3e' }
+    },
+    musician: {
+      label: 'Músico', color: '#E67E22', description: 'Compartilha trilhas e identificações sonoras.',
+      theme: { background: '#120c08', gradient: '#4a2a12', card: '#1d150e', accent: '#ffb26b', text: '#fff5e8', border: '#5b3a1f' }
     }
   };
   const SERVER_BADGE_PRESETS = {
     owner: { name: 'Owner', description: 'Insígnia reservada aos perfis oficiais do Hättz.', category: 'server', rarity: '5', icon: '👑', color: '#F0B232' },
     vip: { name: 'VIP', description: 'Apoio premium ao ecossistema Hättz.', category: 'server', rarity: '4', icon: '💎', color: '#43B581' },
-    apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝', color: '#5865F2' }
+    apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝', color: '#5865F2' },
+    genesis: { name: 'Gênese', description: 'Concedida automaticamente ao criar um perfil no Hättz.', category: 'milestone', rarity: '1', icon: '✧', color: '#B8BCC8' },
+    'event-pass': { name: 'Participante de Evento', description: 'Participou de um evento oficial da comunidade.', category: 'event', rarity: '2', icon: '🎟️', color: '#43B581' },
+    'creative-flare': { name: 'Faísca Criativa', description: 'Destaque em criações visuais da comunidade.', category: 'achievement', rarity: '3', icon: '✨', color: '#C18BE8' }
   };
   function applyRolePreset(id) {
     const preset = SERVER_ROLE_PRESETS[id];
