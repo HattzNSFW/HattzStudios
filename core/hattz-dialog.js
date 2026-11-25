@@ -5,18 +5,18 @@
   const DIALOG_SELECTOR = '.modal-backdrop.open, .modal-backdrop[aria-hidden="false"], [role="dialog"][aria-modal="true"]:not([hidden])';
   const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
+  function isVisible(node) {
+    const style = getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+    return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+  }
+
   function activeDialogs() {
-    return [...document.querySelectorAll(DIALOG_SELECTOR)].filter((node) => {
-      const style = getComputedStyle(node);
-      return style.display !== "none" && style.visibility !== "hidden";
-    });
+    return [...document.querySelectorAll(DIALOG_SELECTOR)].filter(isVisible);
   }
 
   function focusables(dialog) {
-    return [...dialog.querySelectorAll(FOCUSABLE)].filter((node) => {
-      const style = getComputedStyle(node);
-      return style.display !== "none" && style.visibility !== "hidden";
-    });
+    return [...dialog.querySelectorAll(FOCUSABLE)].filter(isVisible);
   }
 
   function topDialog() {

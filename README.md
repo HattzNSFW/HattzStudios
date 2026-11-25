@@ -96,7 +96,7 @@ Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
-A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa4`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa5`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
 
 ### Liquid Glass personalizável
 
