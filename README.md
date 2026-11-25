@@ -66,13 +66,13 @@ Antes de substituir os arquivos publicados, abra a versão original no navegador
 
 ## Hättz Control e benefícios
 
-- Catálogo com 19 insígnias e cargos administráveis pelo Control, incluindo insígnias automáticas por marco e manualmente concedidas. Dessas insígnias, 8 são livres (`is_free=1`) e podem ser escolhidas pelo próprio perfil. O administrador pode editar/desativar os itens disponíveis.
+- Catálogo com 19 insígnias e cargos administráveis pelo Control, incluindo insígnias automáticas por marco e manualmente concedidas. Dessas insígnias, 8 são livres (`is_free=1`) e podem ser escolhidas pelo próprio perfil. O administrador pode editar/desativar os itens disponíveis e, na aba “Regras de escolha”, bloquear IDs adicionais sem poder remover as proteções embutidas.
 - Cargos com aparência estilo Discord: `Moderador` (`#ED4245`), `Músico` (`#1ABC9C`), `Desenvolvedor` (`#57F287`) e `Suporte` (`#5865F2`) mantêm os IDs antigos (`curator`, `musician`, `contributor`, `supporter`) para não quebrar concessões nem regras de moldura.
 - Concessão e revogação individual de cargos, insígnias e molduras, com listagem dos perfis que receberam cada cargo/insígnia. A desativação de moldura preserva as concessões; não há exclusão permanente de moldura.
 - VIP individual com validade opcional e registro de auditoria.
 - Benefício VIP implementado no backend: cota de mídia do perfil passa de 250 MiB para 500 MiB enquanto o VIP estiver ativo. O limite global lógico continua sendo 900.000.000 bytes.
 - `Gênese` é concedida automaticamente na criação do perfil; `Conectado`, `Resonância` e `Pulso` seguem critérios automáticos. Insígnias do JSON editável do perfil são ignoradas; as demais vêm das concessões feitas no Control ou da escolha livre do dono.
-- Escolha livre: o seletor aparece uma vez no Share quando há código público e token local, e pode ser reaberto pelo Menu ou pelo Studio. O limite é de 6 insígnias `self` por perfil; VIP, cargos especiais, conquistas automáticas e itens da deny list não podem ser escolhidos. Concessões `system`/`admin` nunca são removidas por essa escolha.
+- Escolha livre: o seletor aparece uma vez no Share quando há código público e token local, e pode ser reaberto pelo Menu ou pelo Studio. Ele carrega com skeleton, mostra progresso de 6 slots, prévia das insígnias escolhidas, destaque quando o limite é atingido e navegação por setas. O limite é de 6 insígnias `self` por perfil; VIP, cargos especiais, conquistas automáticas e itens da deny list (embutida ou configurada no Control) não podem ser escolhidos. Concessões `system`/`admin` nunca são removidas por essa escolha. Diálogos do Share e do Control agora retêm o foco por teclado e devolvem o foco ao elemento de origem ao fechar.
 - Inventário completo de insígnias e molduras fica disponível no Menu para o dono e para visitantes do link público; o Share não exibe catálogo sobre o perfil.
 - Restaurar o perfil padrão apaga personalizações e mídias do perfil, mas preserva VIP, cargos, tags e molduras gerenciados separadamente pelo Control.
 
@@ -91,12 +91,12 @@ A visão geral do Control é alimentada por `GET /api/admin/dashboard`, que agre
 
 Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas `GET`/`PUT /api/admin/credential` informam a origem da senha e permitem rotacioná-la; a troca exige `confirmation: "TROCAR"`, no mínimo 16 caracteres e revoga todas as sessões. No runtime local a chave é gravada em `data/admin-key.txt`; no Worker, em `admin_credential` (D1).
 
-**Estado desta entrega:** dashboard, rotação e credencial no D1 estão aplicados no Worker público. As 18 migrações estão no pacote; as migrações 0014, 0015, 0017 e 0018 foram aplicadas ao D1 remoto (`wrangler d1 migrations list hattz-share --remote` não indica pendências). `HATTZ_ADMIN_PASSWORD` foi removido; a senha ativa é a gravada em `admin_credential`. O Worker está publicado na versão `567ddc5e-71fa-4cce-b8b1-a917e4bd690c`, com `/api/health` respondendo `ok`, `/api/catalog` devolvendo 19 insígnias (8 livres) e `/api/profiles/:code/entitlements` incluindo `awardedBy`/`selfBadgeIds`. O frontend do Share, do Studio e do Control está publicado no GitHub Pages preservando coleções, benefícios e o status de conexão já existentes.
+**Estado desta entrega:** dashboard, rotação e credencial no D1 estão aplicados no Worker público. As 18 migrações estão no pacote; as migrações 0014, 0015, 0017 e 0018 foram aplicadas ao D1 remoto (`wrangler d1 migrations list hattz-share --remote` não indica pendências). `HATTZ_ADMIN_PASSWORD` foi removido; a senha ativa é a gravada em `admin_credential`. O Worker está publicado na versão `700cc49b-526a-4cc2-9e5e-20d3c08ecce6`, com `/api/health` respondendo `ok`, `/api/catalog` devolvendo 19 insígnias (8 livres), `/api/profiles/:code/entitlements` incluindo `awardedBy`/`selfBadgeIds` e `GET`/`PUT /api/admin/badge-rules` autenticados por sessão. O frontend do Share, do Studio e do Control está publicado no GitHub Pages preservando coleções, benefícios e o status de conexão já existentes.
 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
-A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa3`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa4`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
 
 ### Liquid Glass personalizável
 
@@ -169,7 +169,7 @@ node --check backend/src/index.js
 node --check backend/tests/worker.test.js
 ```
 
-A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **137 testes, todos aprovados**, incluindo os testes do endpoint `POST /api/profiles/:code/badges/self` e da preservação de concessões `system`/`admin`. As 18 migrações estão presentes no pacote; a 0014, a 0015, a 0017 e a 0018 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **139 testes, todos aprovados**, incluindo os testes do endpoint `POST /api/profiles/:code/badges/self`, da preservação de concessões `system`/`admin`, das regras editáveis em `system_settings`/`badge_rules`, da aba do Control, do seletor acessível e da armadilha de foco dos diálogos. As 18 migrações estão presentes no pacote; a 0014, a 0015, a 0017 e a 0018 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
 
 ## Implantação e segurança
 

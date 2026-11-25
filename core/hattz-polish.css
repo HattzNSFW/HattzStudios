@@ -1148,8 +1148,28 @@ body.hattz-menu-open { overflow: hidden; }
 .hattz-badge-choice.selected .hattz-badge-choice-check {
   border-color: var(--badge-accent); background: var(--badge-accent); color: #0c0a11;
 }
+.hattz-badge-picker-skeleton { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 9px; }
+.hattz-badge-skeleton-card {
+  min-height: 58px; border: 1px solid var(--line, var(--border)); border-radius: 12px;
+  background: linear-gradient(100deg, rgba(255,255,255,.03) 30%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.03) 70%) 0 0 / 220% 100%;
+  animation: hattz-badge-skeleton 1.4s linear infinite;
+}
+@keyframes hattz-badge-skeleton { to { background-position: -220% 0; } }
+.hattz-badge-choice-grid.limit-reached .hattz-badge-choice:not(.selected) { opacity: .62; }
+.hattz-badge-choice-grid.limit-reached .hattz-badge-choice:hover { opacity: 1; }
 .hattz-badge-picker-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hattz-badge-picker-summary { display: grid; gap: 7px; min-width: 0; }
 .hattz-badge-picker-status { margin: 0; color: var(--muted); font-size: 11px; }
+.hattz-badge-picker-slots { display: flex; gap: 5px; }
+.hattz-badge-picker-slot { width: 22px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.12); transition: background .18s ease, box-shadow .18s ease; }
+.hattz-badge-picker-slot.filled { background: var(--accent, #a78bfa); box-shadow: 0 0 9px color-mix(in srgb, var(--accent, #a78bfa) 55%, transparent); }
+.hattz-badge-picker-preview { display: flex; align-items: center; gap: 5px; min-height: 18px; }
+.hattz-badge-preview-chip {
+  display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 10px;
+  border: 1px solid color-mix(in srgb, var(--badge-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--badge-accent) 16%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--badge-accent) 35%, transparent);
+}
 .badge-onboarding-modal {
   width: min(680px, 100%); max-height: min(86vh, 760px); overflow: auto;
   padding: 22px; border: 1px solid var(--line, var(--border)); border-radius: 18px;
@@ -1162,5 +1182,6 @@ body.hattz-menu-open { overflow: hidden; }
 .badge-onboarding-backdrop { z-index: 1301; }
 @media (prefers-reduced-motion: reduce) {
   .menu-toggle-button, .hattz-menu-list button, .frame-catalog-item, .frame-catalog-button,
-  .hattz-badge-choice { transition: none !important; transform: none !important; }
+  .hattz-badge-choice, .hattz-badge-picker-slot { transition: none !important; transform: none !important; }
+  .hattz-badge-skeleton-card { animation: none !important; background: rgba(255,255,255,.05); }
 }

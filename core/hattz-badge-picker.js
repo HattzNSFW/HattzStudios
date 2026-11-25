@@ -22,11 +22,12 @@
     return data;
   }
 
-  async function load(profileId = "perfil-1") {
+  async function load(profileId = "perfil-1", options = {}) {
     const code = normalizeCode(tryGet(codeKey(profileId)) || "");
     if (!code) return { available: false, code: "", token: "", badges: [], selected: [] };
+    const supplied = options.catalog && Array.isArray(options.catalog.badges) ? options.catalog : null;
     const [catalog, info] = await Promise.all([
-      requestJson("/api/catalog"),
+      supplied ? Promise.resolve(supplied) : requestJson("/api/catalog"),
       requestJson(`/api/profiles/${encodeURIComponent(code)}/entitlements`)
     ]);
     const badges = (Array.isArray(catalog.badges) ? catalog.badges : [])
@@ -43,6 +44,23 @@
       badges,
       selected: Array.isArray(fromInfo) ? fromInfo.filter((id) => badges.some((badge) => badge.id === id)) : []
     };
+  }
+
+  function renderLoading(host, label = "Carregando insígnias disponíveis...") {
+    if (!host) return;
+    host.replaceChildren();
+    const note = document.createElement("p");
+    note.className = "hattz-badge-picker-intro";
+    note.textContent = label;
+    const skeleton = document.createElement("div");
+    skeleton.className = "hattz-badge-picker-skeleton";
+    skeleton.setAttribute("aria-hidden", "true");
+    for (let index = 0; index < 6; index++) {
+      const card = document.createElement("span");
+      card.className = "hattz-badge-skeleton-card";
+      skeleton.append(card);
+    }
+    host.append(note, skeleton);
   }
 
   function render(host, state, options = {}) {
@@ -95,19 +113,45 @@
 
     const footer = document.createElement("div");
     footer.className = "hattz-badge-picker-footer";
+    const summary = document.createElement("div");
+    summary.className = "hattz-badge-picker-summary";
     const status = document.createElement("p");
     status.className = "hattz-badge-picker-status";
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
+    const slots = document.createElement("div");
+    slots.className = "hattz-badge-picker-slots";
+    slots.setAttribute("aria-hidden", "true");
+    for (let index = 0; index < MAX; index++) {
+      const slot = document.createElement("span");
+      slot.className = "hattz-badge-picker-slot";
+      slots.append(slot);
+    }
+    const preview = document.createElement("div");
+    preview.className = "hattz-badge-picker-preview";
+    preview.setAttribute("aria-hidden", "true");
+    summary.append(status, slots, preview);
     const saveButton = document.createElement("button");
     saveButton.type = "button";
     saveButton.className = "primary-button";
     saveButton.textContent = options.saveLabel || "Salvar insígnias";
-    footer.append(status, saveButton);
+    footer.append(summary, saveButton);
     host.append(footer);
 
+    const badgeById = new Map(badges.map((badge) => [badge.id, badge]));
     const updateStatus = (message) => {
       status.textContent = message || `${selected.size} de ${MAX} insígnias escolhidas.`;
+      [...slots.children].forEach((slot, index) => slot.classList.toggle("filled", index < selected.size));
+      preview.replaceChildren(...[...selected].slice(0, MAX).map((id) => {
+        const chip = document.createElement("span");
+        const badge = badgeById.get(id) || {};
+        const color = /^#[0-9a-f]{6}$/i.test(String(badge.color || "")) ? badge.color : "#B8BCC8";
+        chip.className = "hattz-badge-preview-chip";
+        chip.style.setProperty("--badge-accent", color);
+        chip.textContent = String(window.HattzEmoji?.badge?.(badge) || badge.icon || "✦");
+        return chip;
+      }));
+      grid.classList.toggle("limit-reached", selected.size >= MAX);
     };
     updateStatus();
 
@@ -124,6 +168,16 @@
       button.classList.toggle("selected", selected.has(id));
       button.setAttribute("aria-pressed", String(selected.has(id)));
       updateStatus();
+    });
+
+    grid.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      const cards = [...grid.querySelectorAll(".hattz-badge-choice")];
+      const index = cards.indexOf(document.activeElement);
+      if (index < 0) return;
+      event.preventDefault();
+      const delta = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : event.key === "ArrowDown" ? 1 : -1;
+      cards[(index + delta + cards.length) % cards.length]?.focus();
     });
 
     saveButton.addEventListener("click", async () => {
@@ -171,6 +225,7 @@
     limit: MAX,
     load,
     render,
+    renderLoading,
     save,
     isOnboarded,
     markOnboarded,

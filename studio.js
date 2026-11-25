@@ -387,7 +387,7 @@
       renderFrameCatalog(data.frames || [], info);
       const pickerHost = $("badgeSelfPicker");
       if (pickerHost && window.HattzBadgePicker) {
-        const pickerState = await window.HattzBadgePicker.load(profileId).catch(() => ({ available: false, badges: [], selected: [] }));
+        const pickerState = await window.HattzBadgePicker.load(profileId, { catalog: data }).catch(() => ({ available: false, badges: [], selected: [] }));
         window.HattzBadgePicker.render(pickerHost, pickerState, {
           profileId,
           saveLabel: "Salvar minhas insígnias",

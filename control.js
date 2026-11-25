@@ -579,6 +579,33 @@
     if (hint) hint.hidden = !query || badges.length > 0;
   }
 
+  async function loadBadgeRules() {
+    try {
+      const data = await api('/api/admin/badge-rules');
+      const field = $('badgeRulesDenyList');
+      if (field) field.value = (data.denyList || []).join('\n');
+      const protect = $('badgeRulesProtected');
+      if (protect) protect.innerHTML = (data.protectedIds || []).map(id => `<span class="role-preview-chip">${escapeHtml(id)}</span>`).join('');
+    } catch (error) { notify(error.message); }
+  }
+
+  async function saveBadgeRules() {
+    const status = $('badgeRulesStatus');
+    const raw = String($('badgeRulesDenyList')?.value || '');
+    const denyList = [...new Set(raw.split(/[\n,;]+/).map(id => id.trim().toLowerCase()).filter(Boolean))];
+    if (denyList.length > 100) { notify('Use no máximo 100 identificadores.'); return; }
+    try {
+      if (status) status.textContent = 'Salvando...';
+      const data = await api('/api/admin/badge-rules', { method: 'PUT', body: JSON.stringify({ denyList }) });
+      if ($('badgeRulesDenyList')) $('badgeRulesDenyList').value = (data.denyList || denyList).join('\n');
+      if (status) status.textContent = 'Regras salvas.';
+      notify('Regras de escolha salvas.');
+    } catch (error) {
+      if (status) status.textContent = '';
+      notify(error.message);
+    }
+  }
+
   /* Cada aba busca apenas o que usa. O catálogo é paginado para não transformar
      a lista publicada numa parede de 3000px. */
   async function ensureRoles() {
@@ -1409,15 +1436,19 @@
   $("catalogMore").addEventListener("click", () => { catalogVisible += CATALOG_PAGE; renderCatalog(); });
   $("badgePurgeSearch").addEventListener("input", renderBadgePurgeList);
   document.querySelectorAll("[data-badge-tab]").forEach(button => button.addEventListener("click", () => {
-    const purge = button.dataset.badgeTab === 'purge';
-    $('badgeCatalogPane').hidden = purge;
-    $('badgePurgePane').hidden = !purge;
-    document.querySelectorAll('[data-badge-tab]').forEach(tab => {
-      const active = tab === button;
-      tab.classList.toggle('active', active);
-      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    const tab = button.dataset.badgeTab;
+    $('badgeCatalogPane').hidden = tab !== 'catalog';
+    $('badgePurgePane').hidden = tab !== 'purge';
+    $('badgeRulesPane').hidden = tab !== 'rules';
+    if (tab === 'rules') loadBadgeRules();
+    document.querySelectorAll('[data-badge-tab]').forEach(item => {
+      const active = item === button;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-selected', active ? 'true' : 'false');
     });
   }));
+  $("reloadBadgeRules").addEventListener("click", loadBadgeRules);
+  $("saveBadgeRules").addEventListener("click", saveBadgeRules);
   $("previewRoles").addEventListener("click", () => openPreview('entitlementCode'));
   $("previewBadges").addEventListener("click", () => openPreview('badgeProfileCode'));
   $("previewClose").addEventListener("click", closePreview);

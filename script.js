@@ -3631,7 +3631,7 @@ async function openBadgeOnboarding() {
   modal.classList.add("open");
   modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
-  host.innerHTML = '<p class="muted">Carregando insígnias livres...</p>';
+  window.HattzBadgePicker.renderLoading(host, "Carregando insígnias livres...");
   try {
     const state = await window.HattzBadgePicker.load(ACTIVE_PROFILE_ID);
     if (!state.available || !state.token) {

@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa3">
-  <link rel="stylesheet" href="control.css?v=e7c4aa3">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa3">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa4">
+  <link rel="stylesheet" href="control.css?v=e7c4aa4">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa4">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -196,6 +196,7 @@
             <div class="editor-tabs badge-tabs" role="tablist" aria-label="Seções de insígnias">
               <button type="button" class="tab-button active" data-badge-tab="catalog" role="tab" aria-selected="true">Catálogo e concessões</button>
               <button type="button" class="tab-button" data-badge-tab="purge" role="tab" aria-selected="false">Excluir insígnias</button>
+              <button type="button" class="tab-button" data-badge-tab="rules" role="tab" aria-selected="false">Regras de escolha</button>
             </div>
             <div id="badgeCatalogPane">
             <div class="panel-grid">
@@ -258,6 +259,14 @@
                 <div class="panel-heading"><div><p class="eyebrow">PERMANENT REMOVAL</p><h2>Excluir insígnias permanentemente</h2><p class="muted">Esta ação apaga a insígnia do catálogo e remove todas as concessões associadas. Não há desfazer.</p></div></div>
                 <div class="catalog-toolbar"><input id="badgePurgeSearch" class="search-input" type="search" placeholder="Buscar insígnia" aria-label="Buscar insígnia para exclusão"><span id="badgePurgeCount" class="catalog-count">— itens</span><span id="badgePurgeHint" class="search-hint" hidden>Nenhuma insígnia encontrada.</span></div>
                 <div id="badgePurgeList" class="audit-list"><p class="empty">Carregando insígnias...</p></div>
+              </article>
+            </div>
+            <div id="badgeRulesPane" hidden>
+              <article class="panel glass">
+                <div class="panel-heading"><div><p class="eyebrow">ESCOLHA LIVRE</p><h2>Regras de escolha</h2><p class="muted">Bloqueie insígnias públicas adicionais para o seletor. Cargos, VIP, apoiadores e conquistas especiais permanecem protegidos.</p></div><div class="page-actions"><button id="reloadBadgeRules" class="quiet-button" type="button">Atualizar</button></div></div>
+                <div class="field"><label for="badgeRulesDenyList">IDs bloqueados (um por linha)</label><textarea id="badgeRulesDenyList" rows="8" spellcheck="false" placeholder="ex.: night-owl"></textarea><small>Até 100 IDs. Insígnias bloqueadas deixam de aparecer no questionário e no Studio.</small></div>
+                <div class="field"><span class="field-hint">Proteções permanentes</span><div id="badgeRulesProtected" class="inline-actions"></div></div>
+                <div class="inline-actions"><button id="saveBadgeRules" class="primary" type="button">Salvar regras</button><span id="badgeRulesStatus" class="muted" role="status" aria-live="polite"></span></div>
               </article>
             </div>
           </section>
@@ -361,10 +370,11 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="share-config.js?v=e7c4aa3"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa3"></script>
-  <script defer src="core/local-history.js?v=e7c4aa3"></script>
-  <script defer src="control.js?v=e7c4aa3"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa3"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa4"></script>
+  <script defer src="share-config.js?v=e7c4aa4"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa4"></script>
+  <script defer src="core/local-history.js?v=e7c4aa4"></script>
+  <script defer src="control.js?v=e7c4aa4"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa4"></script>
 </body>
 </html>
