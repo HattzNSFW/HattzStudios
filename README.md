@@ -72,7 +72,9 @@ Antes de substituir os arquivos publicados, abra a versão original no navegador
 - VIP individual com validade opcional e registro de auditoria.
 - Benefício VIP implementado no backend: cota de mídia do perfil passa de 250 MiB para 500 MiB enquanto o VIP estiver ativo. O limite global lógico continua sendo 900.000.000 bytes.
 - `Gênese` é concedida automaticamente na criação do perfil; `Conectado`, `Resonância` e `Pulso` seguem critérios automáticos. Insígnias do JSON editável do perfil são ignoradas; as demais vêm das concessões feitas no Control ou da escolha livre do dono.
-- Escolha livre: o seletor aparece uma vez no Share quando há código público e token local, e pode ser reaberto pelo Menu ou pelo Studio. Ele carrega com skeleton, mostra progresso de 6 slots, prévia das insígnias escolhidas, destaque quando o limite é atingido e navegação por setas. O limite é de 6 insígnias `self` por perfil; VIP, cargos especiais, conquistas automáticas e itens da deny list (embutida ou configurada no Control) não podem ser escolhidos. Concessões `system`/`admin` nunca são removidas por essa escolha. Diálogos do Share e do Control agora retêm o foco por teclado e devolvem o foco ao elemento de origem ao fechar.
+- Escolha livre: o seletor aparece uma vez no Share quando há código público e token local, e pode ser reaberto pelo Menu ou pelo Studio. Ele carrega com skeleton, mostra progresso de 6 slots, prévia das insígnias escolhidas, destaque quando o limite é atingido e navegação por setas. Busca por nome/ID/categoria, filtros por raridade/categoria e botões de subir/descer definem quais insígnias entram e em que ordem aparecem no perfil. O limite é de 6 insígnias `self` por perfil; VIP, cargos especiais, conquistas automáticas e itens da deny list (embutida ou configurada no Control) não podem ser escolhidos. Concessões `system`/`admin` nunca são removidas por essa escolha. Diálogos do Share e do Control agora retêm o foco por teclado e devolvem o foco ao elemento de origem ao fechar.
+- A aba “Regras de escolha” do Control sugere IDs do catálogo enquanto você digita e mostra o impacto estimado: quantas insígnias livres continuam no seletor, IDs inexistentes e IDs protegidos que serão ignorados.
+- O Studio expõe botões de desfazer/refazer no cabeçalho, sincronizados com os atalhos `Ctrl+Z`/`Ctrl+Y`; os botões ficam desabilitados quando não há histórico.
 - Inventário completo de insígnias e molduras fica disponível no Menu para o dono e para visitantes do link público; o Share não exibe catálogo sobre o perfil.
 - Restaurar o perfil padrão apaga personalizações e mídias do perfil, mas preserva VIP, cargos, tags e molduras gerenciados separadamente pelo Control.
 
@@ -96,7 +98,7 @@ Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
-A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa5`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa6`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
 
 ### Liquid Glass personalizável
 
@@ -169,7 +171,7 @@ node --check backend/src/index.js
 node --check backend/tests/worker.test.js
 ```
 
-A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **139 testes, todos aprovados**, incluindo os testes do endpoint `POST /api/profiles/:code/badges/self`, da preservação de concessões `system`/`admin`, das regras editáveis em `system_settings`/`badge_rules`, da aba do Control, do seletor acessível e da armadilha de foco dos diálogos. As 18 migrações estão presentes no pacote; a 0014, a 0015, a 0017 e a 0018 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **140 testes, todos aprovados**, incluindo os testes do endpoint `POST /api/profiles/:code/badges/self`, da preservação de concessões `system`/`admin`, das regras editáveis em `system_settings`/`badge_rules`, da aba do Control, do seletor acessível com busca/filtros/reordenação, do impacto das regras no Control, do histórico visível no Studio e da armadilha de foco dos diálogos. As 18 migrações estão presentes no pacote; a 0014, a 0015, a 0017 e a 0018 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
 
 ## Implantação e segurança
 

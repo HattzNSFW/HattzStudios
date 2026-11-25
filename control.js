@@ -20,6 +20,7 @@
   let studioRoleIds = new Set();
   let catalogItems = [];
   let catalogVisible = 12;
+  let badgeRulesProtectedIds = [];
   let frameAdjustImageData = "";
   let previewUrl = "";
   const loadedViews = new Set();
@@ -579,13 +580,56 @@
     if (hint) hint.hidden = !query || badges.length > 0;
   }
 
+  function parseBadgeRuleIds(raw) {
+    return [...new Set(String(raw || '').split(/[\n,;]+/).map(id => id.trim().toLowerCase()).filter(Boolean))];
+  }
+
+  function fillBadgeRulesOptions() {
+    const list = $('badgeRulesOptions');
+    if (!list) return;
+    list.replaceChildren(...ecosystemBadges
+      .filter(badge => Number(badge.enabled) !== 0)
+      .map(badge => {
+        const option = document.createElement('option');
+        option.value = String(badge.id);
+        option.label = `${badge.name || badge.id} · ${badge.rarityLabel || badge.rarity || ''}`;
+        return option;
+      }));
+  }
+
+  function updateBadgeRulesImpact() {
+    const impact = $('badgeRulesImpact');
+    if (!impact) return;
+    if (!ecosystemBadges.length) {
+      impact.textContent = 'Carregando catálogo para calcular o impacto...';
+      impact.classList.remove('warning');
+      return;
+    }
+    const ids = parseBadgeRuleIds($('badgeRulesDenyList')?.value);
+    const known = new Set(ecosystemBadges.map(badge => String(badge.id)));
+    const invalid = ids.filter(id => !known.has(id));
+    const freeBadges = ecosystemBadges.filter(badge => Number(badge.is_free) === 1 || badge.isFree === 1 || badge.isFree === true);
+    const freeIds = new Set(freeBadges.map(badge => String(badge.id)));
+    const blockedFree = ids.filter(id => freeIds.has(id) && !badgeRulesProtectedIds.includes(id));
+    const ignoredProtected = ids.filter(id => badgeRulesProtectedIds.includes(id));
+    const notes = [];
+    if (invalid.length) notes.push(`IDs não encontrados no catálogo: ${invalid.join(', ')}.`);
+    if (ignoredProtected.length) notes.push(`Proteções permanentes ignoram: ${ignoredProtected.join(', ')}.`);
+    impact.textContent = `${freeBadges.length} insígnia(s) livre(s) no catálogo · ${blockedFree.length} bloqueada(s) · ${freeBadges.length - blockedFree.length} disponível(is) no seletor.${notes.length ? ' ' + notes.join(' ') : ''}`;
+    impact.classList.toggle('warning', invalid.length > 0 || ignoredProtected.length > 0);
+  }
+
   async function loadBadgeRules() {
     try {
+      if (!ecosystemBadges.length) await ensureCatalog();
       const data = await api('/api/admin/badge-rules');
+      badgeRulesProtectedIds = Array.isArray(data.protectedIds) ? data.protectedIds.map(id => String(id).toLowerCase()) : [];
       const field = $('badgeRulesDenyList');
       if (field) field.value = (data.denyList || []).join('\n');
       const protect = $('badgeRulesProtected');
       if (protect) protect.innerHTML = (data.protectedIds || []).map(id => `<span class="role-preview-chip">${escapeHtml(id)}</span>`).join('');
+      fillBadgeRulesOptions();
+      updateBadgeRulesImpact();
     } catch (error) { notify(error.message); }
   }
 
@@ -598,6 +642,8 @@
       if (status) status.textContent = 'Salvando...';
       const data = await api('/api/admin/badge-rules', { method: 'PUT', body: JSON.stringify({ denyList }) });
       if ($('badgeRulesDenyList')) $('badgeRulesDenyList').value = (data.denyList || denyList).join('\n');
+      badgeRulesProtectedIds = Array.isArray(data.protectedIds) ? data.protectedIds.map(id => String(id).toLowerCase()) : badgeRulesProtectedIds;
+      updateBadgeRulesImpact();
       if (status) status.textContent = 'Regras salvas.';
       notify('Regras de escolha salvas.');
     } catch (error) {
@@ -1449,6 +1495,7 @@
   }));
   $("reloadBadgeRules").addEventListener("click", loadBadgeRules);
   $("saveBadgeRules").addEventListener("click", saveBadgeRules);
+  $('badgeRulesDenyList').addEventListener('input', updateBadgeRulesImpact);
   $("previewRoles").addEventListener("click", () => openPreview('entitlementCode'));
   $("previewBadges").addEventListener("click", () => openPreview('badgeProfileCode'));
   $("previewClose").addEventListener("click", closePreview);

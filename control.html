@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa5">
-  <link rel="stylesheet" href="control.css?v=e7c4aa5">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa5">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa6">
+  <link rel="stylesheet" href="control.css?v=e7c4aa6">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa6">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -264,7 +264,8 @@
             <div id="badgeRulesPane" hidden>
               <article class="panel glass">
                 <div class="panel-heading"><div><p class="eyebrow">ESCOLHA LIVRE</p><h2>Regras de escolha</h2><p class="muted">Bloqueie insígnias públicas adicionais para o seletor. Cargos, VIP, apoiadores e conquistas especiais permanecem protegidos.</p></div><div class="page-actions"><button id="reloadBadgeRules" class="quiet-button" type="button">Atualizar</button></div></div>
-                <div class="field"><label for="badgeRulesDenyList">IDs bloqueados (um por linha)</label><textarea id="badgeRulesDenyList" rows="8" spellcheck="false" placeholder="ex.: night-owl"></textarea><small>Até 100 IDs. Insígnias bloqueadas deixam de aparecer no questionário e no Studio.</small></div>
+                <div class="field"><label for="badgeRulesDenyList">IDs bloqueados (um por linha)</label><textarea id="badgeRulesDenyList" rows="8" spellcheck="false" list="badgeRulesOptions" placeholder="ex.: night-owl" aria-describedby="badgeRulesHint badgeRulesImpact"></textarea><datalist id="badgeRulesOptions"></datalist><small id="badgeRulesHint">Até 100 IDs. Comece a digitar para ver sugestões do catálogo. Insígnias bloqueadas deixam de aparecer no questionário e no Studio.</small></div>
+                <div class="field"><span class="field-hint">Impacto estimado</span><div id="badgeRulesImpact" class="muted" role="status" aria-live="polite">Carregando catálogo...</div></div>
                 <div class="field"><span class="field-hint">Proteções permanentes</span><div id="badgeRulesProtected" class="inline-actions"></div></div>
                 <div class="inline-actions"><button id="saveBadgeRules" class="primary" type="button">Salvar regras</button><span id="badgeRulesStatus" class="muted" role="status" aria-live="polite"></span></div>
               </article>
@@ -370,11 +371,11 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa5"></script>
-  <script defer src="share-config.js?v=e7c4aa5"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa5"></script>
-  <script defer src="core/local-history.js?v=e7c4aa5"></script>
-  <script defer src="control.js?v=e7c4aa5"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa5"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa6"></script>
+  <script defer src="share-config.js?v=e7c4aa6"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa6"></script>
+  <script defer src="core/local-history.js?v=e7c4aa6"></script>
+  <script defer src="control.js?v=e7c4aa6"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa6"></script>
 </body>
 </html>

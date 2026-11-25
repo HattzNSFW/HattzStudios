@@ -26,6 +26,30 @@
   }
   window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { label: "Studio carregado" });
 
+  function syncHistoryButtons() {
+    const history = window.HATTZ_HISTORY;
+    const undo = $("studioUndo");
+    const redo = $("studioRedo");
+    if (undo) undo.disabled = !history?.canUndo?.(STUDIO_HISTORY_KEY);
+    if (redo) redo.disabled = !history?.canRedo?.(STUDIO_HISTORY_KEY);
+  }
+
+  function undoStudio() {
+    const snapshot = window.HATTZ_HISTORY?.undo(STUDIO_HISTORY_KEY);
+    if (!snapshot) return false;
+    applyStudioSnapshot(snapshot, "Personalização desfeita.");
+    syncHistoryButtons();
+    return true;
+  }
+
+  function redoStudio() {
+    const snapshot = window.HATTZ_HISTORY?.redo(STUDIO_HISTORY_KEY);
+    if (!snapshot) return false;
+    applyStudioSnapshot(snapshot, "Personalização refeita.");
+    syncHistoryButtons();
+    return true;
+  }
+
   const profileHref = `./index.html?profile=${profileId}`;
   $("activeProfileLabel").textContent = profileId === "perfil-1" ? "Perfil 1" : "Perfil 2";
   if ($("backToProfile")) $("backToProfile").href = profileHref;
@@ -102,6 +126,7 @@
     else localStorage.setItem(storageKey, JSON.stringify(profile));
     window.HATTZ_SUITE?.backup?.(profileId, profile);
     applyPreview();
+    syncHistoryButtons();
     if (show) toast("Personalização salva neste perfil.");
   }
 
@@ -139,19 +164,13 @@
   window.HATTZ_HISTORY?.bindShortcut({
     priority: 5,
     isActive: () => !window.HattzLiquidGlass?.isOpen?.(),
-    onUndo: () => {
-      const snapshot = window.HATTZ_HISTORY.undo(STUDIO_HISTORY_KEY);
-      if (!snapshot) return false;
-      applyStudioSnapshot(snapshot, "Personalização desfeita.");
-      return true;
-    },
-    onRedo: () => {
-      const snapshot = window.HATTZ_HISTORY.redo(STUDIO_HISTORY_KEY);
-      if (!snapshot) return false;
-      applyStudioSnapshot(snapshot, "Personalização refeita.");
-      return true;
-    }
+    onUndo: undoStudio,
+    onRedo: redoStudio
   });
+
+  $("studioUndo")?.addEventListener("click", undoStudio);
+  $("studioRedo")?.addEventListener("click", redoStudio);
+  syncHistoryButtons();
 
   document.querySelectorAll(".studio-nav[data-panel]").forEach(btn => btn.addEventListener("click", () => {
     document.querySelectorAll(".studio-nav").forEach(x => x.classList.toggle("active", x === btn));
