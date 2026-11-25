@@ -1,8 +1,12 @@
-/* Hättz — seletor de insígnias livres (públicas, escolhidas pelo dono do perfil). */
+/* Hättz — seletor de insígnias no estilo do catálogo de molduras.
+   Insígnias concedidas e insígnias livres podem ser escolhidas para exibição;
+   sem acesso aparece bloqueado e nunca vira concessão. */
 (() => {
   "use strict";
 
   const MAX = 6;
+  const RESERVED_IDS = new Set(["owner", "vip", "apoiador", "event-pass", "creative-flare", "community-anchor", "chronicle"]);
+  const RESERVED_NAME = /\b(owner|dono|founder|official|oficial)\b/i;
   const apiBase = () => String(
     window.HATTZ_CORE?.apiBase?.() || window.HATTZ_SHARE_CONFIG?.apiBase || ""
   ).replace(/\/+$/, "");
@@ -17,6 +21,7 @@
   const categoryOf = (badge) => String(badge?.category || "Outros");
   const accentOf = (badge) => /^#[0-9a-f]{6}$/i.test(String(badge?.color || "")) ? badge.color : "#B8BCC8";
   const glyphOf = (badge) => String(window.HattzEmoji?.badge?.(badge) || badge?.icon || "✦");
+  const badgeId = (badge) => String(badge?.id || "");
 
   async function requestJson(path, options = {}) {
     const api = apiBase();
@@ -29,25 +34,27 @@
 
   async function load(profileId = "perfil-1", options = {}) {
     const code = normalizeCode(tryGet(codeKey(profileId)) || "");
-    if (!code) return { available: false, code: "", token: "", badges: [], selected: [] };
+    if (!code) return { available: false, code: "", token: "", badges: [], selected: [], grantedIds: [] };
     const supplied = options.catalog && Array.isArray(options.catalog.badges) ? options.catalog : null;
     const [catalog, info] = await Promise.all([
       supplied ? Promise.resolve(supplied) : requestJson("/api/catalog"),
       requestJson(`/api/profiles/${encodeURIComponent(code)}/entitlements`)
     ]);
     const badges = (Array.isArray(catalog.badges) ? catalog.badges : [])
-      .filter(isFree)
       .sort((a, b) => rarityLevel(b) - rarityLevel(a) ||
         String(a.name || a.id).localeCompare(String(b.name || b.id), "pt-BR"));
-    const fromInfo = Array.isArray(info.selfBadgeIds)
-      ? info.selfBadgeIds
-      : (Array.isArray(info.badges) ? info.badges.filter((badge) => badge.awardedBy === "self").map((badge) => badge.id) : []);
+    const grants = Array.isArray(info.badges) ? info.badges : [];
+    const grantedIds = grants.map((badge) => badgeId(badge));
+    const granted = new Set(grantedIds);
+    const visible = (Array.isArray(info.displayedBadgeIds) ? info.displayedBadgeIds : grantedIds)
+      .filter((id) => badges.some((badge) => badgeId(badge) === id) || granted.has(id));
     return {
       available: true,
       code,
       token: tryGet(tokenKey(profileId)) || "",
       badges,
-      selected: Array.isArray(fromInfo) ? fromInfo.filter((id) => badges.some((badge) => badge.id === id)) : []
+      grantedIds,
+      selected: [...new Set(visible)].slice(0, MAX)
     };
   }
 
@@ -71,17 +78,30 @@
   function render(host, state, options = {}) {
     if (!host) return { getSelected: () => [], setBusy() {}, setStatus() {} };
     host.replaceChildren();
-    // A ordem do array é a ordem que será salva e exibida no perfil.
+    // A ordem do array é a ordem exibida no perfil e enviada ao backend.
     const selected = [...new Set(Array.isArray(state.selected) ? state.selected.filter(Boolean) : [])].slice(0, MAX);
     const badges = Array.isArray(state.badges) ? state.badges : [];
-    const badgeById = new Map(badges.map((badge) => [String(badge.id), badge]));
+    const granted = new Set(Array.isArray(state.grantedIds) ? state.grantedIds : []);
+    const badgeById = new Map(badges.map((badge) => [badgeId(badge), badge]));
     const filters = { query: "", rarity: "", category: "" };
+
+    function isReserved(badge) {
+      return RESERVED_IDS.has(badgeId(badge)) || RESERVED_NAME.test(`${badgeId(badge)} ${badge?.name || ""}`);
+    }
+
+    function availability(badge) {
+      if (granted.has(badgeId(badge))) return { available: true, kind: "Concedida", hint: "Insígnia já concedida ao perfil." };
+      if (isFree(badge)) return { available: true, kind: "Livre", hint: "Disponível para qualquer perfil." };
+      if (badge?.award_mode === "automatic") return { available: false, kind: "Conquista", hint: "Bloqueada · concedida automaticamente quando o requisito é cumprido." };
+      if (isReserved(badge)) return { available: false, kind: "Reservada", hint: "Bloqueada · reservada a cargos, VIP ou perfis oficiais." };
+      return { available: false, kind: "Sem acesso", hint: "Bloqueada · concedida pelo Control." };
+    }
 
     const intro = document.createElement("p");
     intro.className = "hattz-badge-picker-intro";
     intro.textContent = badges.length
-      ? `Escolha até ${MAX} insígnias livres. Use a busca e os filtros para encontrar uma insígnia; a ordem escolhida aparece no perfil.`
-      : "Nenhuma insígnia livre foi publicada no catálogo ainda.";
+      ? `Escolha até ${MAX} insígnias para exibir. Insígnias concedidas e livres podem ser escolhidas; as demais aparecem bloqueadas. A ordem escolhida aparece no perfil.`
+      : "Nenhuma insígnia foi publicada no catálogo ainda.";
     host.append(intro);
 
     const toolbar = document.createElement("div");
@@ -90,7 +110,7 @@
     search.type = "search";
     search.className = "hattz-badge-search";
     search.placeholder = "Buscar insígnia";
-    search.setAttribute("aria-label", "Buscar insígnia livre");
+    search.setAttribute("aria-label", "Buscar insígnia");
     const rarity = document.createElement("select");
     rarity.className = "hattz-badge-filter";
     rarity.setAttribute("aria-label", "Filtrar insígnias por raridade");
@@ -111,12 +131,12 @@
     toolbar.append(search, rarity, category, count);
     host.append(toolbar);
 
-    const grid = document.createElement("div");
-    grid.className = "hattz-badge-choice-grid";
+    const board = document.createElement("div");
+    board.className = "hattz-badge-board";
     const empty = document.createElement("p");
     empty.className = "hattz-badge-picker-empty";
     empty.hidden = true;
-    host.append(grid, empty);
+    host.append(board, empty);
 
     const order = document.createElement("div");
     order.className = "hattz-badge-order";
@@ -169,52 +189,91 @@
         if (filters.rarity && rarityLabel(badge) !== filters.rarity) return false;
         if (filters.category && categoryOf(badge) !== filters.category) return false;
         if (!query) return true;
-        return [badge.id, badge.name, categoryOf(badge), rarityLabel(badge), badge.description]
+        return [badgeId(badge), badge.name, categoryOf(badge), rarityLabel(badge), badge.description]
           .some((value) => String(value || "").toLocaleLowerCase("pt-BR").includes(query));
       });
     }
 
-    function renderGrid() {
-      grid.replaceChildren();
-      const visible = visibleBadges();
-      for (const badge of visible) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "hattz-badge-choice";
-        button.dataset.badge = String(badge.id || "");
-        const isSelected = selected.includes(String(badge.id));
+    function choiceCard(badge) {
+      const info = availability(badge);
+      const isSelected = selected.includes(badgeId(badge));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "hattz-badge-choice";
+      button.dataset.badge = badgeId(badge);
+      button.style.setProperty("--badge-accent", accentOf(badge));
+      button.title = info.hint;
+      if (!info.available) {
+        button.classList.add("locked");
+        button.disabled = true;
+        button.setAttribute("aria-disabled", "true");
+      } else {
         button.setAttribute("aria-pressed", String(isSelected));
         button.classList.toggle("selected", isSelected);
-        button.style.setProperty("--badge-accent", accentOf(badge));
+      }
 
-        const glyph = document.createElement("span");
-        glyph.className = "hattz-badge-choice-glyph";
-        glyph.setAttribute("aria-hidden", "true");
-        glyph.textContent = glyphOf(badge);
+      const glyph = document.createElement("span");
+      glyph.className = "hattz-badge-choice-glyph";
+      glyph.setAttribute("aria-hidden", "true");
+      glyph.textContent = info.available ? glyphOf(badge) : "🔒";
 
-        const copy = document.createElement("span");
-        copy.className = "hattz-badge-choice-copy";
-        const name = document.createElement("strong");
-        name.textContent = String(badge.name || badge.id);
-        const meta = document.createElement("small");
-        meta.textContent = `${rarityLabel(badge)} · ${categoryOf(badge)} · livre`;
-        copy.append(name, meta);
+      const copy = document.createElement("span");
+      copy.className = "hattz-badge-choice-copy";
+      const name = document.createElement("strong");
+      name.textContent = String(badge.name || badgeId(badge));
+      const meta = document.createElement("small");
+      meta.textContent = `${rarityLabel(badge)} · ${categoryOf(badge)} · ${info.kind}`;
+      const hint = document.createElement("small");
+      hint.className = "hattz-badge-choice-hint";
+      hint.textContent = info.hint;
+      copy.append(name, meta, hint);
 
-        const check = document.createElement("span");
-        check.className = "hattz-badge-choice-check";
-        check.setAttribute("aria-hidden", "true");
-        check.textContent = "✓";
+      const statusPill = document.createElement("span");
+      statusPill.className = "hattz-badge-choice-status";
+      statusPill.textContent = info.available ? (isSelected ? "Em destaque" : "Disponível") : "Bloqueada";
 
-        button.append(glyph, copy, check);
-        grid.append(button);
+      const check = document.createElement("span");
+      check.className = "hattz-badge-choice-check";
+      check.setAttribute("aria-hidden", "true");
+      check.textContent = "✓";
+
+      button.append(glyph, copy, statusPill, check);
+      return button;
+    }
+
+    function section(title, items) {
+      if (!items.length) return null;
+      const wrapper = document.createElement("section");
+      wrapper.className = "hattz-badge-section";
+      const heading = document.createElement("h3");
+      heading.className = "hattz-badge-section-title";
+      heading.textContent = title;
+      const grid = document.createElement("div");
+      grid.className = "hattz-badge-choice-grid";
+      grid.append(...items.map(choiceCard));
+      wrapper.append(heading, grid);
+      return wrapper;
+    }
+
+    function renderGrid() {
+      board.replaceChildren();
+      const visible = visibleBadges();
+      const chosen = [], available = [], locked = [];
+      for (const badge of visible) {
+        if (!availability(badge).available) locked.push(badge);
+        else if (selected.includes(badgeId(badge))) chosen.push(badge);
+        else available.push(badge);
+      }
+      for (const item of [section("Em destaque", chosen), section("Disponíveis", available), section("Bloqueadas · sem acesso", locked)]) {
+        if (item) board.append(item);
       }
       const filtered = Boolean(filters.query || filters.rarity || filters.category);
       empty.hidden = visible.length > 0;
       empty.textContent = filtered
         ? "Nenhuma insígnia corresponde aos filtros. Ajuste a busca ou limpe os filtros."
-        : "Nenhuma insígnia livre foi publicada no catálogo ainda.";
-      count.textContent = filtered ? `${visible.length} de ${badges.length} insígnias` : `${badges.length} insígnias livres`;
-      grid.classList.toggle("limit-reached", selected.length >= MAX);
+        : "Nenhuma insígnia foi publicada no catálogo ainda.";
+      count.textContent = filtered ? `${visible.length} de ${badges.length} insígnias` : `${badges.length} insígnias no catálogo`;
+      board.classList.toggle("limit-reached", selected.length >= MAX);
     }
 
     function renderOrder() {
@@ -254,7 +313,7 @@
     }
 
     const updateStatus = (message) => {
-      status.textContent = message || `${selected.length} de ${MAX} insígnias escolhidas.`;
+      status.textContent = message || `${selected.length} de ${MAX} insígnias em destaque.`;
       [...slots.children].forEach((slot, index) => slot.classList.toggle("filled", index < selected.length));
       preview.replaceChildren(...selected.map((id) => {
         const badge = badgeById.get(id) || {};
@@ -269,7 +328,8 @@
     };
 
     function toggle(id) {
-      if (!badgeById.has(id)) return;
+      const badge = badgeById.get(id);
+      if (!badge || !availability(badge).available) return;
       const index = selected.indexOf(id);
       if (index >= 0) selected.splice(index, 1);
       else if (selected.length >= MAX) {
@@ -294,15 +354,15 @@
     rarity.addEventListener("change", () => { filters.rarity = rarity.value; renderGrid(); });
     category.addEventListener("change", () => { filters.category = category.value; renderGrid(); });
 
-    grid.addEventListener("click", (event) => {
+    board.addEventListener("click", (event) => {
       const button = event.target.closest(".hattz-badge-choice");
-      if (!button || saveButton.disabled) return;
+      if (!button || button.disabled || saveButton.disabled) return;
       toggle(button.dataset.badge);
     });
 
-    grid.addEventListener("keydown", (event) => {
+    board.addEventListener("keydown", (event) => {
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
-      const cards = [...grid.querySelectorAll(".hattz-badge-choice")];
+      const cards = [...board.querySelectorAll(".hattz-badge-choice:not(:disabled)")];
       const index = cards.indexOf(document.activeElement);
       if (index < 0) return;
       event.preventDefault();
@@ -354,7 +414,7 @@
     const code = normalizeCode(tryGet(codeKey(profileId)) || "");
     const token = tryGet(tokenKey(profileId)) || "";
     if (!code || !token) throw new Error("Publique o perfil para escolher insígnias.");
-    return requestJson(`/api/profiles/${encodeURIComponent(code)}/badges/self`, {
+    return requestJson(`/api/profiles/${encodeURIComponent(code)}/badges/display`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ badgeIds: badgeIds.slice(0, MAX) })

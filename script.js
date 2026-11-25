@@ -1019,7 +1019,12 @@ async function loadProfileEntitlements() {
     window.HATTZ_INVENTORY_BADGES = sortCollectibles(data.badges || []);
     window.HATTZ_INVENTORY_FRAMES = sortCollectibles(data.frames || []);
     if ($("inventoryModal")?.classList.contains("open")) renderInventory();
-    const strip = renderBadgeStrip(window.HATTZ_INVENTORY_BADGES);
+    // O inventário continua completo; o perfil mostra apenas a seleção salva.
+    const displayed = Array.isArray(data.displayedBadgeIds) ? data.displayedBadgeIds : null;
+    const stripBadges = displayed
+      ? window.HATTZ_INVENTORY_BADGES.filter((badge) => displayed.includes(badge.id))
+      : window.HATTZ_INVENTORY_BADGES;
+    const strip = renderBadgeStrip(stripBadges);
     if (strip.children.length) badges.append(strip);
     window.HATTZ_CORE?.setConnectionState?.("online");
   } catch (error) {

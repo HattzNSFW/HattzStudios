@@ -1064,14 +1064,26 @@ body .hattz-collectible.rarity-elite .hattz-badge-emoji {
   font-size: 10px; font-weight: 800; letter-spacing: .14em;
 }
 .hattz-menu-list button {
-  display: flex; align-items: center; width: 100%; min-height: 40px;
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px;
   padding: 9px 12px; border: 1px solid transparent; border-radius: 10px;
   background: transparent; color: var(--text); text-align: left;
   font-size: 13px; cursor: pointer;
 }
+.hattz-menu-list button::before {
+  display: grid; place-items: center; width: 22px; flex: 0 0 22px;
+  content: attr(data-menu-icon); font-size: 14px; opacity: .85;
+}
 .hattz-menu-list button:hover, .hattz-menu-list button:focus-visible {
   border-color: rgba(var(--lg-tint, 183, 178, 255), .3);
   background: rgba(var(--lg-tint, 183, 178, 255), .12);
+}
+.studio-sidebar .studio-nav-group { margin: 16px 0 6px; }
+@media (min-width: 900px) {
+  .hattz-menu {
+    inset: 0 0 0 auto; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);
+    border-right: 0; border-left: 1px solid var(--line, var(--border));
+    border-radius: 18px 0 0 18px; box-shadow: -18px 0 60px rgba(0, 0, 0, .45);
+  }
 }
 .hattz-menu-empty { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
 .hattz-menu[hidden], .hattz-menu-backdrop[hidden],
@@ -1183,6 +1195,27 @@ body.hattz-menu-open { overflow: hidden; }
 .history-button:focus-visible { outline: 2px solid var(--accent, #b69ae9); outline-offset: 2px; }
 #badgeRulesImpact { font-size: 12px; }
 #badgeRulesImpact.warning { color: var(--danger, #f3a9b8); }
+/* Catálogo de insígnias: disponíveis, concedidas e bloqueadas por acesso. */
+.hattz-badge-board { display: grid; gap: 12px; }
+.hattz-badge-section { display: grid; gap: 7px; }
+.hattz-badge-section-title {
+  margin: 0; color: var(--muted); font-size: 10px; font-weight: 800;
+  letter-spacing: .09em; text-transform: uppercase;
+}
+.hattz-badge-choice { padding-right: 30px; }
+.hattz-badge-choice-status {
+  position: absolute; top: 5px; right: 27px; max-width: calc(100% - 60px);
+  overflow: hidden; color: var(--accent, #a78bfa); font-size: 8px; font-weight: 800;
+  letter-spacing: .05em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap;
+}
+.hattz-badge-choice-hint { color: var(--muted); font-size: 9px; line-height: 1.35; }
+.hattz-badge-choice.locked {
+  border-style: dashed; opacity: .66; cursor: not-allowed; transform: none !important;
+}
+.hattz-badge-choice.locked .hattz-badge-choice-glyph { filter: grayscale(1); opacity: .7; }
+.hattz-badge-choice.locked .hattz-badge-choice-status { color: var(--muted); }
+.hattz-badge-board.limit-reached .hattz-badge-choice:not(.selected):not(.locked) { opacity: .62; }
+.hattz-badge-board.limit-reached .hattz-badge-choice:hover { opacity: 1; }
 /* Busca, filtros e reordenação das insígnias escolhidas. */
 .hattz-badge-picker-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .hattz-badge-search, .hattz-badge-filter {
