@@ -242,7 +242,8 @@ body:not(.capture-mode) .summary-chip::after {
   background: rgba(16, 14, 24, .66);
   color: rgba(var(--lg-tint), .95);
   cursor: pointer;
-  z-index: 9997;
+  /* Abaixo do backdrop/menu (70/71) para nunca cobrir o menu aberto. */
+  z-index: 60;
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
@@ -256,6 +257,11 @@ body:not(.capture-mode) .summary-chip::after {
 .hatz-to-top:hover { border-color: rgba(var(--lg-tint), .45); background: rgba(var(--lg-surface), .75); }
 .hatz-to-top svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 body.capture-mode .hatz-to-top { display: none !important; }
+/* Com o menu aberto o atalho some; ele também fica abaixo do backdrop. */
+body.hattz-menu-open .hatz-to-top {
+  opacity: 0 !important; visibility: hidden !important;
+  pointer-events: none !important; transform: translateY(8px);
+}
 
 /* ---------------------------------------------------------------------------
    Segunda passada — luz, relevo e entrada.
@@ -1174,6 +1180,14 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
   border-color: rgba(var(--lg-tint, 183, 178, 255), .65);
   background: rgba(var(--lg-tint, 183, 178, 255), .2);
 }
+/* Atalho discreto dentro do editor: leva direto ao catálogo de molduras. */
+.studio-shortcut {
+  display: inline-flex; align-items: center; gap: 6px;
+  width: fit-content; margin-top: 6px; padding: 5px 0;
+  color: rgb(var(--lg-tint, 183, 178, 255));
+  font-size: 10px; font-weight: 700; text-decoration: none;
+}
+.studio-shortcut:hover, .studio-shortcut:focus-visible { text-decoration: underline; }
 .hattz-menu-backdrop {
   position: fixed; inset: 0; z-index: 70; background: rgba(4, 4, 8, .58);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
