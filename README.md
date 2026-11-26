@@ -77,6 +77,7 @@ Antes de substituir os arquivos publicados, abra a versão original no navegador
 - O Studio expõe botões de desfazer/refazer no cabeçalho, sincronizados com os atalhos `Ctrl+Z`/`Ctrl+Y`; os botões ficam desabilitados quando não há histórico. O cabeçalho também traz o botão visível **“Voltar ao perfil”**, que leva ao Share do perfil editado (respeitando `?profile=`).
 - A faixa de insígnias do perfil mostra três símbolos por linha; o botão `+N` revela todas as demais insígnias de uma vez e, ao clicar novamente, recolhe à visualização original. O botão permanece visível (`+N`/`−N`) e expõe o estado por `aria-expanded`.
 - Inventário completo de insígnias e molduras fica disponível no Menu para o dono e para visitantes do link público; o Share não exibe catálogo sobre o perfil.
+- O Studio está no Menu → **“Molduras (Studio)”** (abre direto no catálogo) ou **“Abrir Studio”**. No Share, o editor de moldura também traz **“Abrir molduras no Studio”** em Editor → Design → Estilo da moldura. Criar/editar os PNGs do catálogo continua no Control → Molduras.
 - Restaurar o perfil padrão apaga personalizações e mídias do perfil, mas preserva VIP, cargos, tags e molduras gerenciados separadamente pelo Control.
 
 O monitoramento de armazenamento é baseado nos bytes e metadados registrados no D1 durante os uploads gerenciados pelo Worker. Não é uma varredura independente de todo o bucket Supabase; confira também o painel do Supabase para uso externo ou alterações manuais.
@@ -99,7 +100,7 @@ Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
-A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Share, ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa11` (Pages `3107579`). Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Share, ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa12` (build funcional do Pages `44b4c32`). Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages. O botão “voltar ao topo” fica abaixo do backdrop/menu (`z-index: 60` contra `70`/`71`) e desaparece enquanto o menu está aberto.
 
 ### Liquid Glass personalizável
 
