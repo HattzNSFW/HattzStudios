@@ -1047,6 +1047,9 @@ body .hattz-collectible.rarity-elite .hattz-badge-emoji {
 .breadcrumb a:hover { color: rgb(var(--lg-tint)); }
 .breadcrumb [aria-current="page"] { color: var(--text, #f4f0fa); font-weight: 700; }
 .breadcrumb span[aria-hidden] { opacity: .55; }
+.banner-start { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; max-width: min(72%, 620px); }
+.banner-actions .breadcrumb { pointer-events: auto; text-shadow: 0 1px 12px rgba(0,0,0,.75); }
+body.capture-mode .banner-actions .breadcrumb { display: none !important; }
 
 /* A sombra da moldura acompanha o acento do tema, não a cor da insígnia. */
 .avatar-frame:not(:empty) {
