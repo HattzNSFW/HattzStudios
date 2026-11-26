@@ -119,6 +119,46 @@
       ? `<text x="${x(index)}" y="${height - 8}" text-anchor="middle" class="chart-bar-label">${escapeHtml(day.label)}</text>` : "").join("");
     return `<div style="display:grid;gap:10px;width:100%"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Atividade dos últimos 14 dias"><defs><linearGradient id="hattzAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b99af0" stop-opacity=".28"/><stop offset="100%" stop-color="#b99af0" stop-opacity="0"/></linearGradient></defs>${grid}<polygon points="${areaPoints}" fill="url(#hattzAreaGradient)"/>${paths}${labels}</svg>${legendHtml(series.map((item) => ({ label: item.label, value: days.reduce((sum, day) => sum + day[item.key], 0) })))}</div>`;
   }
+  function sparklineSvg(values, color) {
+    const nums = (values || []).map((value) => Number(value) || 0);
+    if (!nums.length) return "";
+    const min = Math.min(0, ...nums);
+    const max = Math.max(1, ...nums);
+    const span = Math.max(1, max - min);
+    const points = nums.map((value, index) => {
+      const x = nums.length === 1 ? 33 : 66 * index / (nums.length - 1);
+      const y = 22 - 18 * (value - min) / span;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    return `<svg viewBox="0 0 66 24" focusable="false"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  function heatmapHtml(days) {
+    const rows = (days || []).slice(-14);
+    if (!rows.length) return '<p class="empty">Sem dados para este gráfico.</p>';
+    const totals = rows.map((day) => Number(day.audits || 0) + Number(day.logins || 0)
+      + Number(day.failures || 0) + Number(day.ipEvents || 0));
+    const max = Math.max(1, ...totals);
+    const cells = rows.map((day, index) => {
+      const total = totals[index];
+      const alpha = (0.06 + 0.44 * total / max).toFixed(2);
+      const label = escapeAttr(day.label || day.date || `Dia ${index + 1}`);
+      return `<div class="heatmap-day"><span class="heatmap-cell" style="--heat-alpha:${alpha}" title="${label}: ${total} eventos" aria-label="${label}: ${total} eventos"></span><small>${escapeHtml(label.slice(-5))}</small></div>`;
+    }).join("");
+    const legend = [0.06, 0.17, 0.28, 0.39, 0.5].map((alpha) => `<i style="--heat-alpha:${alpha}"></i>`).join("");
+    return `<div class="heatmap-grid">${cells}</div><div class="heatmap-legend"><span>Menos</span>${legend}<span>Mais</span></div>`;
+  }
+  let activityView = "line";
+  function setActivityView(next) {
+    activityView = next === "heatmap" ? "heatmap" : "line";
+    const line = $("activityChart");
+    const heat = $("activityHeatmap");
+    if (!line || !heat) return;
+    line.hidden = activityView !== "line";
+    heat.hidden = activityView !== "heatmap";
+    document.querySelectorAll("[data-activity-view]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.activityView === activityView));
+    });
+  }
   function notify(message) {
     const el = $("toast");
     if (!el) return;
@@ -217,14 +257,20 @@
       const usage = Number(storage.usagePercent) || 0;
       $("apiStatus").textContent = "Operacional";
       $("apiStatus").classList.remove("warning");
+      const days = activity.days || [];
+      const totalEvents = days.map((day) => Number(day.audits || 0) + Number(day.logins || 0)
+        + Number(day.failures || 0) + Number(day.ipEvents || 0));
       $("overviewMetrics").innerHTML = [
-        ["Perfis na nuvem", profiles.total ?? "—", `de ${storage.maxProfiles ?? "—"} permitidos`],
-        ["Armazenamento usado", formatBytes(storage.totalBytes), `${usage.toFixed(1)}% da capacidade`],
-        ["Espaço disponível", formatBytes(storage.remainingBytes), "capacidade global"],
-        ["Mídias registradas", media.total ?? "—", `${(media.byType || []).length} tipos de mídia`],
-        ["Perfis VIP", profiles.vip ?? "—", "benefício ativo"],
-        ["Sessões administrativas", security.activeSessions ?? "—", "neste momento"]
-      ].map(([label, value, hint]) => `<article class="metric glass"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(hint)}</small></article>`).join("");
+        ["Perfis na nuvem", profiles.total ?? "—", `de ${storage.maxProfiles ?? "—"} permitidos`, totalEvents],
+        ["Armazenamento usado", formatBytes(storage.totalBytes), `${usage.toFixed(1)}% da capacidade`, days.map((day) => day.ipEvents)],
+        ["Espaço disponível", formatBytes(storage.remainingBytes), "capacidade global", totalEvents.map((value) => Math.max(0, 100 - value))],
+        ["Mídias registradas", media.total ?? "—", `${(media.byType || []).length} tipos de mídia`, days.map((day) => day.audits)],
+        ["Perfis VIP", profiles.vip ?? "—", "benefício ativo", days.map((day) => day.logins)],
+        ["Sessões administrativas", security.activeSessions ?? "—", "neste momento", days.map((day) => day.failures)]
+      ].map(([label, value, hint, series], index) => {
+        const spark = sparklineSvg(series, CHART_COLORS[index % CHART_COLORS.length]);
+        return `<article class="metric glass"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(hint)}</small>${spark ? `<span class="metric-spark" aria-hidden="true">${spark}</span>` : ""}</article>`;
+      }).join("");
       $("overviewStorageBar").style.width = `${Math.min(100, Math.max(0, usage))}%`;
       $("overviewStorageText").textContent = `${formatBytes(storage.totalBytes)} / ${formatBytes(storage.maxBytes)}`;
       $("systemSummary").textContent = `${profiles.total ?? 0} perfis cadastrados · ${profiles.active ?? 0} ativos · ${storage.remainingProfilesByCount ?? "—"} vagas por quantidade.`;
@@ -241,6 +287,8 @@
       $("mediaChartCaption").textContent = `${media.total || 0} arquivos registrados no armazenamento ativo.`;
 
       $("activityChart").innerHTML = lineChartSvg(activity.days || []);
+      $("activityHeatmap").innerHTML = heatmapHtml(activity.days || []);
+      setActivityView(activityView);
       const totals = activity.totals || {};
       $("activityChartCaption").textContent = `${totals.audits || 0} ações de auditoria · ${totals.logins || 0} logins · ${totals.failures || 0} falhas · ${totals.ipEvents || 0} eventos de IP.`;
 
@@ -270,6 +318,10 @@
       $("apiStatus").textContent = "Falha";
       $("apiStatus").classList.add("warning");
       notify(error.message);
+    } finally {
+      for (const id of ["storageDonut", "profilesChart", "mediaChart", "activityChart"]) {
+        $(id)?.classList.remove("skeleton");
+      }
     }
   }
   async function loadProfiles() {
@@ -1457,6 +1509,9 @@
   document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
   document.querySelectorAll("[data-open-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.openView)));
   $("refreshOverview").addEventListener("click", loadOverview);
+  document.querySelectorAll("[data-activity-view]").forEach((button) => {
+    button.addEventListener("click", () => setActivityView(button.dataset.activityView));
+  });
   $("reloadProfiles").addEventListener("click", () => { page = 1; loadProfiles(); });
   $("searchProfiles").addEventListener("click", () => { page = 1; loadProfiles(); });
   $("profileSearch").addEventListener("keydown", (event) => { if (event.key === "Enter") { page = 1; loadProfiles(); } });

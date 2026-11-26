@@ -786,6 +786,13 @@ function renderBadgeStrip(items = []) {
     more.addEventListener("click", () => {
       expanded = !expanded;
       for (const row of extraRows) row.hidden = !expanded;
+      // O atributo dispara um crossfade curto; sem movimento reduzido, a troca é imediata.
+      for (const row of extraRows) {
+        if (expanded) row.dataset.badgeEnter = "1";
+        else delete row.dataset.badgeEnter;
+      }
+      if (expanded) more.dataset.badgeEnter = "1";
+      else delete more.dataset.badgeEnter;
       more.textContent = expanded ? `−${hidden}` : `+${hidden}`;
       more.setAttribute("aria-label", expanded
         ? `Ocultar ${hidden} insígnias adicionais`
@@ -1927,10 +1934,45 @@ function updateMusicButtons() {
   $("previewMusic").textContent = playing ? "Pausar mídia" : "Reproduzir / pausar";
 }
 
+let captureGuideElement = null;
+let captureGuideTimer = null;
+let captureGuideRemovalTimer = null;
+
+function clearCaptureGuide() {
+  if (captureGuideTimer) clearTimeout(captureGuideTimer);
+  if (captureGuideRemovalTimer) clearTimeout(captureGuideRemovalTimer);
+  captureGuideTimer = null;
+  captureGuideRemovalTimer = null;
+  captureGuideElement?.remove();
+  captureGuideElement = null;
+}
+
+function showCaptureGuide() {
+  clearCaptureGuide();
+  const guide = document.createElement("div");
+  guide.className = "capture-guide";
+  guide.id = "captureGuide";
+  guide.setAttribute("aria-hidden", "true");
+  guide.innerHTML = '<span class="capture-guide-frame"></span><span class="capture-guide-label">MODO CAPTURA · ESC PARA SAIR</span>';
+  document.body.append(guide);
+  captureGuideElement = guide;
+  requestAnimationFrame(() => guide.classList.add("is-visible"));
+  captureGuideTimer = setTimeout(() => {
+    guide.classList.remove("is-visible");
+    guide.classList.add("is-hidden");
+    captureGuideRemovalTimer = setTimeout(() => {
+      guide.remove();
+      if (captureGuideElement === guide) captureGuideElement = null;
+    }, 450);
+  }, 2400);
+}
+
 function setCaptureMode(enabled) {
   const next = Boolean(enabled);
   if (next && $("editorModal")?.classList.contains("open")) closeEditor();
   document.body.classList.toggle("capture-mode", next);
+  if (next) showCaptureGuide();
+  else clearCaptureGuide();
   const button = $("toggleCaptureMode");
   const exitButton = $("exitCaptureMode");
   if (button) {

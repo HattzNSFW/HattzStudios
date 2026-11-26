@@ -74,7 +74,8 @@ Antes de substituir os arquivos publicados, abra a versão original no navegador
 - `Gênese` é concedida automaticamente na criação do perfil; `Conectado`, `Resonância` e `Pulso` seguem critérios automáticos. Insígnias do JSON editável do perfil são ignoradas; as demais vêm das concessões feitas no Control ou da escolha livre do dono.
 - Escolha livre: o seletor aparece uma vez no Share quando há código público e token local, e pode ser reaberto pelo Menu ou pelo Studio. Ele carrega com skeleton, mostra progresso de 6 slots, prévia das insígnias escolhidas, destaque quando o limite é atingido e navegação por setas. Busca por nome/ID/categoria, filtros por raridade/categoria e botões de subir/descer definem quais insígnias entram e em que ordem aparecem no perfil. O limite é de 6 insígnias `self` por perfil; VIP, cargos especiais, conquistas automáticas e itens da deny list (embutida ou configurada no Control) não podem ser escolhidos. Concessões `system`/`admin` nunca são removidas por essa escolha. Diálogos do Share e do Control agora retêm o foco por teclado e devolvem o foco ao elemento de origem ao fechar.
 - A aba “Regras de escolha” do Control sugere IDs do catálogo enquanto você digita e mostra o impacto estimado: quantas insígnias livres continuam no seletor, IDs inexistentes e IDs protegidos que serão ignorados.
-- O Studio expõe botões de desfazer/refazer no cabeçalho, sincronizados com os atalhos `Ctrl+Z`/`Ctrl+Y`; os botões ficam desabilitados quando não há histórico.
+- O Studio expõe botões de desfazer/refazer no cabeçalho, sincronizados com os atalhos `Ctrl+Z`/`Ctrl+Y`; os botões ficam desabilitados quando não há histórico. O cabeçalho também traz o botão visível **“Voltar ao perfil”**, que leva ao Share do perfil editado (respeitando `?profile=`).
+- A faixa de insígnias do perfil mostra três símbolos por linha; o botão `+N` revela todas as demais insígnias de uma vez e, ao clicar novamente, recolhe à visualização original. O botão permanece visível (`+N`/`−N`) e expõe o estado por `aria-expanded`.
 - Inventário completo de insígnias e molduras fica disponível no Menu para o dono e para visitantes do link público; o Share não exibe catálogo sobre o perfil.
 - Restaurar o perfil padrão apaga personalizações e mídias do perfil, mas preserva VIP, cargos, tags e molduras gerenciados separadamente pelo Control.
 
@@ -93,16 +94,18 @@ A visão geral do Control é alimentada por `GET /api/admin/dashboard`, que agre
 
 Os gráficos são SVG gerados no frontend, sem dependências externas. As rotas `GET`/`PUT /api/admin/credential` informam a origem da senha e permitem rotacioná-la; a troca exige `confirmation: "TROCAR"`, no mínimo 16 caracteres e revoga todas as sessões. No runtime local a chave é gravada em `data/admin-key.txt`; no Worker, em `admin_credential` (D1).
 
-**Estado desta entrega:** dashboard, rotação e credencial no D1 estão aplicados no Worker público. As 18 migrações estão no pacote; as migrações 0014, 0015, 0017 e 0018 foram aplicadas ao D1 remoto (`wrangler d1 migrations list hattz-share --remote` não indica pendências). `HATTZ_ADMIN_PASSWORD` foi removido; a senha ativa é a gravada em `admin_credential`. O Worker está publicado na versão `700cc49b-526a-4cc2-9e5e-20d3c08ecce6`, com `/api/health` respondendo `ok`, `/api/catalog` devolvendo 19 insígnias (8 livres), `/api/profiles/:code/entitlements` incluindo `awardedBy`/`selfBadgeIds` e `GET`/`PUT /api/admin/badge-rules` autenticados por sessão. O frontend do Share, do Studio e do Control está publicado no GitHub Pages preservando coleções, benefícios e o status de conexão já existentes.
+**Estado desta entrega:** dashboard, rotação e credencial no D1 estão aplicados no Worker público. As 20 migrações estão no pacote; as migrações 0014, 0015, 0017, 0018, 0019 e 0020 foram aplicadas ao D1 remoto (`wrangler d1 migrations list hattz-share --remote` não indica pendências). `HATTZ_ADMIN_PASSWORD` foi removido; a senha ativa é a gravada em `admin_credential`. O Worker está publicado na versão `cb622973-c8d1-4922-99dc-b3ca42c5fc69`, com `/api/health` respondendo `ok`, `/api/catalog` devolvendo 19 insígnias (8 livres), `/api/profiles/:code/entitlements` incluindo `awardedBy`/`selfBadgeIds`/`displayedBadgeIds`, `POST /api/profiles/:code/badges/display` exigindo a chave do dono e `GET`/`PUT /api/admin/badge-rules` autenticados por sessão. O frontend do Share, do Studio e do Control está publicado no GitHub Pages preservando coleções, benefícios e o status de conexão já existentes.
 
 - Worker: `https://hattz-share-api.kl-santdev.workers.dev`
 - Site: `https://hattznsfw.github.io/HattzStudios/`
 
-A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa6`. Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
+A camada visual premium (liquid glass, ícones SVG e acabamento estilo iPhone) está aplicada ao Studio e ao Control na build publicada; os assets usam o sufixo de cache `e7c4aa10` (Pages `9e082a0`). Se o navegador mostrar o layout antigo, use um hard refresh (Ctrl+F5) para renovar o cache do GitHub Pages.
 
 ### Liquid Glass personalizável
 
-Cada tela tem **seu próprio tema**: Share, Studio e Control são independentes. Use o pequeno botão glass com ícone de ajustes no canto inferior direito; o selo no topo do painel mostra qual tela está sendo editada. O painel é um cartão de vidro escuro com 4 presets em swatches, 10 sliders com trilha preenchida (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores em swatches, JSON em “Código do tema”, reset e **“Aplicar a todos”** para igualar as três telas quando desejado.
+Cada tela tem **seu próprio tema**: Share, Studio e Control são independentes. Use o pequeno botão glass com ícone de ajustes no canto inferior direito; o selo no topo do painel mostra qual tela está sendo editada. O painel é um cartão de vidro com 5 presets em swatches (Padrão, Ciano, Rosa, Esmeralda e **Dawn**, o claro), 10 sliders com trilha preenchida (opacidade, desfoque, saturação, arredondamento, borda, reflexo, brilho, glow, sombra e velocidade), 9 cores em swatches, JSON em “Código do tema”, reset e **“Aplicar a todos”** para igualar as três telas quando desejado.
+
+O preset **Dawn** é o único claro: ao escolhê-lo, `apply()` calcula a luminância de `bgBase`, marca `html[data-lg-mode="light"]` e troca os tokens de texto para `rgb(36, 29, 51)` / `rgb(76, 65, 97)`, mantendo superfícies brancas com borda lavanda. O contraste foi auditado: texto/fundo 15,08:1, texto secundário/fundo 8,76:1, texto/painel 16,17:1, branco/acento 8,78:1, branco/acento secundário 6,73:1 e ciano/fundo 5,44:1 — todos acima do AA (4,5:1). Como os temas são independentes, aplicar Dawn no Share não altera Studio nem Control.
 
 O botão e o painel desaparecem automaticamente no **modo captura** do Share (`body.capture-mode`). As preferências ficam em `localStorage` (`hattz_liquid_glass_v2`, com migração automática do tema único `v1`) e não são enviadas ao servidor nem exigem login. A API `window.HattzLiquidGlass` expõe `scope`, `get(scope?)`, `getStore()`, `set(partial, scope?)`, `reset(scope?)`, `apply()` e `applyToAll()`.
 
@@ -159,6 +162,12 @@ As duas migrations foram aplicadas ao D1 remoto e registradas em `d1_migrations`
 
 `POST /api/profiles/:code/badges/self` usa `Authorization: Bearer <ownerToken>` e o corpo `{ "badgeIds": [...] }`. O backend valida `enabled=1 AND is_public=1 AND is_free=1`, aplica a deny list (`owner`, `vip`, `apoiador`, `event-pass`, `creative-flare`, `community-anchor`, `chronicle`) e rejeita insígnias automáticas. O limite é 6 itens com `awardedBy='self'`; a gravação substitui apenas esses itens e nunca apaga concessões `system`/`admin`. A resposta é `{ updated, selfSelected, limit }`. O mesmo contrato existe no runtime local em `server.mjs`, com seeds atualizados para `catalogVersion: 4`.
 
+### Exibição escolhida de insígnias (migração 0019)
+
+A migração `backend/migrations/0019_badge_display_selection.sql` adiciona `display_badges_json` em `profile_entitlements`, separando **exibição** de **concessão**. `POST /api/profiles/:code/badges/display` (com `Authorization: Bearer <ownerToken>` e corpo `{ "badgeIds": [...] }`) grava a ordem/visibilidade escolhida e responde `{ updated, displayedBadgeIds, selfSelected, limit: 6 }`.
+
+O seletor do Share/Studio funciona como o catálogo de molduras: mostra insígnias **concedidas** (Owner, VIP, cargos e conquistas que o perfil já possui) e insígnias **livres** elegíveis como disponíveis; as demais aparecem bloqueadas, com motivo, e não são clicáveis. O backend rejeita ID sem acesso com `403` e ID inexistente com `400`. Nada é concedido automaticamente: concessões `system`/`admin` nunca são removidas, mesmo quando ficam fora da exibição. Sem seleção salva, todas as concessões continuam aparecendo; depois de salvar, apenas a seleção aparece na faixa do perfil. O inventário público permanece completo. A migração foi aplicada ao D1 remoto e é aditiva.
+
 ## Testes locais executados
 
 ```bash
@@ -171,7 +180,17 @@ node --check backend/src/index.js
 node --check backend/tests/worker.test.js
 ```
 
-A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **140 testes, todos aprovados**, incluindo os testes do endpoint `POST /api/profiles/:code/badges/self`, da preservação de concessões `system`/`admin`, das regras editáveis em `system_settings`/`badge_rules`, da aba do Control, do seletor acessível com busca/filtros/reordenação, do impacto das regras no Control, do histórico visível no Studio e da armadilha de foco dos diálogos. As 18 migrações estão presentes no pacote; a 0014, a 0015, a 0017 e a 0018 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+A suíte local cobre o contrato compartilhado de perfil, limites dos ajustes de avatar/moldura, IDs dinâmicos, estrutura CSS/HTML, segurança do Worker, mídia, catálogos, permissões e proteções dos perfis oficiais, além do runtime local (login, rotação de chave, dashboard, credencial, sessões, manutenção, upload, publicação e estáticos). Nesta revisão, `npm test --prefix backend` executa **147 testes, todos aprovados**, incluindo os testes dos endpoints `POST /api/profiles/:code/badges/self` e `POST /api/profiles/:code/badges/display`, da exibição por acesso (concedidas/livres selecionáveis, bloqueadas rejeitadas com `403`), da preservação de concessões `system`/`admin`, da persistência da escolha após reinício, das regras editáveis em `system_settings`/`badge_rules`, da aba do Control, do seletor acessível com busca/filtros/reordenação e blocos de acesso, dos menus reorganizados com ícones, do impacto das regras no Control, do histórico visível no Studio e da armadilha de foco dos diálogos, do toggle do `+N`, do botão de voltar do Studio, dos skip links, do bump de assets e da validação do ZIP. As 20 migrações estão presentes no pacote; a 0014, a 0015, a 0017, a 0018, a 0019 e a 0020 foram aplicadas ao D1 remoto. O texto não comprova comportamento visual em todos os navegadores nem disponibilidade do Supabase real. Consulte `docs/TEST-REPORT-v12.md` para os resultados e limites da base v12.
+
+### Scripts de release
+
+Os scripts de publicação estão versionados em `scripts/` e documentados em `docs/RELEASE-NOTES-v13-release-tooling.md`:
+
+- `npm run release:bump -- <de> <para> [pastaExtra...]` atualiza o sufixo `?v=` das três páginas; o argumento opcional permite versionar também o clone de deploy.
+- `npm run release:zip` gera `hattz-2.0-local.zip` a partir de um manifesto explícito, com data fixa e validação automática.
+- `npm run release:verify` confere entradas, CRC, segredos, PNGs e migrações obrigatórias do ZIP.
+
+`data/`, `node_modules/`, `.env`, chaves de sessão e arquivos temporários continuam fora do pacote.
 
 ## Implantação e segurança
 

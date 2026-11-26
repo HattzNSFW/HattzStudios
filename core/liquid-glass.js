@@ -76,7 +76,7 @@
   };
 
   var presetLabels = {
-    padrao: "Padrão", ciano: "Ciano", rose: "Rosa", esmeralda: "Esmeralda"
+    padrao: "Padrão", ciano: "Ciano", rose: "Rosa", esmeralda: "Esmeralda", dawn: "Dawn"
   };
 
   var presets = {
@@ -92,6 +92,15 @@
     esmeralda: {
       tint: "150, 240, 205", tint2: "90, 190, 165", cyan: "190, 255, 225",
       bgA: "40, 130, 110", bgB: "55, 110, 150", bgC: "45, 140, 120"
+    },
+    /* Dawn: único preset claro. Texto e superfícies foram calibrados para
+       contraste AA (ver README), sem alterar os defaults das outras telas. */
+    dawn: {
+      tint: "91, 55, 150", tint2: "55, 85, 180", cyan: "22, 110, 132",
+      surface: "255, 255, 255", border: "74, 58, 110", bgBase: "248, 246, 252",
+      bgA: "226, 214, 246", bgB: "214, 231, 250", bgC: "248, 222, 238",
+      alpha: 0.88, borderAlpha: 0.18, highlight: 0.5, sheen: 0.18,
+      glow: 0.18, shadow: 0.14, blur: 24, saturate: 135, radius: 24, speed: 0.22
     }
   };
 
@@ -133,6 +142,17 @@
 
   function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
+  // Luminância relativa do fundo: só temas realmente claros ativam o modo Dawn.
+  function isLightTheme(theme) {
+    var parts = String(theme.bgBase || "").split(",").map(Number);
+    if (parts.length !== 3 || parts.some(function (n) { return !isFinite(n); })) return false;
+    var channels = parts.map(function (value) {
+      var c = Math.min(255, Math.max(0, value)) / 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2] > 0.55;
+  }
 
   function detectScope() {
     // Usa só o nome do arquivo: o caminho /HattzStudios/ contém "studio"
@@ -215,6 +235,9 @@
 
   function apply(theme) {
     var root = document.documentElement.style;
+    var light = isLightTheme(theme);
+    if (light) document.documentElement.setAttribute("data-lg-mode", "light");
+    else document.documentElement.removeAttribute("data-lg-mode");
     Object.keys(variableMap).forEach(function (key) {
       var value = theme[key];
       if (key === "blur" || key === "radius") value = value + "px";
@@ -226,7 +249,11 @@
     root.setProperty("--hattz-color-accent", "rgb(" + theme.tint + ")");
     root.setProperty("--hattz-color-accent-strong", "rgb(" + theme.tint2 + ")");
     root.setProperty("--hattz-color-bg", "rgb(" + theme.bgBase + ")");
-    root.setProperty("--hattz-color-text", "rgb(244, 240, 250)");
+    root.setProperty("--hattz-color-text", light ? "rgb(36, 29, 51)" : "rgb(244, 240, 250)");
+    root.setProperty("--hattz-color-muted", light ? "rgb(76, 65, 97)" : "rgb(183, 173, 197)");
+    root.setProperty("--hattz-text-strong", light ? "rgb(36, 29, 51)" : "rgb(248, 244, 252)");
+    root.setProperty("--hattz-text-soft", light ? "rgb(76, 65, 97)" : "rgb(200, 191, 213)");
+    root.setProperty("--hattz-text-muted", light ? "rgb(92, 82, 110)" : "rgb(170, 160, 185)");
     root.setProperty("--hattz-color-surface", "rgba(" + theme.surface + ", " + theme.alpha + ")");
     root.setProperty("--hattz-color-border", "rgba(" + theme.border + ", " + theme.borderAlpha + ")");
     root.setProperty("--hattz-glass-bg", "rgba(" + theme.surface + ", " + theme.alpha + ")");
@@ -301,7 +328,7 @@
     ".hatz-lg-close:hover{background:rgba(255,255,255,.11);color:#fff}",
     ".hatz-lg-section{margin:15px 0 9px;display:flex;align-items:center;gap:9px;font:700 10px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#b3a9c0}",
     ".hatz-lg-section:after{content:'';height:1px;flex:1;background:rgba(255,255,255,.07)}",
-    ".hatz-lg-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}",
+    ".hatz-lg-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}",
     ".hatz-lg-preset{display:grid;justify-items:center;gap:5px;padding:0;border:0;background:none;color:#b3a9c0;cursor:pointer;font:600 10px 'DM Sans',sans-serif}",
     ".hatz-lg-swatch{width:100%;height:27px;border-radius:9px;border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px rgba(255,255,255,.2);transition:outline-color var(--lg-speed) ease}",
     ".hatz-lg-preset[data-active=true]{color:#fff}.hatz-lg-preset[data-active=true] .hatz-lg-swatch{outline:1px solid rgb(var(--lg-tint));outline-offset:2px}",

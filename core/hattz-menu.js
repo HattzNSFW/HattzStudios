@@ -10,12 +10,30 @@
   const empty = $("hattzMenuEmpty");
   if (!toggle || !panel || !list) return;
 
+  // O menu único aponta o painel selecionado na tela (Studio) ou a página atual.
+  function syncActiveMenu() {
+    const activeNav = document.querySelector(".studio-nav.active[data-panel], .nav-item.active[data-view]");
+    const panelId = activeNav ? (activeNav.dataset.panel || activeNav.dataset.view) : "";
+    const file = (window.location.pathname || "").split("/").pop() || "index.html";
+    for (const button of list.querySelectorAll("button[data-menu-panel],button[data-menu-href]")) {
+      const href = button.dataset.menuHref || "";
+      const page = href.startsWith("./") ? href.split("#")[0].slice(2) : "";
+      const active = panelId
+        ? button.dataset.menuPanel === panelId
+        : Boolean(page) && page === file;
+      button.dataset.active = String(active);
+      if (active) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+    }
+  }
+
   function setOpen(open) {
     panel.hidden = !open;
     if (backdrop) backdrop.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));
     document.body.classList.toggle("hattz-menu-open", open);
     if (open) {
+      syncActiveMenu();
       search?.focus();
       applyFilter();
     } else {
@@ -63,5 +81,6 @@
   });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !panel.hidden) setOpen(false); });
 
-  window.HATTZ_MENU = { open: () => setOpen(true), close: () => setOpen(false) };
+  syncActiveMenu();
+  window.HATTZ_MENU = { open: () => setOpen(true), close: () => setOpen(false), syncActive: syncActiveMenu };
 })();

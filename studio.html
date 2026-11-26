@@ -5,14 +5,14 @@
   <meta name="theme-color" content="#09090d"><title>Hättz Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa9"><link rel="stylesheet" href="studio.css?v=e7c4aa9">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa9">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa10"><link rel="stylesheet" href="studio.css?v=e7c4aa10">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa10">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <main class="studio-shell" id="mainContent">
-    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><div class="top-right"><a class="back-to-profile" id="backToProfile" href="./index.html">↩ <span>Voltar ao perfil</span></a><div class="history-buttons" role="group" aria-label="Histórico do Studio"><button class="history-button" id="studioUndo" type="button" aria-label="Desfazer alteração" title="Desfazer (Ctrl+Z)" disabled><span aria-hidden="true">↶</span></button><button class="history-button" id="studioRedo" type="button" aria-label="Refazer alteração" title="Refazer (Ctrl+Y)" disabled><span aria-hidden="true">↷</span></button></div><button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button><span id="blocksState" class="blocks-chip" data-state="local">8 blocos · salvo localmente</span><span id="activeProfileLabel">Perfil 1</span></div></header>
+    <header class="studio-top glass"><a class="brand" href="./index.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Studio</b><small>PROFILE DESIGN LAB</small></span></a><nav class="breadcrumb" aria-label="Trilha de navegação"><a href="./index.html">Perfil</a><span aria-hidden="true">›</span><span aria-current="page">Studio</span></nav><div class="top-right"><a class="back-to-profile" id="backToProfile" href="./index.html">↩ <span>Voltar ao perfil</span></a><div class="history-buttons" role="group" aria-label="Histórico do Studio"><button class="history-button" id="studioUndo" type="button" aria-label="Desfazer alteração" title="Desfazer (Ctrl+Z)" disabled><span aria-hidden="true">↶</span></button><button class="history-button" id="studioRedo" type="button" aria-label="Refazer alteração" title="Refazer (Ctrl+Y)" disabled><span aria-hidden="true">↷</span></button></div><button class="menu-toggle-button" id="openHattzMenu" type="button" aria-label="Abrir menu Hättz" aria-controls="hattzMenu" aria-expanded="false" title="Menu Hättz"><span aria-hidden="true">☰</span><span>Menu</span></button><span id="blocksState" class="blocks-chip" data-state="local">8 blocos · salvo localmente</span><span id="activeProfileLabel">Perfil 1</span></div></header>
     <div class="studio-layout">
       <aside class="studio-sidebar glass">
         <p class="eyebrow">WORKSPACE</p>
@@ -62,7 +62,7 @@
           <div class="heading"><div><p class="eyebrow">MOLDURAS</p><h1>Molduras</h1><p>Catálogo de molduras PNG publicadas pelo Control. Pública: qualquer perfil. VIP: apenas VIPs ativos. Cargo: apenas quem possui o cargo selecionado.</p></div></div>
           <article class="glass editor-card"><div class="frame-grid">
             <button class="frame-option" data-frame="none"><span class="frame-preview plain">○</span><b>Sem moldura</b><small>Basic</small></button>
-          </div><div class="frame-catalog" id="studioFrameCatalog"><p class="muted">Carregando catálogo...</p></div><p class="muted">Somente o Control cria e publica molduras. Este é o único catálogo de molduras do perfil — ele não aparece no Share.</p></article>
+          </div><div class="frame-catalog" id="studioFrameCatalog"><p class="muted skeleton">Carregando catálogo...</p></div><p class="muted">Somente o Control cria e publica molduras. Este é o único catálogo de molduras do perfil — ele não aparece no Share.</p></article>
         </section>
         <section class="studio-panel" id="panel-theme" hidden>
           <div class="heading"><div><p class="eyebrow">EXCLUSIVE ROLE BENEFIT</p><h1>Tema exclusivo</h1><p>Personalize as cores do seu próprio perfil. O acesso depende dos cargos configurados no Control.</p></div></div>
@@ -78,7 +78,7 @@
         <section class="studio-panel" id="panel-badges">
           <div class="heading"><div><p class="eyebrow">COLLECTIBLES</p><h1>Insígnias</h1><p>Consulte a coleção disponível no catálogo do Hättz.</p></div><button id="reloadCatalog" class="secondary">Atualizar catálogo</button></div>
           <article class="glass editor-card"><h2>Minhas insígnias livres</h2><div id="badgeSelfPicker" class="hattz-badge-picker"><p class="muted">Carregando insígnias disponíveis...</p></div></article>
-          <article class="glass editor-card"><h2>Catálogo completo</h2><div id="badgeCatalog" class="catalog-grid"><p class="muted">Carregando catálogo...</p></div><p class="muted">Insígnias de VIP, cargos especiais e conquistas são concedidas pelo Hättz Control.</p></article>
+          <article class="glass editor-card"><h2>Catálogo completo</h2><div id="badgeCatalog" class="catalog-grid"><p class="muted skeleton">Carregando catálogo...</p></div><p class="muted">Insígnias de VIP, cargos especiais e conquistas são concedidas pelo Hättz Control.</p></article>
         </section>
         <section class="studio-panel" id="panel-collections">
           <div class="heading"><div><p class="eyebrow">8 BLOCOS · COLECIONÁVEIS</p><h1>Coleções</h1><p>Conjuntos temáticos calculados a partir das insígnias do perfil, com recompensa ao completar.</p></div><span class="live-chip" id="blocksIdentity">IDENTIDADE LOCAL</span></div>
@@ -112,6 +112,6 @@
     <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4aa9"></script><script defer src="core/hattz-dialog.js?v=e7c4aa9"></script>
-  <script defer src="share-config.js?v=e7c4aa9"></script><script defer src="core/hattz-core.js?v=e7c4aa9"></script><script defer src="core/local-history.js?v=e7c4aa9"></script><script defer src="core/profile-contract.js?v=e7c4aa9"></script><script defer src="core/hattz-badge-picker.js?v=e7c4aa9"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4aa9"></script><script defer src="core/liquid-glass.js?v=e7c4aa9"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4aa10"></script><script defer src="core/hattz-dialog.js?v=e7c4aa10"></script>
+  <script defer src="share-config.js?v=e7c4aa10"></script><script defer src="core/hattz-core.js?v=e7c4aa10"></script><script defer src="core/local-history.js?v=e7c4aa10"></script><script defer src="core/profile-contract.js?v=e7c4aa10"></script><script defer src="core/hattz-badge-picker.js?v=e7c4aa10"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4aa10"></script><script defer src="core/liquid-glass.js?v=e7c4aa10"></script>
 </body></html>

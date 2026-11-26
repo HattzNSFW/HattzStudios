@@ -296,3 +296,21 @@ tbody td{border-bottom-color:rgba(255,255,255,.05)}
 .preview-frame-wrap iframe{display:block;width:100%;height:100%;min-height:320px;border:0;background:#0b0a10}
 @media(max-width:700px){.preview-modal{padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));overflow:auto;overscroll-behavior:contain}.preview-dialog{width:100%;max-height:calc(100dvh - 20px);margin:auto;padding:12px;border-radius:18px}.preview-frame-wrap{min-height:0;height:min(56dvh,420px)}.preview-frame-wrap iframe{min-height:0;height:100%}.page-actions{justify-content:flex-start}}
 @media(prefers-reduced-motion:reduce){.preview-modal,.preview-dialog{backdrop-filter:none;transition:none;animation:none}}
+
+/* Sparklines nos KPIs e grade de 14 dias do painel de atividade. */
+.metric-spark{position:absolute;right:12px;bottom:10px;width:66px;height:24px;opacity:.72;pointer-events:none}
+.metric-spark svg{display:block;width:100%;height:100%;overflow:visible}
+.metric small{padding-right:72px}
+.chart-switch{display:inline-flex;gap:4px;padding:3px;border:1px solid rgba(var(--lg-tint),.18);border-radius:999px;background:rgba(var(--lg-surface),.5)}
+.chart-switch-button{min-height:28px;padding:5px 11px;border:0;border-radius:999px;background:transparent;color:var(--muted);font:700 10px Manrope,sans-serif;cursor:pointer}
+.chart-switch-button[aria-pressed="true"]{background:rgba(var(--lg-tint),.2);color:var(--text)}
+.activity-heatmap{display:grid;gap:10px;padding:8px 0;width:100%}
+.heatmap-grid{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:6px}
+.heatmap-day{display:grid;justify-items:center;gap:6px;min-width:0}
+.heatmap-cell{width:100%;min-height:34px;border:1px solid rgba(var(--lg-tint),.12);border-radius:8px;background:rgba(var(--lg-tint),var(--heat-alpha,.06))}
+.heatmap-day small{font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.heatmap-legend{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.heatmap-legend i{width:14px;height:10px;border:1px solid rgba(var(--lg-tint),.12);border-radius:3px;background:rgba(var(--lg-tint),var(--heat-alpha,.06))}
+.activity-heatmap[hidden]{display:none!important}
+@media(max-width:700px){.metric-spark{width:48px;height:20px}.metric small{padding-right:54px}.heatmap-grid{gap:3px}.heatmap-day small{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.chart-switch-button{transition:none}}

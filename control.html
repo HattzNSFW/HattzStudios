@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa9">
-  <link rel="stylesheet" href="control.css?v=e7c4aa9">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa9">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa10">
+  <link rel="stylesheet" href="control.css?v=e7c4aa10">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa10">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
@@ -36,6 +36,7 @@
     <section id="appView" hidden>
       <header class="topbar glass">
         <a class="brand" href="./control.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Control</b><small>ADMIN CONSOLE</small></span></a>
+        <nav class="breadcrumb" aria-label="Trilha de navegação"><a href="./index.html">Perfil</a><span aria-hidden="true">›</span><span aria-current="page">Control</span></nav>
         <div class="top-actions"><a class="back-to-profile" id="controlBackToProfile" href="./index.html">↩ <span>Ver perfil</span></a><span id="controlConnectionStatus" class="status-pill" role="status" aria-live="polite" hidden> Pronto</span><span class="secure-label"><i></i> Sessão protegida</span><button id="logoutButton" class="quiet-button">Sair <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
       </header>
 
@@ -61,10 +62,10 @@
             <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>Visão geral</h1><p class="muted">Todos os sinais da infraestrutura Hättz Share em um só lugar.</p></div><button id="refreshOverview" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
             <div class="metric-grid" id="overviewMetrics"><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article><article class="metric glass skeleton"></article></div>
             <div class="chart-grid">
-              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">CAPACIDADE</p><h2>Armazenamento</h2></div></div><div id="storageDonut" class="chart-canvas"></div><p class="chart-caption" id="storageDonutCaption">Consultando…</p></article>
-              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">PERFIS</p><h2>Estados e benefícios</h2></div></div><div id="profilesChart" class="chart-canvas"></div><p class="chart-caption" id="profilesChartCaption">Consultando…</p></article>
-              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">MÍDIAS</p><h2>Distribuição por tipo</h2></div></div><div id="mediaChart" class="chart-canvas"></div><p class="chart-caption" id="mediaChartCaption">Consultando…</p></article>
-              <article class="panel glass chart-panel chart-panel-wide"><div class="panel-heading"><div><p class="eyebrow">ÚLTIMOS 14 DIAS</p><h2>Atividade da plataforma</h2></div></div><div id="activityChart" class="chart-canvas chart-canvas-wide"></div><p class="chart-caption" id="activityChartCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">CAPACIDADE</p><h2>Armazenamento</h2></div></div><div id="storageDonut" class="chart-canvas skeleton"></div><p class="chart-caption" id="storageDonutCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">PERFIS</p><h2>Estados e benefícios</h2></div></div><div id="profilesChart" class="chart-canvas skeleton"></div><p class="chart-caption" id="profilesChartCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel"><div class="panel-heading"><div><p class="eyebrow">MÍDIAS</p><h2>Distribuição por tipo</h2></div></div><div id="mediaChart" class="chart-canvas skeleton"></div><p class="chart-caption" id="mediaChartCaption">Consultando…</p></article>
+              <article class="panel glass chart-panel chart-panel-wide"><div class="panel-heading"><div><p class="eyebrow">ÚLTIMOS 14 DIAS</p><h2>Atividade da plataforma</h2></div><div class="chart-switch" role="group" aria-label="Formato do gráfico de atividade"><button type="button" class="chart-switch-button" data-activity-view="line" aria-pressed="true">Linha</button><button type="button" class="chart-switch-button" data-activity-view="heatmap" aria-pressed="false">Mapa</button></div></div><div id="activityChart" class="chart-canvas chart-canvas-wide skeleton"></div><div id="activityHeatmap" class="activity-heatmap" hidden></div><p class="chart-caption" id="activityChartCaption">Consultando…</p></article>
             </div>
             <div class="panel-grid">
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">SISTEMA</p><h2>Estado operacional</h2></div><span class="status-pill" id="apiStatus">Verificando</span></div><p class="muted" id="systemSummary">Consultando armazenamento e perfis...</p><div class="mini-progress"><span id="overviewStorageBar"></span></div><div class="panel-foot"><span>Uso total</span><strong id="overviewStorageText">—</strong></div></article>
@@ -372,11 +373,11 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa9"></script>
-  <script defer src="share-config.js?v=e7c4aa9"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa9"></script>
-  <script defer src="core/local-history.js?v=e7c4aa9"></script>
-  <script defer src="control.js?v=e7c4aa9"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa9"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa10"></script>
+  <script defer src="share-config.js?v=e7c4aa10"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa10"></script>
+  <script defer src="core/local-history.js?v=e7c4aa10"></script>
+  <script defer src="control.js?v=e7c4aa10"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa10"></script>
 </body>
 </html>
