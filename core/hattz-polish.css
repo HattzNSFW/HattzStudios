@@ -1039,6 +1039,15 @@ body .hattz-collectible.rarity-elite .hattz-badge-emoji {
   color: var(--text); font-size: 12px; cursor: pointer;
 }
 .menu-toggle-button:hover { border-color: rgba(var(--lg-tint, 183, 178, 255), .45); }
+.skip-link {
+  position: fixed; top: 8px; left: 8px; z-index: 200;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid rgba(var(--lg-tint, 183, 178, 255), .45);
+  background: var(--panel, var(--card, rgba(17, 15, 24, .96)));
+  color: var(--text, #f4f0fa); font-size: 12px; font-weight: 700;
+  text-decoration: none; transform: translateY(-160%);
+}
+.skip-link:focus { transform: none; }
 .back-to-profile {
   display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
   min-height: 38px; padding: 8px 14px; border-radius: 10px;

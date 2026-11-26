@@ -8,13 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa8">
-  <link rel="stylesheet" href="control.css?v=e7c4aa8">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa8">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa9">
+  <link rel="stylesheet" href="control.css?v=e7c4aa9">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa9">
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
-  <main class="shell">
+  <main class="shell" id="mainContent">
     <section id="loginView" class="login-wrap">
       <div class="login-card glass">
         <div class="brand-mark">H<span>✦</span></div>
@@ -35,7 +36,7 @@
     <section id="appView" hidden>
       <header class="topbar glass">
         <a class="brand" href="./control.html"><span class="brand-symbol">H✦</span><span>Hättz <b>Control</b><small>ADMIN CONSOLE</small></span></a>
-        <div class="top-actions"><span id="controlConnectionStatus" class="status-pill" role="status" aria-live="polite" hidden> Pronto</span><span class="secure-label"><i></i> Sessão protegida</span><button id="logoutButton" class="quiet-button">Sair <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
+        <div class="top-actions"><a class="back-to-profile" id="controlBackToProfile" href="./index.html">↩ <span>Ver perfil</span></a><span id="controlConnectionStatus" class="status-pill" role="status" aria-live="polite" hidden> Pronto</span><span class="secure-label"><i></i> Sessão protegida</span><button id="logoutButton" class="quiet-button">Sair <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
       </header>
 
       <div class="layout">
@@ -371,11 +372,11 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa8"></script>
-  <script defer src="share-config.js?v=e7c4aa8"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa8"></script>
-  <script defer src="core/local-history.js?v=e7c4aa8"></script>
-  <script defer src="control.js?v=e7c4aa8"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa8"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa9"></script>
+  <script defer src="share-config.js?v=e7c4aa9"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa9"></script>
+  <script defer src="core/local-history.js?v=e7c4aa9"></script>
+  <script defer src="control.js?v=e7c4aa9"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa9"></script>
 </body>
 </html>

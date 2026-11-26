@@ -781,6 +781,7 @@ function renderBadgeStrip(items = []) {
     more.textContent = `+${hidden}`;
     more.setAttribute("aria-label", `Mostrar mais ${hidden} insígnias`);
     more.setAttribute("aria-expanded", "false");
+    more.setAttribute("aria-live", "polite");
     let expanded = false;
     more.addEventListener("click", () => {
       expanded = !expanded;
