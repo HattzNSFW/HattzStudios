@@ -4,7 +4,7 @@
 
   const DEFAULTS = Object.freeze({
     glass: Object.freeze({ opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }),
-    avatar: Object.freeze({ size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0 })
+    avatar: Object.freeze({ size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0, frameAutoFit: true })
   });
   const clamp = (value, fallback, min, max) => {
     const number = Number(value);
@@ -46,12 +46,74 @@
         lighting: clamp(avatar.lighting, 65, 0, 100),
         frameScale: clamp(avatar.frameScale, 100, 25, 200),
         frameX: clamp(avatar.frameX, 0, -100, 100),
-        frameY: clamp(avatar.frameY, 0, -100, 100)
+        frameY: clamp(avatar.frameY, 0, -100, 100),
+        frameAutoFit: avatar.frameAutoFit !== false
       }
     };
   };
 
-  const api = Object.freeze({ version: "2.0.0", DEFAULTS, clamp, isSafeFrameId, normalizeStudio });
-  if (typeof window !== "undefined") window.HATTZ_PROFILE_CONTRACT = api;
+  /* Ajuste automático de moldura PNG: mede a arte e devolve escala/centro.
+     A referência é a moldura de 150 px usada no Control sobre a foto de 112 px. */
+  const FRAME_REFERENCE_SIZE = 150;
+  const frameFitClamp = (value, fallback, min, max) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+  };
+  const measureFrameImage = (img) => {
+    if (!img || !img.naturalWidth || !img.naturalHeight || typeof document === "undefined") return null;
+    const sample = 192;
+    const canvas = document.createElement("canvas");
+    canvas.width = sample; canvas.height = sample;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, sample, sample);
+    let pixels;
+    try { pixels = ctx.getImageData(0, 0, sample, sample).data; } catch { return null; }
+    let minX = sample, minY = sample, maxX = -1, maxY = -1;
+    for (let y = 0; y < sample; y += 1) {
+      for (let x = 0; x < sample; x += 1) {
+        if (pixels[(y * sample + x) * 4 + 3] <= 16) continue;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (maxX < 0) return { baseScale: 100, centerX: .5, centerY: .5 };
+    const span = Math.max(maxX - minX + 1, maxY - minY + 1) || sample;
+    return {
+      baseScale: frameFitClamp(sample / span * 100, 100, 40, 400),
+      centerX: (minX + maxX) / (2 * sample),
+      centerY: (minY + maxY) / (2 * sample)
+    };
+  };
+  const autoFrameAdjust = (info, containerSize, avatar = {}) => {
+    const measured = info && typeof info === "object" ? info : { baseScale: 100, centerX: .5, centerY: .5 };
+    const size = frameFitClamp(containerSize, FRAME_REFERENCE_SIZE, 80, 400);
+    const multiplier = frameFitClamp(avatar.frameScale, 100, 25, 200) / 100;
+    const scale = frameFitClamp(measured.baseScale * (FRAME_REFERENCE_SIZE / size) * multiplier, 100, 25, 200);
+    const ratio = scale / 100;
+    const round = (value) => Math.round(value * 10) / 10;
+    return {
+      scale: round(scale),
+      x: round((.5 - measured.centerX) * size * ratio + frameFitClamp(avatar.frameX, 0, -100, 100)),
+      y: round((.5 - measured.centerY) * size * ratio + frameFitClamp(avatar.frameY, 0, -100, 100))
+    };
+  };
+  const manualFrameAdjust = (asset = {}, avatar = {}) => {
+    const round = (value) => Math.round(value * 10) / 10;
+    return {
+      scale: round(frameFitClamp(asset.scale, 100, 25, 200) * frameFitClamp(avatar.frameScale, 100, 25, 200) / 100),
+      x: round(frameFitClamp(asset.x, 0, -100, 100) + frameFitClamp(avatar.frameX, 0, -100, 100)),
+      y: round(frameFitClamp(asset.y, 0, -100, 100) + frameFitClamp(avatar.frameY, 0, -100, 100))
+    };
+  };
+  const frameFit = Object.freeze({ FRAME_REFERENCE_SIZE, measureFrameImage, autoFrameAdjust, manualFrameAdjust });
+
+  const api = Object.freeze({ version: "2.0.0", DEFAULTS, clamp, isSafeFrameId, normalizeStudio, frameFit });
+  if (typeof window !== "undefined") {
+    window.HATTZ_PROFILE_CONTRACT = api;
+    window.HATTZ_FRAME_FIT = frameFit;
+  }
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();

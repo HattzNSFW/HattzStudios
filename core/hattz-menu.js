@@ -78,6 +78,7 @@
     setOpen(false);
     const detail = { action: button.dataset.menuAction || "", panel: button.dataset.menuPanel || "" };
     if (detail.action || detail.panel) document.dispatchEvent(new CustomEvent("hattz:menu", { detail }));
+    syncActiveMenu();
   });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !panel.hidden) setOpen(false); });
 

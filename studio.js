@@ -5,7 +5,7 @@
   const storageKey = window.HATTZ_CORE?.profileStorageKey?.(profileId) || `meuPerfil:${profileId}`;
   const API = String(window.HATTZ_CORE?.apiBase?.() || window.HATTZ_SHARE_CONFIG?.apiBase || "").replace(/\/+$/, "");
   const $ = (id) => document.getElementById(id);
-  const defaults = { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0 } };
+  const defaults = { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0, frameAutoFit: true } };
   const frameAssets = {};
   let profile;
   let toastTimer = 0;
@@ -95,6 +95,8 @@
       const out = $(`avatar${key[0].toUpperCase() + key.slice(1)}Out`);
       if (out) out.textContent = ["size", "thickness", "offsetX", "offsetY", "frameX", "frameY"].includes(key) ? `${value} px` : `${value}%`;
     }
+    const autoFit = $("avatarFrameAutoFit");
+    if (autoFit) autoFit.checked = profile.studio.avatar.frameAutoFit !== false;
   }
   function renderCard() {
     const key = $("cardTarget").value, item = profile.studio.cards[key] || {};
@@ -190,6 +192,29 @@
     profile.studio.avatar[input.dataset.avatar] = Number(input.value);
     renderAvatar(); save(false);
   }));
+  $("avatarFrameAutoFit")?.addEventListener("change", (event) => {
+    profile.studio.avatar.frameAutoFit = event.target.checked;
+    save(false);
+  });
+  $("fitFrameNow")?.addEventListener("click", () => {
+    const asset = frameAssets[profile.moldura] || {};
+    if (!asset.imageData) { toast("Escolha uma moldura PNG para ajustar."); return; }
+    const finish = (info) => {
+      const fit = window.HATTZ_FRAME_FIT;
+      const adjust = fit?.autoFrameAdjust(info, Number(profile.studio.avatar.size) || 150, profile.studio.avatar);
+      if (!adjust) { toast("Não foi possível medir esta moldura."); return; }
+      Object.assign(profile.studio.avatar, {
+        frameScale: adjust.scale, frameX: adjust.x, frameY: adjust.y, frameAutoFit: true
+      });
+      renderAvatar();
+      save(false);
+      toast(`Moldura ajustada: ${adjust.scale}% · ${adjust.x}px / ${adjust.y}px.`);
+    };
+    const image = new Image();
+    image.onload = () => finish(window.HATTZ_FRAME_FIT?.measureFrameImage(image));
+    image.onerror = () => finish(null);
+    image.src = asset.imageData;
+  });
   $("cardTarget").addEventListener("change", renderCard);
   [["cardOpacity", "opacity"], ["cardBlur", "blur"], ["cardGlow", "glow"]].forEach(([id, key]) => $(id).addEventListener("input", () => {
     const target = $("cardTarget").value;

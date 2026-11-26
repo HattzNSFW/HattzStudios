@@ -1188,6 +1188,14 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
   font-size: 10px; font-weight: 700; text-decoration: none;
 }
 .studio-shortcut:hover, .studio-shortcut:focus-visible { text-decoration: underline; }
+/* Ajuste automático da moldura no Avatar Lab. */
+.frame-auto-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--line, var(--border));
+}
+.frame-auto-toggle { flex: 1 1 260px; }
+.frame-auto-row .secondary { flex: 0 0 auto; }
 .hattz-menu-backdrop {
   position: fixed; inset: 0; z-index: 70; background: rgba(4, 4, 8, .58);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
@@ -1227,6 +1235,12 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
   border-color: rgba(var(--lg-tint, 183, 178, 255), .3);
   background: rgba(var(--lg-tint, 183, 178, 255), .12);
 }
+/* Atalhos de navegação/Painel ficam um passo acima das ações comuns. */
+.hattz-menu-list button[data-menu-href], .hattz-menu-list button[data-menu-panel] {
+  border-color: rgba(var(--lg-tint, 183, 178, 255), .14);
+  background: rgba(var(--lg-tint, 183, 178, 255), .045);
+  font-weight: 600;
+}
 /* Painel ativo: barrinha discreta, sem novo rótulo nem contador. */
 .hattz-menu-list button[data-active="true"] {
   border-color: rgba(var(--lg-tint, 183, 178, 255), .35);
@@ -1235,6 +1249,30 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
 .hattz-menu-list button[data-active="true"]::after {
   content: ""; width: 3px; align-self: stretch; min-height: 20px; border-radius: 99px;
   margin-left: auto; background: rgb(var(--lg-tint, 183, 178, 255));
+}
+/* CTA do Studio: destaque sem virar um botão gigante; os itens abaixo continuam realçados. */
+.hattz-menu-list .hattz-menu-cta {
+  min-height: 48px; margin: 4px 0 8px; padding: 11px 13px;
+  border-color: rgba(var(--lg-tint, 183, 178, 255), .55);
+  border-radius: 12px;
+  background: linear-gradient(135deg,
+    rgba(var(--lg-tint, 183, 178, 255), .26),
+    rgba(var(--lg-tint, 183, 178, 255), .09));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .2);
+  font-size: 14px; font-weight: 800;
+}
+.hattz-menu-list .hattz-menu-cta::before {
+  width: 26px; flex: 0 0 26px; font-size: 16px; opacity: 1;
+}
+.hattz-menu-list .hattz-menu-cta > span {
+  margin-left: auto; font-size: 16px; opacity: .85;
+}
+.hattz-menu-list .hattz-menu-cta:hover, .hattz-menu-list .hattz-menu-cta:focus-visible {
+  border-color: rgba(var(--lg-tint, 183, 178, 255), .85);
+  background: linear-gradient(135deg,
+    rgba(var(--lg-tint, 183, 178, 255), .34),
+    rgba(var(--lg-tint, 183, 178, 255), .14));
+  transform: translateY(-1px);
 }
 .studio-sidebar .studio-nav-group { margin: 16px 0 6px; }
 @media (min-width: 900px) {

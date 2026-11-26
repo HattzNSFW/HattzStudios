@@ -126,7 +126,7 @@ const DEFAULT_PROFILE = {
   volume: 12,
   gradientIntensity: 55,
   cardRadius: 18,
-  studio: { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65 } },
+  studio: { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0, frameAutoFit: true } },
 
   tema: "dark",
 
@@ -682,6 +682,31 @@ function getDetailIcon(label = "") {
   return match ? match.icon : "✦";
 }
 
+const frameFitCache = new Map();
+function frameFitInfo(img) {
+  const key = img?.currentSrc || img?.src || "";
+  if (!key || !img.naturalWidth || !window.HATTZ_FRAME_FIT) return null;
+  if (frameFitCache.has(key)) return frameFitCache.get(key);
+  const info = window.HATTZ_FRAME_FIT.measureFrameImage(img)
+    || { baseScale: 100, centerX: .5, centerY: .5 };
+  frameFitCache.set(key, info);
+  return info;
+}
+function applyFrameTransform() {
+  const frame = $("avatarFrame");
+  const img = frame?.querySelector("img");
+  const fit = window.HATTZ_FRAME_FIT;
+  if (!frame || !img || !fit) return null;
+  const avatar = profile.studio?.avatar || DEFAULT_PROFILE.studio.avatar;
+  const asset = window.HATTZ_REMOTE_FRAMES?.[profile.moldura] || {};
+  const size = Number.parseFloat(frame.style.width)
+    || fit.FRAME_REFERENCE_SIZE;
+  const adjust = avatar.frameAutoFit !== false
+    ? fit.autoFrameAdjust(frameFitInfo(img), size, avatar)
+    : fit.manualFrameAdjust(asset, avatar);
+  img.style.transform = `translate(${adjust.x}px,${adjust.y}px) scale(${adjust.scale / 100})`;
+  return adjust;
+}
 function renderFrame() {
   const frame = $("avatarFrame");
   const name = profile.moldura || "none";
@@ -691,12 +716,16 @@ function renderFrame() {
     frame.className = "avatar-frame rarity-custom";
     const img = document.createElement("img");
     img.src = remoteFrame.imageData; img.alt = ""; img.className = "remote-avatar-frame";
-    const avatarAdjust = profile.studio?.avatar || {};
-    img.style.transform = `translate(${Number(remoteFrame.x||0)+Number(avatarAdjust.frameX||0)}px,${Number(remoteFrame.y||0)+Number(avatarAdjust.frameY||0)}px) scale(${Number(remoteFrame.scale||100)*Number(avatarAdjust.frameScale||100)/10000})`;
+    const fallback = window.HATTZ_FRAME_FIT
+      ? window.HATTZ_FRAME_FIT.manualFrameAdjust(remoteFrame, profile.studio?.avatar || {})
+      : { x: 0, y: 0, scale: 100 };
+    img.style.transform = `translate(${fallback.x}px,${fallback.y}px) scale(${fallback.scale / 100})`;
     img.style.width = "100%"; img.style.height = "100%";
     img.style.objectFit = remoteFrame.fit === "cover" ? "cover" : "contain";
     img.style.pointerEvents = "none";
     frame.replaceChildren(img);
+    if (img.complete && img.naturalWidth) applyFrameTransform();
+    else img.addEventListener("load", applyFrameTransform, { once: true });
     return;
   }
 
@@ -950,10 +979,7 @@ function applyStudioSettings() {
     frame.style.setProperty("--studio-frame-thickness", `${avatar.thickness || 2}px`);
     frame.style.setProperty("--studio-frame-lighting", `${Number(avatar.lighting || 0) / 100}`);
     frame.style.translate = `${Number(avatar.offsetX || 0)}px ${Number(avatar.offsetY || 0)}px`;
-    const custom = frame.querySelector(".remote-avatar-frame:not(.custom-local-frame)");
-    if (custom) { const asset=window.HATTZ_REMOTE_FRAMES?.[profile.moldura]||{}; custom.style.transform = `translate(${Number(asset.x||0)+Number(avatar.frameX||0)}px,${Number(asset.y||0)+Number(avatar.frameY||0)}px) scale(${Number(asset.scale||100)*Number(avatar.frameScale||100)/10000})`; }
-    const localCustom = frame.querySelector(".custom-local-frame");
-    if (localCustom) localCustom.style.transform = `translate(${Number(avatar.frameX||0)}px,${Number(avatar.frameY||0)}px) scale(${Number(avatar.frameScale||100)/100})`;
+    if (frame.querySelector("img")) applyFrameTransform();
   }
   const cards = [...document.querySelectorAll(".stat-card, .detail-card")];
   cards.forEach((card, index) => {
