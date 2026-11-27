@@ -3648,7 +3648,7 @@ function updateInventoryCount(badgeItems, frameItems) {
   if (!count) return;
   const total = inventoryTab === "frames" ? frameItems.length : badgeItems.length;
   const noun = inventoryTab === "frames" ? "moldura" : "insígnia";
-  count.textContent = `${total} ${noun}${total === 1 ? "" : "s"}${inventorySearchQuery() ? " encontrada" + (total === 1 ? "" : "s") : " disponível" + (total === 1 ? "" : "is")}.`;
+  count.textContent = `${total} ${noun}${total === 1 ? "" : "s"}${inventorySearchQuery() ? (total === 1 ? " encontrada" : " encontradas") : (total === 1 ? " disponível" : " disponíveis")}.`;
 }
 
 function inventoryFrameSource(frame) {
