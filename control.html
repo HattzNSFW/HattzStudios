@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa16">
-  <link rel="stylesheet" href="control.css?v=e7c4aa16">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa16">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa17">
+  <link rel="stylesheet" href="control.css?v=e7c4aa17">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa17">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
@@ -21,8 +21,10 @@
         <div class="brand-mark">H<span>✦</span></div>
         <p class="eyebrow">CENTRAL ADMINISTRATIVA</p>
         <h1>Hättz <span>Control</span></h1>
-        <p class="muted">Acesso restrito ao administrador principal.</p>
+        <p class="muted">Acesso exclusivo aos perfis oficiais.</p>
         <form id="loginForm">
+          <label for="adminProfileCode">Código do perfil oficial</label>
+          <input id="adminProfileCode" type="text" autocomplete="off" spellcheck="false" required placeholder="HTZ-XXXXX-XXXXX">
           <label for="adminPassword">Chave administrativa</label>
           <input id="adminPassword" type="password" autocomplete="current-password" minlength="16" required placeholder="Digite sua chave administrativa">
           <button class="primary full" type="submit"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Entrar no Control <span><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></span></button>
@@ -374,12 +376,12 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa16"></script>
-  <script defer src="share-config.js?v=e7c4aa16"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa16"></script>
-  <script defer src="core/local-history.js?v=e7c4aa16"></script>
-  <script defer src="core/profile-contract.js?v=e7c4aa16"></script>
-  <script defer src="control.js?v=e7c4aa16"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa16"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa17"></script>
+  <script defer src="share-config.js?v=e7c4aa17"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa17"></script>
+  <script defer src="core/local-history.js?v=e7c4aa17"></script>
+  <script defer src="core/profile-contract.js?v=e7c4aa17"></script>
+  <script defer src="control.js?v=e7c4aa17"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa17"></script>
 </body>
 </html>

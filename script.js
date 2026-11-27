@@ -52,10 +52,8 @@ function normalizePublicCode(value) {
 }
 
 function isOfficialProfileContext() {
-  const code = IS_PUBLIC_VIEW
-    ? normalizePublicCode(SHARED_PROFILE_CODE)
-    : normalizePublicCode(localStorage.getItem(SHARE_PUBLIC_CODE_KEY) || "");
-  return OFFICIAL_PROFILE_CODES.has(code);
+  // Fonte única: HATTZ_CORE considera ?share= ou o código publicado do perfil local.
+  return Boolean(window.HATTZ_CORE?.isOfficialProfile?.());
 }
 
 function buildPublicProfileUrl(code) {

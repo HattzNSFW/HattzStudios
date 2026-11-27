@@ -3,6 +3,7 @@
   "use strict";
 
   const VALID_PROFILE_IDS = new Set(["perfil-1", "perfil-2"]);
+  const OFFICIAL_CODES = new Set(["MT7QTEVMZY", "YGZNK6TMG8"]);
   const VALID_STATES = new Set(["idle", "online", "offline", "syncing", "degraded", "error"]);
   const config = () => window.HATTZ_SHARE_CONFIG || {};
   const release = () => String(config().release || window.HATTZ_CORE_LEGACY_VERSION || "2.0.0");
@@ -42,6 +43,14 @@
   const normalizeCode = (value) => {
     const code = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^HTZ/, "");
     return /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code) ? code : null;
+  };
+  /* Perfil oficial = código publicado (ou código do perfil local). Usado para
+     esconder o atalho do Control de quem não tem permissão de administrador. */
+  const isOfficialProfile = () => {
+    const params = new URLSearchParams(window.location.search || "");
+    const shared = params.get("share");
+    const code = normalizeCode(shared || safeStorage.get(publicCodeKey(params.get("profile"))) || "");
+    return Boolean(code && OFFICIAL_CODES.has(code));
   };
   const escapeHTML = (value = "") => String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -222,6 +231,7 @@
     getThemes,
     setThemes,
     normalizeCode,
+    isOfficialProfile,
     escapeHTML,
     request,
     getConnectionState,

@@ -67,8 +67,10 @@
         continue;
       }
       if (!child.matches("button[data-menu-action],button[data-menu-panel],button[data-menu-href]")) continue;
+      // O Control só aparece para perfis oficiais; membros comuns não veem a entrada.
+      const allowed = !child.hasAttribute("data-menu-control") || Boolean(window.HATTZ_CORE?.isOfficialProfile?.());
       const text = normalize(`${child.textContent} ${child.dataset.keywords || ""}`);
-      const show = !needle || text.includes(needle);
+      const show = allowed && (!needle || text.includes(needle));
       child.hidden = !show;
       if (show) {
         visibleActions += 1;

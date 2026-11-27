@@ -48,8 +48,8 @@
     const hint = $("loginModeHint");
     if (!hint) return;
     hint.textContent = window.HATTZ_SHARE_CONFIG?.mode === "remote"
-      ? "Site público: use a credencial administrativa do servidor. A chave local funciona apenas em localhost."
-      : "Modo local: use a chave gravada em data/admin-key.txt.";
+      ? "Site público: informe um código de perfil oficial e a credencial administrativa do servidor. A chave local funciona apenas em localhost."
+      : "Modo local: informe um código de perfil oficial e a chave gravada em data/admin-key.txt.";
   }
 
   function escapeHtml(value) {
@@ -208,9 +208,13 @@
     button.disabled = true;
     $("loginError").textContent = "";
     try {
-      const result = await api("/api/admin/auth/login", { method: "POST", body: JSON.stringify({ password: $("adminPassword").value }) }, false);
+      const result = await api("/api/admin/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ profileCode: $("adminProfileCode").value, password: $("adminPassword").value })
+      }, false);
       token = result.token;
       sessionStorage.setItem(tokenKey, token);
+      $("adminProfileCode").value = "";
       $("adminPassword").value = "";
       showApp(true);
       notify("Acesso autorizado.");
