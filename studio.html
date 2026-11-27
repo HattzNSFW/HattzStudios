@@ -5,8 +5,8 @@
   <meta name="theme-color" content="#09090d"><title>Hättz Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa14"><link rel="stylesheet" href="studio.css?v=e7c4aa14">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa14">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa15"><link rel="stylesheet" href="studio.css?v=e7c4aa15">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa15">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
@@ -99,28 +99,27 @@
     <footer>HÄTTZ STUDIO <span>✦</span> LIQUID GLASS CUSTOM</footer>
   </main>
   <div class="hattz-menu-backdrop" id="hattzMenuBackdrop" hidden></div>
-  <aside class="hattz-menu glass" id="hattzMenu" aria-label="Menu Hättz" hidden>
-    <div class="hattz-menu-head"><div><p class="eyebrow">MENU ÚNICO</p><h2>Hättz</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
-    <label class="hattz-menu-search"><span>Buscar função</span><input id="hattzMenuSearch" type="search" placeholder="Ex.: moldura, insígnia, avatar" autocomplete="off"></label>
-    <nav class="hattz-menu-list" id="hattzMenuList" aria-label="Funções do Hättz">
-      <p class="hattz-menu-group">SHARE</p>
-      <button type="button" data-menu-icon="↗" data-menu-href="./index.html" data-keywords="share perfil público ver perfil publicar">Ver perfil no Share</button>
+  <aside class="hattz-menu glass" id="hattzMenu" aria-label="Menu do Hättz" hidden>
+    <div class="hattz-menu-head"><div><p class="eyebrow">ACESSO RÁPIDO</p><h2>Suas ações</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
+    <label class="hattz-menu-search"><span>O que você quer fazer?</span><input id="hattzMenuSearch" type="search" placeholder="Ex.: salvar, avatar, tema" autocomplete="off"></label>
+    <nav class="hattz-menu-list" id="hattzMenuList" aria-label="Ações do Hättz">
       <p class="hattz-menu-group">STUDIO</p>
-      <button type="button" class="hattz-menu-cta" data-menu-icon="✧" data-menu-panel="frames" data-keywords="studio molduras ajustar automático centro escala">Ajustar molduras <span aria-hidden="true">→</span></button>
-      <button type="button" class="hattz-menu-shortcut" data-menu-icon="🖼️" data-menu-panel="frames" data-keywords="molduras png catálogo disponível bloqueada">Molduras</button>
-      <button type="button" data-menu-icon="✦" data-menu-panel="badges" data-keywords="insígnias emoji coleção catálogo escolher exibir">Insígnias</button>
+      <button type="button" class="hattz-menu-cta" data-menu-icon="✓" data-menu-action="save" data-keywords="salvar alterações aplicar studio">Salvar alterações <span aria-hidden="true">↵</span></button>
+      <button type="button" data-menu-icon="✦" data-menu-panel="badges" data-keywords="insígnias emoji coleção catálogo escolher exibir">Insígnias do perfil</button>
       <button type="button" data-menu-icon="▦" data-menu-panel="cards" data-keywords="vidro cartões transparência glass">Vidro dos cartões</button>
-      <button type="button" data-menu-icon="◉" data-menu-panel="avatar" data-keywords="avatar foto posição iluminação">Avatar Lab</button>
+      <button type="button" data-menu-icon="◉" data-menu-panel="avatar" data-keywords="avatar foto aparência posição iluminação">Aparência do avatar</button>
       <button type="button" data-menu-icon="◇" data-menu-panel="collections" data-keywords="coleções conjuntos conquistas">Coleções</button>
-      <button type="button" data-menu-icon="✓" data-menu-action="save" data-keywords="salvar alterações aplicarStudio">Salvar alterações</button>
-      <button type="button" data-menu-icon="🎨" data-menu-action="theme" data-keywords="tema global cores">Tema global</button>
-      <button type="button" data-menu-icon="↩" data-menu-action="back" data-keywords="voltar perfil share sair studio">Voltar ao perfil</button>
+      <button type="button" data-menu-icon="🎨" data-menu-action="theme" data-keywords="tema cores personalizar aparência">Personalizar tema</button>
+      <button type="button" data-menu-icon="↩" data-menu-action="back" data-keywords="voltar perfil share sair studio">Voltar ao Share</button>
+      <p class="hattz-menu-group">SHARE</p>
+      <button type="button" data-menu-icon="↗" data-menu-href="./index.html" data-keywords="share perfil público ver perfil publicar">Ver perfil publicado</button>
       <p class="hattz-menu-group">CONTROL</p>
-      <button type="button" data-menu-icon="⚙" data-menu-href="./control.html" data-keywords="control administrador senha criar moldura catálogo">Abrir Control</button>
+      <button type="button" data-menu-icon="⚙" data-menu-href="./control.html" data-keywords="control administrador senha catálogo molduras criar">Painel administrativo</button>
     </nav>
-    <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
+    <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma ação encontrada.</p>
+    <p class="hattz-menu-hint">Use a busca para encontrar uma ação. <kbd>Esc</kbd> limpa a busca e fecha o menu.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4aa14"></script><script defer src="core/hattz-dialog.js?v=e7c4aa14"></script>
-  <script defer src="share-config.js?v=e7c4aa14"></script><script defer src="core/hattz-core.js?v=e7c4aa14"></script><script defer src="core/local-history.js?v=e7c4aa14"></script><script defer src="core/profile-contract.js?v=e7c4aa14"></script><script defer src="core/hattz-badge-picker.js?v=e7c4aa14"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4aa14"></script><script defer src="core/liquid-glass.js?v=e7c4aa14"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4aa15"></script><script defer src="core/hattz-dialog.js?v=e7c4aa15"></script>
+  <script defer src="share-config.js?v=e7c4aa15"></script><script defer src="core/hattz-core.js?v=e7c4aa15"></script><script defer src="core/local-history.js?v=e7c4aa15"></script><script defer src="core/profile-contract.js?v=e7c4aa15"></script><script defer src="core/hattz-badge-picker.js?v=e7c4aa15"></script><script defer src="core/blocks.js"></script><script defer src="studio.js?v=e7c4aa15"></script><script defer src="core/liquid-glass.js?v=e7c4aa15"></script>
 </body></html>

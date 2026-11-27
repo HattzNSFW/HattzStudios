@@ -1208,28 +1208,32 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
   box-shadow: 18px 0 60px rgba(0, 0, 0, .45);
 }
 .hattz-menu-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.hattz-menu-head h2 { margin: 2px 0 0; font-size: 20px; color: var(--text); }
+.hattz-menu-head h2 { margin: 2px 0 0; font-size: 18px; color: var(--text); }
 .hattz-menu-head .eyebrow { margin: 0; }
-.hattz-menu-search { display: grid; gap: 6px; margin: 18px 0 12px; font-size: 11px; color: var(--muted); }
+.hattz-menu-search { display: grid; gap: 6px; margin: 16px 0 10px; font-size: 11px; color: var(--muted); }
 .hattz-menu-search input {
   width: 100%; min-height: 42px; padding: 10px 12px;
   border: 1px solid var(--line, var(--border)); border-radius: 10px;
   background: rgba(255, 255, 255, .04); color: var(--text); font-size: 13px;
 }
-.hattz-menu-list { display: grid; gap: 4px; }
+.hattz-menu-list { display: grid; gap: 6px; }
 .hattz-menu-group {
   margin: 14px 0 2px; color: var(--muted);
   font-size: 10px; font-weight: 800; letter-spacing: .14em;
 }
+.hattz-menu-list .hattz-menu-group:not(:first-of-type) {
+  padding-top: 14px; border-top: 1px solid var(--line, var(--border));
+}
 .hattz-menu-list button {
-  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px;
-  padding: 9px 12px; border: 1px solid transparent; border-radius: 10px;
+  display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px;
+  padding: 9px 12px; border: 1px solid transparent; border-radius: 12px;
   background: transparent; color: var(--text); text-align: left;
   font-size: 13px; cursor: pointer;
 }
 .hattz-menu-list button::before {
-  display: grid; place-items: center; width: 22px; flex: 0 0 22px;
-  content: attr(data-menu-icon); font-size: 14px; opacity: .85;
+  display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 26px;
+  border-radius: 8px; background: rgba(255, 255, 255, .045);
+  content: attr(data-menu-icon); font-size: 14px; opacity: .9;
 }
 .hattz-menu-list button:hover, .hattz-menu-list button:focus-visible {
   border-color: rgba(var(--lg-tint, 183, 178, 255), .3);
@@ -1250,7 +1254,7 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
   content: ""; width: 3px; align-self: stretch; min-height: 20px; border-radius: 99px;
   margin-left: auto; background: rgb(var(--lg-tint, 183, 178, 255));
 }
-/* CTA do Studio: destaque sem virar um botão gigante; os itens abaixo continuam realçados. */
+/* CTA: uma única ação principal por tela, sem virar um botão gigante. */
 .hattz-menu-list .hattz-menu-cta {
   min-height: 48px; margin: 4px 0 8px; padding: 11px 13px;
   border-color: rgba(var(--lg-tint, 183, 178, 255), .55);
@@ -1274,13 +1278,9 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
     rgba(var(--lg-tint, 183, 178, 255), .14));
   transform: translateY(-1px);
 }
-/* Studio é o primeiro bloco: rótulo em destaque e atalhos logo abaixo do CTA. */
+/* Studio é o primeiro bloco: rótulo em destaque e CTA único para a ação principal. */
 .hattz-menu-list .hattz-menu-group:first-of-type {
   margin-top: 4px; color: rgb(var(--lg-tint, 183, 178, 255));
-}
-.hattz-menu-list .hattz-menu-shortcut {
-  border-color: rgba(var(--lg-tint, 183, 178, 255), .22);
-  background: rgba(var(--lg-tint, 183, 178, 255), .07);
 }
 .hattz-menu-list button:focus-visible {
   outline: 2px solid rgba(var(--lg-tint, 183, 178, 255), .7); outline-offset: 2px;
@@ -1294,6 +1294,14 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
   }
 }
 .hattz-menu-empty { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+.hattz-menu-hint {
+  margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line, var(--border));
+  color: var(--muted); font-size: 11px; line-height: 1.5;
+}
+.hattz-menu-hint kbd {
+  padding: 1px 5px; border: 1px solid var(--line, var(--border)); border-radius: 5px;
+  background: rgba(255, 255, 255, .05); color: var(--text); font: 700 10px Manrope, sans-serif;
+}
 .hattz-menu[hidden], .hattz-menu-backdrop[hidden],
 .hattz-menu-list button[hidden], .hattz-menu-group[hidden], .hattz-menu-empty[hidden] { display: none !important; }
 body.hattz-menu-open { overflow: hidden; }
