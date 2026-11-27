@@ -116,9 +116,6 @@ const DEFAULT_PROFILE = {
   musicPlayerX: null,
   musicPlayerY: null,
   moldura: "none",
-  raridadeMoldura: "none",
-  molduraCorPersonalizada: false,
-  molduraCor: "#a78bfa",
   efeitosPerfil: true,
   fonte: "DM Sans",
   volume: 12,
@@ -424,9 +421,10 @@ function normalizeProfileData(parsed) {
   normalized.statsSubtitle = String(parsed.statsSubtitle ?? DEFAULT_PROFILE.statsSubtitle).slice(0, 180);
   normalized.detailsTitle = String(parsed.detailsTitle ?? DEFAULT_PROFILE.detailsTitle).slice(0, 80);
   normalized.detailsSubtitle = String(parsed.detailsSubtitle ?? DEFAULT_PROFILE.detailsSubtitle).slice(0, 180);
-  normalized.raridadeMoldura = parsed.raridadeMoldura || "none";
-  normalized.molduraCorPersonalizada = Boolean(parsed.molduraCorPersonalizada);
-  normalized.molduraCor = /^#[0-9a-f]{6}$/i.test(parsed.molduraCor || "") ? parsed.molduraCor : "#a78bfa";
+  // A raridade/cor da moldura não são mais opções do editor: vêm do catálogo no Studio.
+  delete normalized.raridadeMoldura;
+  delete normalized.molduraCorPersonalizada;
+  delete normalized.molduraCor;
   normalized.verificadoCor = /^#[0-9a-f]{6}$/i.test(parsed.verificadoCor || "") ? parsed.verificadoCor : DEFAULT_PROFILE.verificadoCor;
 
   for (const key of ["bannerOpacity", "cardBackgroundOpacity", "backgroundOpacity", "musicBarBackgroundOpacity"]) {
@@ -1055,7 +1053,6 @@ async function loadProfileEntitlements() {
     }
     if (data.profileTheme) applyColors(data.profileTheme);
     window.HATTZ_REMOTE_FRAMES = Object.fromEntries((data.frames || []).map(frame => { let asset={}; try { asset=JSON.parse(frame.asset_json||"{}"); } catch {} return [frame.id,asset]; }));
-    syncRemoteFrameOptions();
     window.HATTZ_REMOTE_BENEFITS = data.benefits || {};
     window.HATTZ_REMOTE_COLLECTIONS = data.collections || [];
     if (profile.moldura && window.HATTZ_REMOTE_FRAMES[profile.moldura]?.imageData) renderFrame();
@@ -2053,42 +2050,6 @@ function resetThemeColors() {
   showToast("Cores originais restauradas.");
 }
 
-function syncRemoteFrameOptions() {
-  const select = $("avatarFrameSelect");
-  if (!select) return;
-  let group = select.querySelector("#remoteFrameOptions");
-  if (!group) {
-    group = document.createElement("optgroup");
-    group.id = "remoteFrameOptions";
-    group.label = "Molduras PNG do catálogo";
-    select.append(group);
-  }
-  group.replaceChildren();
-  const escape = window.HATTZ_CORE?.escapeHTML || ((value) => String(value || ""));
-  for (const [id, asset] of Object.entries(window.HATTZ_REMOTE_FRAMES || {})) {
-    if (!asset?.imageData) continue;
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = `Moldura PNG · ${escape(id)}`;
-    group.append(option);
-  }
-}
-
-function resetFrameAppearance() {
-  profile.moldura = DEFAULT_PROFILE.moldura;
-  profile.raridadeMoldura = DEFAULT_PROFILE.raridadeMoldura;
-  profile.molduraCorPersonalizada = DEFAULT_PROFILE.molduraCorPersonalizada;
-  profile.molduraCor = DEFAULT_PROFILE.molduraCor;
-  $("avatarFrameSelect").value = profile.moldura;
-  $("frameRarity").value = profile.raridadeMoldura;
-  $("customFrameColorEnabled").checked = false;
-  $("customFrameColor").value = profile.molduraCor;
-  $("customFrameColor").disabled = true;
-  renderFrame();
-  saveProfile();
-  showToast("Moldura original restaurada.");
-}
-
 function resetDividerAppearance() {
   profile.dividerStyle = DEFAULT_PROFILE.dividerStyle;
   profile.dividerCustomColorEnabled = DEFAULT_PROFILE.dividerCustomColorEnabled;
@@ -2133,8 +2094,7 @@ function resetAppearance() {
     "tema", "gradientIntensity", "cardRadius", "verificadoCor", "bannerHeight",
     "bannerOpacity", "cardBackgroundOpacity", "backgroundOpacity", "musicBarBackgroundOpacity",
     "musicPlayerWidth", "musicPlayerHeight", "musicPlayerX", "musicPlayerY", "dividerStyle",
-    "dividerCustomColorEnabled", "dividerColor", "moldura", "raridadeMoldura",
-    "molduraCorPersonalizada", "molduraCor", "efeitosPerfil", "fonte", "volume",
+    "dividerCustomColorEnabled", "dividerColor", "moldura", "efeitosPerfil", "fonte", "volume",
     "animarMidia", "avatarPausado", "bannerPausado", "fundoPausado", "cardBackgroundPausado"
   ];
   keys.forEach((key) => { profile[key] = structuredClone(DEFAULT_PROFILE[key]); });
@@ -2685,12 +2645,6 @@ function fillEditor() {
   $("dividerCustomColorEnabled").checked = Boolean(profile.dividerCustomColorEnabled);
   $("dividerColor").value = profile.dividerColor || "#a78bfa";
   $("dividerColor").disabled = !profile.dividerCustomColorEnabled;
-  syncRemoteFrameOptions();
-  $("avatarFrameSelect").value = profile.moldura;
-  $("frameRarity").value = profile.raridadeMoldura || "none";
-  $("customFrameColorEnabled").checked = Boolean(profile.molduraCorPersonalizada);
-  $("customFrameColor").value = profile.molduraCor || "#a78bfa";
-  $("customFrameColor").disabled = !profile.molduraCorPersonalizada;
   $("profileEffects").checked = profile.efeitosPerfil !== false;
   $("fontFamily").value = profile.fonte;
 
@@ -2800,10 +2754,6 @@ function saveChanges() {
   applyCropSettings();
   applyDividerSettings();
   applyMediaOpacitySettings();
-  profile.moldura = $("avatarFrameSelect").value || profile.moldura;
-  profile.raridadeMoldura = $("frameRarity").value;
-  profile.molduraCorPersonalizada = $("customFrameColorEnabled").checked;
-  profile.molduraCor = $("customFrameColor").value;
   profile.efeitosPerfil = $("profileEffects").checked;
   profile.fonte = $("fontFamily").value;
   profile.volume = Number($("musicVolume").value);
@@ -2833,7 +2783,7 @@ function saveChanges() {
 
 async function resetProfile() {
   const confirmed = confirm(
-    "Restaurar o perfil padrão? Personalizações e mídias serão removidas. VIP, cargos e tags concedidos pelo Control serão preservados."
+    "Restaurar o perfil padrão? Personalizações e mídias serão removidas; moldura e insígnias equipadas voltam ao padrão. VIP, cargos e tags concedidos pelo Control serão preservados."
   );
 
   if (!confirmed) return;
@@ -2900,7 +2850,7 @@ async function resetProfile() {
   fillEditor();
   window.HATTZ_HISTORY?.clearDraft(EDITOR_DRAFT_KEY);
 
-  showToast("Perfil restaurado. VIP, cargos e tags foram preservados.");
+  showToast("Perfil restaurado. Moldura e insígnias equipadas voltaram ao padrão; VIP, cargos e tags foram preservados.");
 }
 
 async function uploadAvatar(event) {
@@ -3864,7 +3814,6 @@ function setupEvents() {
     button.addEventListener("click", () => resetThemeColor(button.dataset.resetColor));
   });
   $("resetFont").addEventListener("click", resetFont);
-  $("resetFrameAppearance").addEventListener("click", resetFrameAppearance);
   $("resetDividerAppearance").addEventListener("click", resetDividerAppearance);
   $("resetMusicPlayerPlacement").addEventListener("click", resetMusicPlayerPlacement);
   $("musicPlayerWidth").addEventListener("input", (event) => {
@@ -3974,27 +3923,6 @@ function setupEvents() {
   $("dividerColor").addEventListener("input", (event) => {
     profile.dividerColor = event.target.value;
     applyDividerSettings();
-  });
-
-  $("avatarFrameSelect").addEventListener("change", (event) => {
-    profile.moldura = event.target.value;
-    renderFrame();
-  });
-
-  $("frameRarity").addEventListener("change", (event) => {
-    profile.raridadeMoldura = event.target.value;
-    renderFrame();
-  });
-
-  $("customFrameColorEnabled").addEventListener("change", (event) => {
-    profile.molduraCorPersonalizada = event.target.checked;
-    $("customFrameColor").disabled = !event.target.checked;
-    renderFrame();
-  });
-
-  $("customFrameColor").addEventListener("input", (event) => {
-    profile.molduraCor = event.target.value;
-    renderFrame();
   });
 
   $("profileEffects").addEventListener("change", (event) => {

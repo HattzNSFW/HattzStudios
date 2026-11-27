@@ -347,7 +347,7 @@
     } catch (error) { $("profilesTable").innerHTML = `<tr><td colspan="7" class="empty">${escapeHtml(error.message)}</td></tr>`; }
   }
   async function resetProfileFromControl(code) {
-    const confirmed = window.confirm(`Restaurar ${code} ao padrão? Todas as personalizações e mídias serão removidas. VIP, cargos, tags e molduras concedidas serão preservados.`);
+    const confirmed = window.confirm(`Restaurar ${code} ao padrão? Personalizações e mídias serão removidas; moldura e insígnias equipadas voltam ao padrão. VIP, cargos, tags e concessões permanecem.`);
     if (!confirmed) return;
     const typed = window.prompt(`Para confirmar, digite RESTAURAR ${code}:`);
     if (typed !== `RESTAURAR ${code}`) { if (typed !== null) notify("Confirmação não corresponde. Nada foi alterado."); return; }
@@ -355,7 +355,7 @@
     if (button) button.disabled = true;
     try {
       const result = await api(`/api/admin/profiles/${encodeURIComponent(code)}/reset`, { method: "POST", body: JSON.stringify({ confirmation: "RESTAURAR" }) });
-      notify(`Perfil restaurado. ${Number(result.mediaRemoved || 0)} mídias removidas; benefícios preservados.`);
+      notify(`Perfil restaurado. ${Number(result.mediaRemoved || 0)} mídias removidas; moldura e insígnias equipadas revertidas, benefícios preservados.`);
       await Promise.all([loadProfiles(), loadStorage(), loadOverview(true)]);
     } catch (error) { notify(error.message); if (button) button.disabled = false; }
   }

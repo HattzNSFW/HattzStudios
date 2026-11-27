@@ -20,8 +20,7 @@
   function studioSnapshot() {
     return JSON.parse(JSON.stringify({
       studio: profile.studio,
-      moldura: profile.moldura,
-      raridadeMoldura: profile.raridadeMoldura
+      moldura: profile.moldura
     }));
   }
   window.HATTZ_HISTORY?.push(STUDIO_HISTORY_KEY, studioSnapshot(), { label: "Studio carregado" });
@@ -144,7 +143,6 @@
     try {
       profile.studio = window.HATTZ_PROFILE_CONTRACT?.normalizeStudio?.(snapshot.studio) || snapshot.studio;
       profile.moldura = snapshot.moldura || "none";
-      profile.raridadeMoldura = snapshot.raridadeMoldura || "none";
       if (profile.moldura === "moldura-custom") profile.moldura = "none";
       delete profile.customFrame;
       renderGlass();

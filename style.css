@@ -1835,14 +1835,6 @@ input[type="range"] {
   }
 }
 
-.sub-field-label {
-  display: block;
-  margin: 14px 0 8px;
-  color: #ded8e8;
-  font-size: 11px;
-  font-weight: 600;
-}
-
 
 .profile-card.effects-enabled .banner-overlay::after {
   content: "";
@@ -1953,7 +1945,6 @@ body.has-animated-background { background: transparent; }
 .card-background img,
 .card-background video { object-fit: cover; }
 
-.frame-color-toggle { margin-top: 14px; }
 .frame-color-picker {
   display: flex !important;
   align-items: center;
@@ -3445,3 +3436,9 @@ img,video{max-width:100%}
 .hattz-badge-detail{position:absolute;z-index:30;left:50%;bottom:calc(100% + 10px);display:grid;gap:4px;width:min(240px,70vw);padding:12px 14px;border:1px solid rgba(190,170,230,.32);border-radius:13px;background:rgba(18,15,26,.97);box-shadow:0 14px 40px rgba(0,0,0,.42);text-align:left;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,5px);transition:opacity .15s ease,transform .15s ease}
 .hattz-badge-detail strong{font-size:12px;color:#f4efff}.hattz-badge-detail small{font-size:10px;color:#c7a9ff}.hattz-badge-detail span{font-size:11px;line-height:1.45;color:#c5bfce}.hattz-collectible:hover .hattz-badge-detail,.hattz-collectible:focus-visible .hattz-badge-detail,.hattz-collectible.is-open .hattz-badge-detail{opacity:1;visibility:visible;transform:translate(-50%,0)}
 @media(prefers-reduced-motion:reduce){.hattz-collectible,.hattz-badge-detail{transition:none}}
+
+/* O fundo do cartão começa no limite inferior do banner; a altura é publicada
+   por applyBannerSettings() em --profile-banner-height (mesma altura do banner). */
+.card-background {
+  inset: var(--profile-banner-height, 355px) 0 0;
+}
