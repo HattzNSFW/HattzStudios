@@ -2871,6 +2871,8 @@ function startVisitorPreview() {
   profileBeforePreview = structuredClone(profile);
   applyEditorValuesToProfile({ preserveInsignias: true });
   renderProfile();
+  // Move o foco para fora do modal antes de marcar o editor como aria-hidden.
+  document.activeElement?.blur?.();
   closeEditor();
   visitorPreviewMode = true;
   document.body.classList.add("public-profile-view", "visitor-preview");
@@ -4048,7 +4050,7 @@ function setupEvents() {
   $("toggleCaptureMode")?.addEventListener("click", () => setCaptureMode(true));
   $("exitCaptureMode").addEventListener("click", () => setCaptureMode(false));
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && visitorPreviewMode) { stopVisitorPreview(); return; }
+    if (event.key === "Escape" && visitorPreviewMode) { event.preventDefault(); stopVisitorPreview(); return; }
     if (event.key === "Escape" && $("badgeOnboardingModal")?.classList.contains("open")) { closeBadgeOnboarding(); return; }
     if (event.key === "Escape" && $("inventoryModal")?.classList.contains("open")) { closeInventory(); return; }
     if (event.key === "Escape" && $("shareModal")?.classList.contains("open")) { closeShareManager(); return; }
@@ -4091,6 +4093,7 @@ function setupEvents() {
   syncHistoryButtons();
 
   document.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented) return;
     if (
       event.key === "Escape" &&
       $("editorModal").classList.contains("open")
