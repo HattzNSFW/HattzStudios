@@ -1851,6 +1851,11 @@ input[type="range"] {
   animation: ambient-drift 16s linear infinite alternate;
 }
 
+/* As partículas decorativas só pertencem ao gradiente padrão: com banner enviado, o banner fica limpo. */
+.profile-card.effects-enabled .banner.has-media .banner-overlay::after {
+  display: none;
+}
+
 .profile-card.effects-enabled .avatar-photo::after {
   content: "";
   position: absolute;

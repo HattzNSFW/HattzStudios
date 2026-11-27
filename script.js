@@ -1424,6 +1424,7 @@ function clearBanner() {
   $("bannerVideo").pause();
   $("bannerVideo").removeAttribute("src");
   $("bannerVideo").load();
+  document.querySelector(".banner")?.classList.remove("has-media");
 }
 
 function displayBanner(file) {
@@ -1441,6 +1442,7 @@ function displayBanner(file) {
     $("bannerImage").src = bannerURL;
     $("bannerImage").hidden = false;
   }
+  document.querySelector(".banner")?.classList.add("has-media");
   applyMediaPlayback();
 }
 
