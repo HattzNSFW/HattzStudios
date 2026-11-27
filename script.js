@@ -17,6 +17,7 @@ const SHARE_MEDIA_KEYS = ["avatar", "banner", "background", "cardBackground", "m
 const OFFICIAL_PROFILE_CODES = new Set(["MT7QTEVMZY", "YGZNK6TMG8"]);
 const SHARE_OWNER_TOKEN_KEY = `hattz-share-owner:${ACTIVE_PROFILE_ID}`;
 const SHARE_PUBLIC_CODE_KEY = `hattz-share-code:${ACTIVE_PROFILE_ID}`;
+const LAST_PUBLISH_KEY = `hattz2:last-publish:${ACTIVE_PROFILE_ID}`;
 let sharedMediaManifest = [];
 let sharedProfileLoaded = false;
 let sharedProfileLoadError = "";
@@ -312,6 +313,8 @@ const EDITOR_DRAFT_KEY = `editor:${ACTIVE_PROFILE_ID}`;
 const LAST_PROFILE_SAVE_KEY = `hattz2:last-profile-save:${ACTIVE_PROFILE_ID}`;
 let applyingHistory = false;
 let applyingDraft = false;
+let visitorPreviewMode = false;
+let profileBeforePreview = null;
 
 function saveProfile() {
   if (IS_PUBLIC_VIEW) return false;
@@ -323,10 +326,13 @@ function saveProfile() {
   localStorage.setItem(getProfileStorageKey(), JSON.stringify(profile));
   window.HATTZ_SUITE?.backup?.(ACTIVE_PROFILE_ID, profile);
   updateProfileSwitcher();
+  syncHistoryButtons();
 }
 
 function applyProfileSnapshot(snapshot, message) {
+  const draftBefore = window.HATTZ_HISTORY?.restoreDraft?.(EDITOR_DRAFT_KEY);
   applyingHistory = true;
+  applyingDraft = true;
   try {
     if (!window.HATTZ_CORE?.setProfile?.(ACTIVE_PROFILE_ID, snapshot)) {
       localStorage.setItem(getProfileStorageKey(), JSON.stringify(snapshot));
@@ -334,11 +340,38 @@ function applyProfileSnapshot(snapshot, message) {
     profile = normalizeProfileData(snapshot);
     renderProfile();
     fillEditor();
+    if (draftBefore?.values) applyEditorDraft(draftBefore.values);
     updateProfileSwitcher();
+    syncHistoryButtons();
     showToast(message);
   } finally {
+    applyingDraft = false;
     applyingHistory = false;
   }
+}
+
+function syncHistoryButtons() {
+  const history = window.HATTZ_HISTORY;
+  const undoButton = $("editorUndo");
+  const redoButton = $("editorRedo");
+  if (undoButton) undoButton.disabled = !history?.canUndo?.(PROFILE_HISTORY_KEY);
+  if (redoButton) redoButton.disabled = !history?.canRedo?.(PROFILE_HISTORY_KEY);
+}
+
+function undoProfile() {
+  if (visitorPreviewMode) return false;
+  const snapshot = window.HATTZ_HISTORY?.undo?.(PROFILE_HISTORY_KEY);
+  if (!snapshot) return false;
+  applyProfileSnapshot(snapshot, "Alterações desfeitas.");
+  return true;
+}
+
+function redoProfile() {
+  if (visitorPreviewMode) return false;
+  const snapshot = window.HATTZ_HISTORY?.redo?.(PROFILE_HISTORY_KEY);
+  if (!snapshot) return false;
+  applyProfileSnapshot(snapshot, "Alterações refeitas.");
+  return true;
 }
 
 window.addEventListener("hattz:restore-profile", (event) => {
@@ -1128,6 +1161,91 @@ function validateVisualMedia(file) {
   return { valid: true, kind };
 }
 
+let bannerAnalysisToken = 0;
+let bannerSkeletonTimer = 0;
+
+function setBannerSkeleton(visible) {
+  const skeleton = $("bannerSkeleton");
+  if (!skeleton) return;
+  clearTimeout(bannerSkeletonTimer);
+  if (!visible) {
+    skeleton.hidden = true;
+    return;
+  }
+  skeleton.hidden = false;
+  // Nunca deixe o skeleton preso se o navegador não disparar load/erro.
+  bannerSkeletonTimer = setTimeout(() => { skeleton.hidden = true; }, 7000);
+}
+
+function applyBannerContrast(light) {
+  const banner = document.querySelector(".banner");
+  if (banner) banner.dataset.bannerContrast = light ? "light" : "dark";
+}
+
+function isCrossOriginBannerURL(url) {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return /^https?:$/i.test(parsed.protocol) && parsed.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function analyzeBannerLuminance(element, expectedURL, token, isVideo) {
+  if (token !== bannerAnalysisToken) return;
+  try {
+    if (isVideo ? element.readyState < 2 : !(element.complete && element.naturalWidth)) return;
+    const size = 24;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return;
+    context.drawImage(element, 0, 0, size, size);
+    const pixels = context.getImageData(0, 0, size, size).data;
+    let total = 0;
+    let count = 0;
+    for (let index = 0; index < pixels.length; index += 16) {
+      if (pixels[index + 3] < 40) continue;
+      total += 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
+      count += 1;
+    }
+    if (count && token === bannerAnalysisToken && element.getAttribute("src") === expectedURL && !element.hidden) {
+      applyBannerContrast(total / count > 170);
+    }
+  } catch {
+    // Canvas remota sem CORS não pode ser lida: mantém o contraste escuro padrão.
+    if (token === bannerAnalysisToken) applyBannerContrast(false);
+  } finally {
+    if (token === bannerAnalysisToken) setBannerSkeleton(false);
+  }
+}
+
+function bindBannerMediaEvents(element, expectedURL, token, isVideo) {
+  const loadEvent = isVideo ? "loadeddata" : "load";
+  if (element._bannerLoadHandler) element.removeEventListener(loadEvent, element._bannerLoadHandler);
+  const onLoad = () => {
+    if (token !== bannerAnalysisToken || element.getAttribute("src") !== expectedURL || element.hidden) return;
+    analyzeBannerLuminance(element, expectedURL, token, isVideo);
+  };
+  element._bannerLoadHandler = onLoad;
+  element.addEventListener(loadEvent, onLoad);
+
+  if (element._bannerErrorHandler) element.removeEventListener("error", element._bannerErrorHandler);
+  const onError = () => {
+    if (token !== bannerAnalysisToken || element.getAttribute("src") !== expectedURL) return;
+    if (element.crossOrigin) {
+      // A mídia continua visível mesmo quando o servidor remoto não libera CORS.
+      element.crossOrigin = "";
+      element.src = expectedURL;
+      return;
+    }
+    setBannerSkeleton(false);
+  };
+  element._bannerErrorHandler = onError;
+  element.addEventListener("error", onError);
+}
+
 
 function prepareVideo(video) {
   if (!video) return;
@@ -1272,6 +1390,18 @@ function refreshVisualVideoVisibility(states) {
   });
 }
 
+function updateBannerParallax() {
+  const banner = document.querySelector(".banner");
+  if (!banner || banner.classList.contains("has-media")) return;
+  if (!document.querySelector(".profile-card")?.classList.contains("effects-enabled")) return;
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    banner.style.removeProperty("--banner-parallax");
+    return;
+  }
+  const offset = Math.min(18, Math.max(-8, window.scrollY * 0.045));
+  banner.style.setProperty("--banner-parallax", `${offset.toFixed(1)}px`);
+}
+
 function queueVisualVideoSync() {
   if (visualVideoSyncQueued) return;
   visualVideoSyncQueued = true;
@@ -1285,6 +1415,7 @@ function queueVisualVideoSync() {
     }
     lastVisualVideoSync = now;
     syncVisualVideoPlayback();
+    updateBannerParallax();
   });
 }
 
@@ -1424,7 +1555,13 @@ function clearBanner() {
   $("bannerVideo").pause();
   $("bannerVideo").removeAttribute("src");
   $("bannerVideo").load();
-  document.querySelector(".banner")?.classList.remove("has-media");
+  bannerAnalysisToken += 1;
+  setBannerSkeleton(false);
+  applyBannerContrast(false);
+  const banner = document.querySelector(".banner");
+  banner?.classList.remove("has-media");
+  banner?.style.removeProperty("--banner-parallax");
+  updateBannerParallax();
 }
 
 function displayBanner(file) {
@@ -1433,16 +1570,26 @@ function displayBanner(file) {
   revokeURL(bannerURL);
   bannerURL = createMediaURL(file);
 
+  const token = ++bannerAnalysisToken;
+  setBannerSkeleton(true);
+  const crossOrigin = isCrossOriginBannerURL(bannerURL);
   if (getVisualMediaKind(file) === "video") {
     const video = $("bannerVideo");
     prepareVideo(video);
+    video.crossOrigin = crossOrigin ? "anonymous" : "";
+    bindBannerMediaEvents(video, bannerURL, token, true);
     video.src = bannerURL;
     video.hidden = false;
   } else {
-    $("bannerImage").src = bannerURL;
-    $("bannerImage").hidden = false;
+    const image = $("bannerImage");
+    image.crossOrigin = crossOrigin ? "anonymous" : "";
+    bindBannerMediaEvents(image, bannerURL, token, false);
+    image.src = bannerURL;
+    image.hidden = false;
   }
-  document.querySelector(".banner")?.classList.add("has-media");
+  const banner = document.querySelector(".banner");
+  banner?.classList.add("has-media");
+  banner?.style.removeProperty("--banner-parallax");
   applyMediaPlayback();
 }
 
@@ -2709,6 +2856,7 @@ function openEditor() {
   refreshCropPreviews();
 
   document.body.style.overflow = "hidden";
+  syncHistoryButtons();
 }
 
 function closeEditor() {
@@ -2716,6 +2864,30 @@ function closeEditor() {
   $("editorModal").setAttribute("aria-hidden", "true");
 
   document.body.style.overflow = "";
+}
+
+function startVisitorPreview() {
+  if (IS_PUBLIC_VIEW || visitorPreviewMode || !$("editorModal").classList.contains("open")) return;
+  profileBeforePreview = structuredClone(profile);
+  applyEditorValuesToProfile({ preserveInsignias: true });
+  renderProfile();
+  closeEditor();
+  visitorPreviewMode = true;
+  document.body.classList.add("public-profile-view", "visitor-preview");
+  $("exitVisitorPreview")?.focus({ preventScroll: true });
+  showToast("Prévia do visitante. Volte à edição pelo botão no topo.");
+}
+
+function stopVisitorPreview() {
+  if (!visitorPreviewMode) return;
+  document.body.classList.remove("public-profile-view", "visitor-preview");
+  visitorPreviewMode = false;
+  if (profileBeforePreview) profile = profileBeforePreview;
+  profileBeforePreview = null;
+  renderProfile();
+  openEditor();
+  syncHistoryButtons();
+  $("previewVisitor")?.focus({ preventScroll: true });
 }
 
 function switchTab(name) {
@@ -2728,9 +2900,11 @@ function switchTab(name) {
   });
 }
 
-function saveChanges() {
-  if (IS_PUBLIC_VIEW) return;
+function applyEditorValuesToProfile(options = {}) {
+  const insigniasBefore = [...(profile.insignias || [])];
   readIdentityEditor();
+  // Insígnias são concedidas pelo Control; a prévia não pode apagar as concessões.
+  if (options.preserveInsignias) profile.insignias = insigniasBefore;
 
   profile.animarMidia = $("animateMedia").checked;
   profile.avatarPausado = $("pauseAvatar").checked;
@@ -2774,7 +2948,12 @@ function saveChanges() {
   $("profileVideo").volume = profile.volume / 100;
 
   setMediaAnimation(profile.animarMidia);
+  return profile;
+}
 
+function saveChanges() {
+  if (IS_PUBLIC_VIEW || visitorPreviewMode) return;
+  applyEditorValuesToProfile();
   saveProfile();
   renderProfile();
   closeEditor();
@@ -3310,6 +3489,82 @@ function setShareStatus(message, isError = false) {
   status.classList.toggle("is-error", Boolean(isError));
 }
 
+function formatPublishTime(value) {
+  const date = new Date(Number(value) || 0);
+  if (Number.isNaN(date.getTime()) || !Number(value)) return "";
+  try {
+    return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  } catch {
+    return "";
+  }
+}
+
+function setPublishState(state, options = {}) {
+  const node = $("publishState");
+  if (!node) return;
+  node.dataset.state = state;
+  const code = options.code || getSavedShareCode();
+  const when = formatPublishTime(options.at);
+  const suffix = `${code}${when ? ` em ${when}` : ""}`;
+  if (state === "local") node.textContent = "Perfil salvo apenas neste navegador.";
+  else if (state === "publishing") node.textContent = "Publicando alterações...";
+  else if (state === "error") node.textContent = options.detail || "Falha na última publicação.";
+  else if (state === "pending") node.textContent = `Publicado como ${suffix}, com alterações locais ainda não publicadas.`;
+  else node.textContent = `Publicado como ${suffix}.`;
+}
+
+async function computePublishSignature() {
+  const media = await Promise.all(SHARE_MEDIA_KEYS.map(async (key) => {
+    try {
+      const file = await getMedia(key);
+      return file
+        ? [key, String(file.name || ""), Number(file.size || 0), Number(file.lastModified || 0)]
+        : [key, null];
+    } catch {
+      return [key, null];
+    }
+  }));
+  return JSON.stringify({ profile: shareableProfile(), media });
+}
+
+function readPublishBaseline() {
+  try {
+    const baseline = JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY) || "null");
+    return baseline && typeof baseline === "object" ? baseline : null;
+  } catch {
+    return null;
+  }
+}
+
+async function renderPublishState() {
+  const node = $("publishState");
+  if (!node || node.dataset.state === "publishing") return;
+  const code = getSavedShareCode();
+  if (!code) {
+    setPublishState("local");
+    return;
+  }
+  const baseline = readPublishBaseline();
+  if (!baseline?.signature || baseline.code !== code) {
+    setPublishState("published", { code });
+    return;
+  }
+  const signature = await computePublishSignature();
+  if (node.dataset.state === "publishing") return;
+  setPublishState(signature === baseline.signature ? "published" : "pending", { code, at: baseline.at });
+}
+
+async function markProfilePublished() {
+  try {
+    localStorage.setItem(LAST_PUBLISH_KEY, JSON.stringify({
+      at: Date.now(),
+      code: getSavedShareCode(),
+      signature: await computePublishSignature()
+    }));
+  } catch {}
+  setPublishState("published", { at: readPublishBaseline()?.at });
+}
+
 function updateShareManagerFields() {
   const code = getSavedShareCode();
   const token = getSavedOwnerToken();
@@ -3333,6 +3588,7 @@ function updateShareManagerFields() {
       : "Configure a URL do Worker em share-config.js para ativar o compartilhamento.";
     status.classList.toggle("is-warning", !apiBase || apiBase.includes("YOUR-WORKER"));
   }
+  void renderPublishState();
 }
 
 function openShareManager() {
@@ -3361,6 +3617,38 @@ function inventoryRarityText(item) {
   return String(item?.rarityLabel || INVENTORY_RARITY_LABELS[badgeRarityLevel(item) - 1] || "Comum");
 }
 
+function normalizeInventoryText(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+}
+
+function inventorySearchQuery() {
+  return normalizeInventoryText($("inventorySearch")?.value || "").trim();
+}
+
+function inventoryHaystack(item) {
+  return normalizeInventoryText([
+    item?.name, item?.id, inventoryRarityText(item),
+    item?.rarity, item?.rarity_level, item?.rarityLevel
+  ].join(" "));
+}
+
+function filterInventory(items) {
+  const query = inventorySearchQuery();
+  const rarity = String($("inventoryRarityFilter")?.value || "");
+  return (Array.isArray(items) ? items : []).filter((item) =>
+    (!rarity || String(badgeRarityLevel(item)) === rarity) &&
+    (!query || inventoryHaystack(item).includes(query))
+  );
+}
+
+function updateInventoryCount(badgeItems, frameItems) {
+  const count = $("inventoryResultCount");
+  if (!count) return;
+  const total = inventoryTab === "frames" ? frameItems.length : badgeItems.length;
+  const noun = inventoryTab === "frames" ? "moldura" : "insígnia";
+  count.textContent = `${total} ${noun}${total === 1 ? "" : "s"}${inventorySearchQuery() ? " encontrada" + (total === 1 ? "" : "s") : " disponível" + (total === 1 ? "" : "is")}.`;
+}
+
 function inventoryFrameSource(frame) {
   let asset = {};
   try {
@@ -3374,6 +3662,9 @@ function createInventoryBadgeCard(item) {
   const card = document.createElement("article");
   card.className = "inventory-card";
   card.dataset.inventoryBadge = String(item?.id || "");
+  card.dataset.inventoryRarity = String(badgeRarityLevel(item));
+  card.dataset.inventoryName = String(item?.name || item?.id || "");
+  card.dataset.inventorySearch = inventoryHaystack(item);
   if (/^#[0-9a-f]{6}$/i.test(String(item?.color || ""))) card.style.setProperty("--inventory-accent", item.color);
   const glyph = document.createElement("span");
   glyph.className = "inventory-glyph";
@@ -3393,6 +3684,9 @@ function createInventoryFrameCard(frame) {
   const card = document.createElement("article");
   card.className = "inventory-card";
   card.dataset.inventoryFrame = String(frame?.id || "");
+  card.dataset.inventoryRarity = String(badgeRarityLevel(frame));
+  card.dataset.inventoryName = String(frame?.name || frame?.id || "");
+  card.dataset.inventorySearch = inventoryHaystack(frame);
   const source = inventoryFrameSource(frame);
   let art;
   if (source) {
@@ -3423,20 +3717,22 @@ function renderInventory() {
   if (!badges || !frames) return;
   badges.replaceChildren();
   frames.replaceChildren();
-  const badgeItems = sortCollectibles(window.HATTZ_INVENTORY_BADGES || []);
-  const frameItems = sortCollectibles(window.HATTZ_INVENTORY_FRAMES || []);
+  const badgeItems = filterInventory(sortCollectibles(window.HATTZ_INVENTORY_BADGES || []));
+  const frameItems = filterInventory(sortCollectibles(window.HATTZ_INVENTORY_FRAMES || []));
   for (const item of badgeItems) badges.append(createInventoryBadgeCard(item));
   for (const frame of frameItems) frames.append(createInventoryFrameCard(frame));
+  updateInventoryCount(badgeItems, frameItems);
+  const queried = Boolean(inventorySearchQuery() || $("inventoryRarityFilter")?.value);
   if (!badgeItems.length) {
     const empty = document.createElement("p");
     empty.className = "inventory-empty";
-    empty.textContent = "Nenhuma insígnia disponível neste perfil.";
+    empty.textContent = queried ? "Nenhuma insígnia encontrada." : "Nenhuma insígnia disponível neste perfil.";
     badges.append(empty);
   }
   if (!frameItems.length) {
     const empty = document.createElement("p");
     empty.className = "inventory-empty";
-    empty.textContent = "Nenhuma moldura disponível neste perfil.";
+    empty.textContent = queried ? "Nenhuma moldura encontrada." : "Nenhuma moldura disponível neste perfil.";
     frames.append(empty);
   }
 }
@@ -3546,6 +3842,7 @@ async function publishProfile() {
   button.disabled = true;
   const originalLabel = button.textContent;
   button.textContent = "Publicando...";
+  setPublishState("publishing");
 
   try {
     let code = getSavedShareCode();
@@ -3628,11 +3925,13 @@ async function publishProfile() {
     }, ownerToken);
 
     updateShareManagerFields();
+    await markProfilePublished();
     setShareStatus(`Perfil publicado com sucesso. ${completed}/${total} itens verificados. Compartilhe o código ou o link público.`);
     showToast("Perfil publicado no Hättz Share.");
   } catch (error) {
     console.error("Erro ao publicar perfil:", error);
     setShareStatus(error.message || "Não foi possível publicar o perfil.", true);
+    setPublishState("error", { detail: error.message || "Não foi possível publicar o perfil." });
   } finally {
     button.disabled = false;
     button.textContent = originalLabel;
@@ -3648,7 +3947,9 @@ async function unpublishProfile() {
     await shareApiRequest(`/api/profiles/${encodeURIComponent(code)}`, { method: "DELETE" }, token);
     localStorage.removeItem(SHARE_PUBLIC_CODE_KEY);
     localStorage.removeItem(SHARE_OWNER_TOKEN_KEY);
+    localStorage.removeItem(LAST_PUBLISH_KEY);
     updateShareManagerFields();
+    setPublishState("local");
     setShareStatus("Perfil despublicado. Seus dados locais foram preservados.");
   } catch (error) {
     setShareStatus(error.message || "Não foi possível despublicar o perfil.", true);
@@ -3734,6 +4035,8 @@ function setupEvents() {
   document.querySelectorAll("[data-inventory-tab]").forEach((button) => {
     button.addEventListener("click", () => setInventoryTab(button.dataset.inventoryTab));
   });
+  $("inventorySearch")?.addEventListener("input", renderInventory);
+  $("inventoryRarityFilter")?.addEventListener("change", renderInventory);
   $("closeBadgeOnboarding")?.addEventListener("click", closeBadgeOnboarding);
   $("badgeOnboardingModal")?.addEventListener("click", (event) => {
     if (event.target === $("badgeOnboardingModal")) closeBadgeOnboarding();
@@ -3745,6 +4048,7 @@ function setupEvents() {
   $("toggleCaptureMode")?.addEventListener("click", () => setCaptureMode(true));
   $("exitCaptureMode").addEventListener("click", () => setCaptureMode(false));
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && visitorPreviewMode) { stopVisitorPreview(); return; }
     if (event.key === "Escape" && $("badgeOnboardingModal")?.classList.contains("open")) { closeBadgeOnboarding(); return; }
     if (event.key === "Escape" && $("inventoryModal")?.classList.contains("open")) { closeInventory(); return; }
     if (event.key === "Escape" && $("shareModal")?.classList.contains("open")) { closeShareManager(); return; }
@@ -3757,6 +4061,10 @@ function setupEvents() {
       setCaptureMode(!document.body.classList.contains("capture-mode"));
     }
   });
+  $("previewVisitor").addEventListener("click", startVisitorPreview);
+  $("exitVisitorPreview").addEventListener("click", stopVisitorPreview);
+  $("editorUndo").addEventListener("click", undoProfile);
+  $("editorRedo").addEventListener("click", redoProfile);
   $("openStudio")?.addEventListener("click", () => { if (!IS_PUBLIC_VIEW) window.location.href = `studio.html?profile=${encodeURIComponent(ACTIVE_PROFILE_ID)}`; });
   $("openEditor")?.addEventListener("click", openEditor);
   $("closeEditor").addEventListener("click", closeEditor);
@@ -3776,20 +4084,11 @@ function setupEvents() {
 
   window.HATTZ_HISTORY?.bindShortcut({
     priority: 0,
-    isActive: () => !IS_PUBLIC_VIEW && !document.body.classList.contains("capture-mode") && !window.HattzLiquidGlass?.isOpen?.(),
-    onUndo: () => {
-      const snapshot = window.HATTZ_HISTORY.undo(PROFILE_HISTORY_KEY);
-      if (!snapshot) return false;
-      applyProfileSnapshot(snapshot, "Alterações desfeitas.");
-      return true;
-    },
-    onRedo: () => {
-      const snapshot = window.HATTZ_HISTORY.redo(PROFILE_HISTORY_KEY);
-      if (!snapshot) return false;
-      applyProfileSnapshot(snapshot, "Alterações refeitas.");
-      return true;
-    }
+    isActive: () => !IS_PUBLIC_VIEW && !visitorPreviewMode && !document.body.classList.contains("capture-mode") && !window.HattzLiquidGlass?.isOpen?.(),
+    onUndo: undoProfile,
+    onRedo: redoProfile
   });
+  syncHistoryButtons();
 
   document.addEventListener("keydown", (event) => {
     if (
@@ -3860,6 +4159,46 @@ function setupEvents() {
   $("musicVideoUpload").addEventListener("change", uploadMusicVideo);
   $("musicBarBackgroundUpload").addEventListener("change", uploadMusicBarBackground);
   $("removeMusicBarBackground").addEventListener("click", removeMusicBarBackground);
+
+  const uploadDropHandlers = {
+    avatar: uploadAvatar,
+    banner: uploadBanner,
+    background: uploadBackground,
+    cardBackground: uploadCardBackground,
+    music: uploadMusic,
+    musicVideo: uploadMusicVideo,
+    musicBarBackground: uploadMusicBarBackground
+  };
+  document.querySelectorAll("[data-upload-input]").forEach((zone) => {
+    const handler = uploadDropHandlers[zone.dataset.uploadKey];
+    if (!handler || IS_PUBLIC_VIEW) return;
+    let depth = 0;
+    zone.addEventListener("dragenter", (event) => {
+      event.preventDefault();
+      depth += 1;
+      zone.classList.add("is-dragover");
+    });
+    zone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    });
+    zone.addEventListener("dragleave", (event) => {
+      event.preventDefault();
+      depth = Math.max(0, depth - 1);
+      if (!depth) zone.classList.remove("is-dragover");
+    });
+    zone.addEventListener("dragend", () => {
+      depth = 0;
+      zone.classList.remove("is-dragover");
+    });
+    zone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      depth = 0;
+      zone.classList.remove("is-dragover");
+      const files = event.dataTransfer?.files;
+      if (files?.length) handler({ target: { files, value: "" } });
+    });
+  });
 
   $("removeAvatar").addEventListener("click", removeAvatar);
   $("removeBanner").addEventListener("click", removeBanner);
@@ -4009,12 +4348,12 @@ function setupEvents() {
 
   document.addEventListener("hattz:menu", (event) => {
     const { action, panel } = event.detail || {};
-    if (action === "editor" && !IS_PUBLIC_VIEW) { openEditor(); return; }
-    if (action === "share" && !IS_PUBLIC_VIEW) { openShareManager(); return; }
+    if (action === "editor" && !IS_PUBLIC_VIEW && !visitorPreviewMode) { openEditor(); return; }
+    if (action === "share" && !IS_PUBLIC_VIEW && !visitorPreviewMode) { openShareManager(); return; }
     if (action === "inventory") { openInventory(); return; }
     if (action === "capture") { setCaptureMode(true); return; }
-    if (action === "other-profile" && !IS_PUBLIC_VIEW) { openOtherProfile(); return; }
-    if (action === "badges" && !IS_PUBLIC_VIEW) { openBadgeOnboarding(); return; }
+    if (action === "other-profile" && !IS_PUBLIC_VIEW && !visitorPreviewMode) { openOtherProfile(); return; }
+    if (action === "badges" && !IS_PUBLIC_VIEW && !visitorPreviewMode) { openBadgeOnboarding(); return; }
     const targets = { cards: "statsSection", avatar: "avatarFrame", collections: "detailsSection" };
     const target = panel && $(targets[panel]);
     if (target) {
@@ -4040,6 +4379,7 @@ async function init() {
   } else {
     loadProfile();
     window.HATTZ_HISTORY?.push(PROFILE_HISTORY_KEY, profile, { label: "Perfil carregado" });
+    syncHistoryButtons();
   }
 
   $("profileAudio").volume = profile.volume / 100;

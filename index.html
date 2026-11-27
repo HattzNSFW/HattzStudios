@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa19">
-  <link rel="stylesheet" href="style.css?v=e7c4aa19">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa19">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa20">
+  <link rel="stylesheet" href="style.css?v=e7c4aa20">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa20">
 </head>
 
 <body>
@@ -34,6 +34,7 @@
         <img id="bannerImage" class="banner-media" alt="" hidden>
         <video id="bannerVideo" class="banner-media" muted loop playsinline hidden preload="none"></video>
         <div class="banner-overlay"></div>
+        <div class="banner-skeleton skeleton" id="bannerSkeleton" hidden aria-hidden="true"></div>
 
         <div class="banner-actions">
           <div class="banner-start">
@@ -148,6 +149,10 @@
     </svg>
   </button>
 
+  <button class="capture-exit-button visitor-preview-exit-button" id="exitVisitorPreview" type="button" aria-label="Voltar à edição" title="Voltar à edição">
+    <span aria-hidden="true">↩</span>
+  </button>
+
   <div class="toast" id="toast"></div>
 
   <div class="modal-backdrop" id="editorModal" aria-hidden="true">
@@ -226,7 +231,7 @@
         <section class="tab-panel" id="tab-media">
           <div class="field-group">
             <label>Avatar</label>
-            <label class="upload-box" for="avatarUpload">
+            <label class="upload-box" for="avatarUpload" data-upload-input="avatarUpload" data-upload-key="avatar" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">＋</span>
               <span><strong>Escolher imagem ou vídeo</strong></span>
             </label>
@@ -268,7 +273,7 @@
 
           <div class="field-group">
             <label>Banner</label>
-            <label class="upload-box" for="bannerUpload">
+            <label class="upload-box" for="bannerUpload" data-upload-input="bannerUpload" data-upload-key="banner" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">＋</span>
               <span><strong>Escolher imagem ou vídeo</strong></span>
             </label>
@@ -322,7 +327,7 @@
 
           <div class="field-group">
             <label>Fundo do cartão de perfil</label>
-            <label class="upload-box" for="cardBackgroundUpload">
+            <label class="upload-box" for="cardBackgroundUpload" data-upload-input="cardBackgroundUpload" data-upload-key="cardBackground" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">＋</span>
               <span><strong>Escolher imagem ou vídeo</strong></span>
             </label>
@@ -369,7 +374,7 @@
 
           <div class="field-group">
             <label>Fundo da página</label>
-            <label class="upload-box" for="backgroundUpload">
+            <label class="upload-box" for="backgroundUpload" data-upload-input="backgroundUpload" data-upload-key="background" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">＋</span>
               <span><strong>Escolher imagem, GIF ou vídeo para a página</strong></span>
             </label>
@@ -434,17 +439,17 @@
 
           <div class="field-group music-settings">
             <label>Música e vídeo do perfil</label>
-            <label class="upload-box" for="musicUpload">
+            <label class="upload-box" for="musicUpload" data-upload-input="musicUpload" data-upload-key="music" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">♫</span>
               <span><strong>Selecionar arquivo de áudio</strong><small>MP3, WAV, OGG, M4A, AAC e FLAC</small></span>
             </label>
             <input type="file" id="musicUpload" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus" hidden>
-            <label class="upload-box" for="musicVideoUpload">
+            <label class="upload-box" for="musicVideoUpload" data-upload-input="musicVideoUpload" data-upload-key="musicVideo" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">▣</span>
               <span><strong>Selecionar vídeo</strong><small>MP4, WebM, MOV e OGG vídeo (conforme o navegador)</small></span>
             </label>
             <input type="file" id="musicVideoUpload" accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.webm,.mov,.ogv,.m4v" hidden>
-            <label class="upload-box music-bar-background-upload" for="musicBarBackgroundUpload">
+            <label class="upload-box music-bar-background-upload" for="musicBarBackgroundUpload" data-upload-input="musicBarBackgroundUpload" data-upload-key="musicBarBackground" data-upload-hint="ou arraste o arquivo aqui">
               <span class="upload-symbol">▧</span>
               <span><strong>Personalizar o fundo da faixa</strong><small>Imagem, GIF, WebP ou vídeo em loop</small></span>
             </label>
@@ -758,6 +763,11 @@
           <input type="file" id="importProfileFile" accept="application/json,.json" hidden>
         </div>
         <div class="modal-main-actions">
+          <div class="history-buttons" role="group" aria-label="Histórico do perfil">
+            <button class="history-button" id="editorUndo" type="button" aria-label="Desfazer alteração" title="Desfazer (Ctrl+Z)" disabled><span aria-hidden="true">↶</span></button>
+            <button class="history-button" id="editorRedo" type="button" aria-label="Refazer alteração" title="Refazer (Ctrl+Y)" disabled><span aria-hidden="true">↷</span></button>
+          </div>
+          <button class="text-button" id="previewVisitor">Prévia do visitante</button>
           <button class="text-button danger" id="resetProfile">Restaurar padrão</button>
           <button class="primary-button save-button" id="saveProfile">Salvar alterações</button>
         </div>
@@ -780,6 +790,7 @@
         <div class="share-api-status" id="shareApiStatus">Verificando configuração da API...</div>
         <button class="primary-button share-publish-button" id="publishProfileButton" type="button">Publicar / atualizar perfil</button>
         <p class="share-publish-status" id="sharePublishStatus" role="status" aria-live="polite">Seu perfil continua salvo localmente até ser publicado.</p>
+        <div class="publish-state" id="publishState" data-state="local" role="status" aria-live="polite">Perfil salvo apenas neste navegador.</div>
 
         <div class="share-result-panel" id="shareResultPanel" hidden>
           <div class="share-field">
@@ -831,6 +842,21 @@
         <button class="inventory-tab" type="button" role="tab" data-inventory-tab="frames" aria-selected="false">Molduras</button>
       </div>
       <div class="inventory-modal-body">
+        <div class="inventory-search-row">
+          <label class="inventory-search">
+            <span>Buscar no inventário</span>
+            <input id="inventorySearch" type="search" placeholder="Nome ou raridade" autocomplete="off">
+          </label>
+          <select id="inventoryRarityFilter" aria-label="Filtrar inventário por raridade">
+            <option value="">Todas as raridades</option>
+            <option value="1">Comum</option>
+            <option value="2">Rara</option>
+            <option value="3">Épica</option>
+            <option value="4">Lendária</option>
+            <option value="5">Limitada</option>
+          </select>
+        </div>
+        <p id="inventoryResultCount" class="inventory-search-count" role="status" aria-live="polite"></p>
         <div id="inventoryBadges" class="inventory-grid" role="tabpanel"></div>
         <div id="inventoryFrames" class="inventory-grid" role="tabpanel" hidden></div>
       </div>
@@ -873,15 +899,15 @@
     <p class="hattz-menu-hint">Use a busca para encontrar uma ação. <kbd>Esc</kbd> limpa a busca e fecha o menu.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4aa19"></script>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa19"></script>
-  <script defer src="share-config.js?v=e7c4aa19"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa19"></script>
-  <script defer src="core/local-history.js?v=e7c4aa19"></script>
-  <script defer src="core/profile-contract.js?v=e7c4aa19"></script>
-  <script defer src="core/hattz-badge-picker.js?v=e7c4aa19"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4aa20"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa20"></script>
+  <script defer src="share-config.js?v=e7c4aa20"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa20"></script>
+  <script defer src="core/local-history.js?v=e7c4aa20"></script>
+  <script defer src="core/profile-contract.js?v=e7c4aa20"></script>
+  <script defer src="core/hattz-badge-picker.js?v=e7c4aa20"></script>
   <script defer src="maintenance.js"></script>
-  <script defer src="script.js?v=e7c4aa19"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa19"></script>
+  <script defer src="script.js?v=e7c4aa20"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa20"></script>
 </body>
 </html>
