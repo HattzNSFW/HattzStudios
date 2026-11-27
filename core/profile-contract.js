@@ -66,7 +66,11 @@
     canvas.width = sample; canvas.height = sample;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return null;
-    ctx.drawImage(img, 0, 0, sample, sample);
+    // object-fit: contain — desenha dentro do quadrado sem deformar a arte.
+    const ratio = Math.min(sample / img.naturalWidth, sample / img.naturalHeight);
+    const drawWidth = img.naturalWidth * ratio;
+    const drawHeight = img.naturalHeight * ratio;
+    ctx.drawImage(img, (sample - drawWidth) / 2, (sample - drawHeight) / 2, drawWidth, drawHeight);
     let pixels;
     try { pixels = ctx.getImageData(0, 0, sample, sample).data; } catch { return null; }
     let minX = sample, minY = sample, maxX = -1, maxY = -1;

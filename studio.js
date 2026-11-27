@@ -360,6 +360,20 @@
       hint: role ? `Cargo ${roleName} · liberada para este perfil.` : `Bloqueada · exige o cargo ${roleName}.`
     };
   }
+  function centerFrameThumb(img) {
+    if (!img || !window.HATTZ_FRAME_FIT) return;
+    const apply = () => {
+      if (!img.naturalWidth) return;
+      const measured = window.HATTZ_FRAME_FIT.measureFrameImage(img);
+      if (!measured) return;
+      const size = img.clientWidth || img.parentElement?.clientWidth || 46;
+      const round = (value) => Math.round(value * 10) / 10;
+      img.style.transform = `translate(${round((.5 - measured.centerX) * size)}px,${round((.5 - measured.centerY) * size)}px)`;
+      img.dataset.frameCentered = "true";
+    };
+    if (img.complete && img.naturalWidth) apply();
+    else img.addEventListener("load", apply, { once: true });
+  }
   function renderFrameCatalog(catalogFrames = [], info = {}) {
     const selected = catalogFrames.find(frame => frame.id === profile.moldura);
     if (selected && !frameAvailability(selected, info).available) {
@@ -399,13 +413,14 @@
         ? (frame.description ? `${frame.description} · ${state.hint}` : state.hint)
         : state.hint;
       const preview = asset.imageData
-        ? `<span class="frame-catalog-preview"><img src="${escapeText(asset.imageData)}" alt=""></span>`
+        ? `<span class="frame-catalog-preview"><img src="${escapeText(asset.imageData)}" alt=""><span class="frame-fit-badge" aria-hidden="true">AUTO FIT</span></span>`
         : '<span class="frame-catalog-preview plain">○</span>';
       const action = state.available
         ? `<button class="frame-option frame-catalog-button" type="button" data-frame="${escapeText(frame.id)}" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>${escapeText(frame.rarityLabel || frame.rarity || "Especial")}</small></button>`
         : `<div class="frame-option frame-catalog-button locked" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>🔒 ${escapeText(kindLabels[state.kind])}</small></div>`;
       return `<article class="frame-catalog-item ${state.available ? "" : "locked"}"><span class="frame-catalog-status ${state.available ? "available" : "locked"}">${label}</span>${action}<small class="frame-catalog-kind">${escapeText(kindLabels[state.kind])}</small><small class="frame-catalog-hint">${escapeText(hint)}</small></article>`;
     }).join("");
+    root.querySelectorAll(".frame-catalog-preview img").forEach(centerFrameThumb);
     syncFrameSelection();
   }
 

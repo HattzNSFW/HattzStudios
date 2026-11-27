@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa13">
-  <link rel="stylesheet" href="style.css?v=e7c4aa13">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa13">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa14">
+  <link rel="stylesheet" href="style.css?v=e7c4aa14">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa14">
 </head>
 
 <body>
@@ -879,6 +879,9 @@
     <div class="hattz-menu-head"><div><p class="eyebrow">MENU ÚNICO</p><h2>Hättz</h2></div><button class="icon-button" id="closeHattzMenu" type="button" aria-label="Fechar menu">×</button></div>
     <label class="hattz-menu-search"><span>Buscar função</span><input id="hattzMenuSearch" type="search" placeholder="Ex.: moldura, insígnia, compartilhar" autocomplete="off"></label>
     <nav class="hattz-menu-list" id="hattzMenuList" aria-label="Funções do Hättz">
+      <p class="hattz-menu-group">STUDIO</p>
+      <button type="button" class="hattz-menu-cta" data-menu-icon="✧" data-menu-href="./studio.html" data-keywords="studio abrir editor molduras ajustar centro escala automático">Abrir Studio <span aria-hidden="true">↗</span></button>
+      <button type="button" class="hattz-menu-shortcut" data-menu-icon="🖼️" data-menu-href="./studio.html#frames" data-keywords="molduras png catálogo disponível bloqueada studio">Molduras (Studio)</button>
       <p class="hattz-menu-group">SHARE</p>
       <button type="button" data-menu-icon="⌂" data-menu-href="./index.html" data-keywords="perfil share início página inicial">Perfil (Share)</button>
       <button type="button" data-menu-icon="✎" data-menu-action="editor" data-keywords="perfil editar nome bio design conteúdo">Editar perfil</button>
@@ -887,24 +890,21 @@
       <button type="button" data-menu-icon="✦" data-menu-action="badges" data-keywords="insígnias escolher exibir ordem catálogo">Escolher insígnias</button>
       <button type="button" data-menu-icon="◐" data-menu-action="capture" data-keywords="modo captura screenshot imagem">Modo captura</button>
       <button type="button" data-menu-icon="⇄" data-menu-action="other-profile" data-keywords="perfil 2 alternar outro">Abrir outro perfil</button>
-      <p class="hattz-menu-group">STUDIO</p>
-      <button type="button" class="hattz-menu-cta" data-menu-icon="✧" data-menu-href="./studio.html" data-keywords="studio abrir editor molduras ajustar centro escala automático">Abrir Studio <span aria-hidden="true">↗</span></button>
-      <button type="button" data-menu-icon="🖼️" data-menu-href="./studio.html#frames" data-keywords="molduras png catálogo disponível bloqueada studio">Molduras (Studio)</button>
       <p class="hattz-menu-group">CONTROL</p>
       <button type="button" data-menu-icon="⚙" data-menu-href="./control.html" data-keywords="control administrador senha catálogo molduras criar">Abrir Control</button>
     </nav>
     <p class="hattz-menu-empty" id="hattzMenuEmpty" hidden>Nenhuma função encontrada.</p>
   </aside>
 
-  <script defer src="core/hattz-menu.js?v=e7c4aa13"></script>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa13"></script>
-  <script defer src="share-config.js?v=e7c4aa13"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa13"></script>
-  <script defer src="core/local-history.js?v=e7c4aa13"></script>
-  <script defer src="core/profile-contract.js?v=e7c4aa13"></script>
-  <script defer src="core/hattz-badge-picker.js?v=e7c4aa13"></script>
+  <script defer src="core/hattz-menu.js?v=e7c4aa14"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa14"></script>
+  <script defer src="share-config.js?v=e7c4aa14"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa14"></script>
+  <script defer src="core/local-history.js?v=e7c4aa14"></script>
+  <script defer src="core/profile-contract.js?v=e7c4aa14"></script>
+  <script defer src="core/hattz-badge-picker.js?v=e7c4aa14"></script>
   <script defer src="maintenance.js"></script>
-  <script defer src="script.js?v=e7c4aa13"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa13"></script>
+  <script defer src="script.js?v=e7c4aa14"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa14"></script>
 </body>
 </html>

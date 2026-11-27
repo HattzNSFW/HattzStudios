@@ -1274,6 +1274,17 @@ html[data-lg-mode="light"] ::selection { background: rgba(var(--lg-tint), .18); 
     rgba(var(--lg-tint, 183, 178, 255), .14));
   transform: translateY(-1px);
 }
+/* Studio é o primeiro bloco: rótulo em destaque e atalhos logo abaixo do CTA. */
+.hattz-menu-list .hattz-menu-group:first-of-type {
+  margin-top: 4px; color: rgb(var(--lg-tint, 183, 178, 255));
+}
+.hattz-menu-list .hattz-menu-shortcut {
+  border-color: rgba(var(--lg-tint, 183, 178, 255), .22);
+  background: rgba(var(--lg-tint, 183, 178, 255), .07);
+}
+.hattz-menu-list button:focus-visible {
+  outline: 2px solid rgba(var(--lg-tint, 183, 178, 255), .7); outline-offset: 2px;
+}
 .studio-sidebar .studio-nav-group { margin: 16px 0 6px; }
 @media (min-width: 900px) {
   .hattz-menu {
@@ -1304,11 +1315,28 @@ body.hattz-menu-open { overflow: hidden; }
 }
 .frame-catalog-status.locked { color: #f0b8b8; }
 .frame-catalog-preview {
-  display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 46px;
-  border-radius: 10px; background: rgba(0, 0, 0, .28); overflow: hidden;
+  position: relative; display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 46px;
+  border: 1px solid rgba(var(--lg-tint, 183, 178, 255), .16); border-radius: 12px;
+  background: radial-gradient(circle at 50% 45%, rgba(var(--lg-tint, 183, 178, 255), .14), rgba(0, 0, 0, .3) 68%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .08); overflow: hidden;
+}
+.frame-catalog-preview::after {
+  content: ""; position: absolute; inset: 9px; border-radius: 50%;
+  border: 1px dashed rgba(var(--lg-tint, 183, 178, 255), .34); pointer-events: none;
 }
 .frame-catalog-preview img { width: 100%; height: 100%; object-fit: contain; }
 .frame-catalog-item.locked .frame-catalog-preview { filter: grayscale(1); }
+.frame-catalog .frame-catalog-button.selected .frame-catalog-preview {
+  border-color: rgba(var(--lg-tint, 183, 178, 255), .7);
+  box-shadow: 0 0 0 2px rgba(var(--lg-tint, 183, 178, 255), .18), inset 0 1px rgba(255, 255, 255, .12);
+}
+.frame-fit-badge {
+  position: absolute; left: 6px; bottom: 6px; z-index: 1;
+  padding: 2px 5px; border-radius: 99px;
+  background: rgba(var(--lg-tint, 183, 178, 255), .18);
+  color: rgb(var(--lg-tint, 183, 178, 255));
+  font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+}
 .frame-catalog-body { display: grid; gap: 3px; min-width: 0; padding-right: 48px; }
 .frame-catalog-body strong { font-size: 12px; color: var(--text); }
 .frame-catalog-body small { font-size: 10px; color: var(--muted); }

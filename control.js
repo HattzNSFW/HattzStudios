@@ -1207,6 +1207,36 @@
     }
   }
 
+  function centerFrameAdjust(silent = false) {
+    const img = $('frameAdjustImage');
+    const fit = window.HATTZ_FRAME_FIT;
+    if (!img || !frameAdjustImageData || !fit) {
+      if (!silent) notify('Envie um PNG para centralizar a moldura.');
+      return;
+    }
+    const finish = () => {
+      const info = fit.measureFrameImage(img);
+      const adjust = info && fit.autoFrameAdjust(info, fit.FRAME_REFERENCE_SIZE, {
+        frameScale: 100, frameX: 0, frameY: 0
+      });
+      if (!adjust) {
+        if (!silent) notify('Não foi possível medir esta moldura.');
+        return;
+      }
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      $('frameScale').value = String(clamp(adjust.scale, 25, 200));
+      $('frameX').value = String(clamp(adjust.x, -100, 100));
+      $('frameY').value = String(clamp(adjust.y, -100, 100));
+      updateFrameAdjustPreview();
+      if (!silent) notify(`Moldura centralizada: ${$('frameScale').value}% · ${$('frameX').value}px / ${$('frameY').value}px.`);
+    };
+    if (img.complete && img.naturalWidth) finish();
+    else {
+      img.addEventListener('load', finish, { once: true });
+      img.addEventListener('error', () => { if (!silent) notify('Não foi possível medir esta moldura.'); }, { once: true });
+    }
+  }
+
   function resetFrameForm() {
     ['frameId', 'frameName', 'frameDescription'].forEach((id) => { $(id).value = ''; });
     $('frameId').readOnly = false;
@@ -1238,6 +1268,7 @@
     $('frameY').value = String(asset.y || 0);
     frameAdjustImageData = asset.imageData || '';
     updateFrameAdjustPreview();
+    centerFrameAdjust(true);
     syncFrameAccessFields();
     $('frameName').focus();
     $('frameName').scrollIntoView({ block: 'center' });
@@ -1568,6 +1599,7 @@
     try {
       frameAdjustImageData = await readPngFile(file, FRAME_PNG_LIMIT);
       updateFrameAdjustPreview();
+      centerFrameAdjust();
     } catch (error) {
       frameAdjustImageData = '';
       updateFrameAdjustPreview();
@@ -1575,6 +1607,7 @@
     }
   });
   ["frameScale", "frameX", "frameY"].forEach((id) => $(id).addEventListener("input", updateFrameAdjustPreview));
+  $("centerFrameNow").addEventListener("click", () => centerFrameAdjust());
   $("saveFrame").addEventListener("click", saveFrame);
   $("newFrame").addEventListener("click", resetFrameForm);
   $("frameCatalogSearch").addEventListener("input", renderFrameCatalog);

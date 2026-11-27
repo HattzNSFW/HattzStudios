@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa13">
-  <link rel="stylesheet" href="control.css?v=e7c4aa13">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa13">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa14">
+  <link rel="stylesheet" href="control.css?v=e7c4aa14">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa14">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
@@ -297,6 +297,7 @@
                     <img id="frameAdjustImage" class="frame-adjust-image" alt="" hidden>
                   </div>
                   <p class="frame-adjust-hint">Referência vazia da foto do perfil. Envie um PNG para ajustar a moldura sobre ela.</p>
+                  <button id="centerFrameNow" class="secondary" type="button">Centralizar moldura automaticamente</button>
                   <label for="frameScale">Escala</label><input id="frameScale" type="range" min="25" max="200" value="100">
                   <label for="frameX">Posição horizontal</label><input id="frameX" type="range" min="-100" max="100" value="0">
                   <label for="frameY">Posição vertical</label><input id="frameY" type="range" min="-100" max="100" value="0">
@@ -373,11 +374,12 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa13"></script>
-  <script defer src="share-config.js?v=e7c4aa13"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa13"></script>
-  <script defer src="core/local-history.js?v=e7c4aa13"></script>
-  <script defer src="control.js?v=e7c4aa13"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa13"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa14"></script>
+  <script defer src="share-config.js?v=e7c4aa14"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa14"></script>
+  <script defer src="core/local-history.js?v=e7c4aa14"></script>
+  <script defer src="core/profile-contract.js?v=e7c4aa14"></script>
+  <script defer src="control.js?v=e7c4aa14"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa14"></script>
 </body>
 </html>

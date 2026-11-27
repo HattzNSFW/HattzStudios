@@ -692,6 +692,19 @@ function frameFitInfo(img) {
   frameFitCache.set(key, info);
   return info;
 }
+function centerFrameThumb(img) {
+  if (!img || !window.HATTZ_FRAME_FIT) return;
+  const apply = () => {
+    const info = frameFitInfo(img);
+    if (!info) return;
+    const size = img.clientWidth || img.parentElement?.clientWidth || 46;
+    const round = (value) => Math.round(value * 10) / 10;
+    img.style.transform = `translate(${round((.5 - info.centerX) * size)}px,${round((.5 - info.centerY) * size)}px)`;
+    img.dataset.frameCentered = "true";
+  };
+  if (img.complete && img.naturalWidth) apply();
+  else img.addEventListener("load", apply, { once: true });
+}
 function applyFrameTransform() {
   const frame = $("avatarFrame");
   const img = frame?.querySelector("img");
@@ -3437,6 +3450,7 @@ function createInventoryFrameCard(frame) {
     art.className = "inventory-frame-image";
     art.src = source;
     art.alt = "";
+    centerFrameThumb(art);
   } else {
     art = document.createElement("span");
     art.className = "inventory-frame-placeholder";
