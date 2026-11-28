@@ -21,12 +21,19 @@
   let catalogItems = [];
   let catalogVisible = 12;
   let badgeRulesProtectedIds = [];
+  const OFFICIAL_CODES = new Set(["MT7QTEVMZY", "YGZNK6TMG8"]);
+  const PURGE_PROTECTED_BADGE_IDS = new Set(["owner", "vip", "apoiador", "event-pass", "creative-flare", "community-anchor", "chronicle"]);
+  const PURGE_PROTECTED_FRAME_IDS = new Set(["none", "default", "padrao", "padrão"]);
+  const RESERVED_LABEL = /\b(admin|administrator|dev|developer|staff|moderator|owner|dono|founder|official|oficial|vip|premium)\b/i;
+  const RESERVED_BADGE = /\b(owner|dono|founder|official|oficial)\b/i;
   let frameAdjustImageData = "";
   let previewUrl = "";
   const loadedViews = new Set();
   let dashboardCache = null;
   let dashboardPromise = null;
   let rolesLoaded = false;
+  let benefitsLoaded = false;
+  let collectionsLoaded = false;
   const CATALOG_PAGE = 12;
   const statusLabels = { idle: "Pronto", online: "Sincronizado", offline: "Sem conexão", syncing: "Sincronizando…", degraded: "Serviço instável", error: "Falha" };
 
@@ -601,6 +608,39 @@
     filterList('roleAssignmentsList', $('roleAssignmentSearch')?.value, 'assignmentSearchHint');
     filterList('collectionList', $('collectionSearch')?.value, 'collectionSearchHint');
   }
+  function debounce(fn, wait = 180) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), wait);
+    };
+  }
+  function isOfficialCode(code) { return OFFICIAL_CODES.has(String(code || '').replace(/^HTZ-?/, '').replace(/-/g, '').toUpperCase()); }
+  function blockOfficialMutation(code, action) {
+    if (!isOfficialCode(code)) return false;
+    notify(`Os ${action} dos perfis oficiais são protegidos e não podem ser alterados pelo Control.`);
+    return true;
+  }
+  function syncOfficialGuards() {
+    const official = isOfficialCode(codeFrom('entitlementCode'));
+    ['saveVip', 'grantRole', 'revokeRole', 'grantBenefit', 'revokeBenefit'].forEach(id => { const el = $(id); if (el) el.disabled = official; });
+    const warning = $('officialCodeWarning');
+    if (warning) warning.hidden = !official;
+  }
+  function isProtectedBadgePurge(badge) {
+    const id = String(badge?.id || '').toLowerCase();
+    return badge?.award_mode === 'automatic' || PURGE_PROTECTED_BADGE_IDS.has(id)
+      || RESERVED_BADGE.test(id) || RESERVED_BADGE.test(badge?.name || '');
+  }
+  function isProtectedFramePurge(frame) {
+    const id = String(frame?.id || '').toLowerCase();
+    return PURGE_PROTECTED_FRAME_IDS.has(id) || RESERVED_BADGE.test(frame?.name || '');
+  }
+  function isProtectedRolePurge(role) {
+    return RESERVED_LABEL.test(String(role?.id || '')) || RESERVED_LABEL.test(String(role?.label || role?.name || ''));
+  }
+  function grantCount(item) { return Number(item?.grants ?? item?.grant_count ?? 0) || 0; }
+  function grantLabel(item) { const count = grantCount(item); return `${count} concess${count === 1 ? 'ão' : 'ões'}`; }
 
   function renderCatalog() {
     const root = $('ecosystemCatalog');
@@ -627,7 +667,11 @@
     if (!root) return;
     const query = String($('badgePurgeSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
     const badges = ecosystemBadges.filter(badge => !query || `${badge.id} ${badge.name || ''} ${badge.description || ''}`.toLocaleLowerCase('pt-BR').includes(query));
-    root.innerHTML = badges.length ? badges.map(badge => `<div class="audit-item" data-search="${escapeHtml(`${badge.id} ${badge.name || ''} ${badge.description || ''}`)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(badge)}</span> ${escapeHtml(badge.name)}</div><div class="audit-detail">${escapeHtml(badge.id)} · ${escapeHtml(badge.description || '')}${Number(badge.enabled) === 0 ? ' · Desativada' : ''}</div></div><button type="button" class="quiet-button danger-action" data-purge-badge="${escapeHtml(badge.id)}">Excluir</button></div>`).join('')
+    root.innerHTML = badges.length ? badges.map(badge => {
+      const protectedPurge = isProtectedBadgePurge(badge);
+      const reason = badge.award_mode === 'automatic' ? 'automática' : protectedPurge ? 'reservada ou protegida por regra' : '';
+      return `<div class="audit-item" data-search="${escapeHtml(`${badge.id} ${badge.name || ''} ${badge.description || ''}`)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(badge)}</span> ${escapeHtml(badge.name)}</div><div class="audit-detail">${escapeHtml(badge.id)} · ${grantLabel(badge)}${Number(badge.enabled) === 0 ? ' · Desativada' : ''}${reason ? ` · Não excluível: ${reason}` : ''}</div></div><button type="button" class="quiet-button danger-action" data-purge-badge="${escapeHtml(badge.id)}"${protectedPurge ? ' disabled' : ''}>Excluir</button></div>`;
+    }).join('')
       : `<p class="empty">${query ? 'Nenhuma insígnia encontrada.' : 'Nenhuma insígnia cadastrada.'}</p>`;
     root.querySelectorAll('[data-purge-badge]').forEach(button => button.addEventListener('click', () => removeCatalogItem('badges', button.dataset.purgeBadge)));
     const count = $('badgePurgeCount');
@@ -720,9 +764,13 @@
       const roleOptions = activeRoles.map(x => `<option value="${escapeHtml(x.id)}">${emojiFor(x)} ${escapeHtml(x.label)}</option>`).join('') || '<option value="">Nenhum cargo disponível</option>';
       $('grantRoleId').innerHTML = roleOptions;
       $('frameRole').innerHTML = roleOptions;
-      $('roleDefinitionList').innerHTML = roles.map(role => `<div class="role-definition-row searchable" data-search="${escapeHtml(`${role.id} ${role.label || ''} ${role.description || ''}`)}"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color || '#b99af0')}"><span class="chip-emoji">${emojiFor(role)}</span> ${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)}${Number(role.enabled) === 0 ? ' · Desativado' : ''}${role.benefits && Object.keys(role.benefits).length ? ` · ${Object.keys(role.benefits).length} benefício(s)` : ''}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">${Number(role.enabled) === 0 ? 'Editar / reativar' : 'Editar'}</button>${Number(role.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Desativar</button>` : ''}</div>`).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
+      $('roleDefinitionList').innerHTML = roles.map(role => {
+        const protectedPurge = isProtectedRolePurge(role);
+        return `<div class="role-definition-row searchable" data-search="${escapeHtml(`${role.id} ${role.label || ''} ${role.description || ''}`)}"><span class="role-preview-chip" style="--role-accent:${escapeHtml(role.color || '#b99af0')}"><span class="chip-emoji">${emojiFor(role)}</span> ${escapeHtml(role.label)}</span><span class="role-definition-meta">${escapeHtml(role.id)} · ${grantLabel(role)}${Number(role.enabled) === 0 ? ' · Desativado' : ''}${role.benefits && Object.keys(role.benefits).length ? ` · ${Object.keys(role.benefits).length} benefício(s)` : ''}</span><button type="button" class="quiet-button" data-edit-role="${escapeHtml(role.id)}">${Number(role.enabled) === 0 ? 'Editar / reativar' : 'Editar'}</button>${Number(role.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-role="${escapeHtml(role.id)}">Desativar</button>` : ''}<button type="button" class="quiet-button danger-action" data-purge-role="${escapeHtml(role.id)}"${protectedPurge ? ' disabled title="Cargo reservado"' : ''}>Excluir</button></div>`;
+      }).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
       $('roleDefinitionList').querySelectorAll('[data-edit-role]').forEach(button => button.addEventListener('click', () => editRoleDefinition(roles.find(role => role.id === button.dataset.editRole))));
       $('roleDefinitionList').querySelectorAll('[data-delete-role]').forEach(button => button.addEventListener('click', () => removeRoleDefinition(button.dataset.deleteRole)));
+      $('roleDefinitionList').querySelectorAll('[data-purge-role]').forEach(button => button.addEventListener('click', () => purgeRoleDefinition(button.dataset.purgeRole)));
       updateRoleSummary();
       applyRolePreview();
       filterList('roleDefinitionList', $('roleDefinitionSearch')?.value, 'roleSearchHint');
@@ -730,11 +778,14 @@
     } catch (error) { notify(error.message); }
   }
 
-  /* A API não expõe catálogo de benefícios/coleções; manter estes renderizadores
-     locais evita uma requisição 404 em cada visita ao Control. */
-  async function ensureBenefits() {
-    ecosystemBenefits = [];
-    $('grantBenefitId').innerHTML = '<option value="">Nenhum benefício disponível</option>';
+  async function ensureBenefits(force = false) {
+    if (benefitsLoaded && !force) return;
+    try {
+      const data = await api('/api/admin/benefits');
+      ecosystemBenefits = data.benefits || [];
+    } catch { ecosystemBenefits = []; }
+    benefitsLoaded = true;
+    $('grantBenefitId').innerHTML = ecosystemBenefits.filter(item => Number(item.enabled) !== 0).map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(effectValueLabel(item.effect))}</option>`).join('') || '<option value="">Nenhum benefício disponível</option>';
     renderBenefitList();
     renderRoleBenefitOptions();
   }
@@ -750,7 +801,8 @@
       $('grantFrameId').innerHTML = frames.filter(x => Number(x.enabled) !== 0).map(x => `<option value="${escapeHtml(x.id)}">🖼️ ${escapeHtml(x.name)} · ${escapeHtml(x.rarityLabel || x.rarity)}</option>`).join('') || '<option value="">Nenhuma moldura disponível</option>';
       catalogItems = badges.map(x => {
         const term = `${x.id} ${x.name || ''} ${x.category || ''} Insígnia`;
-        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges">Excluir</button></div>`;
+        const protectedPurge = isProtectedBadgePurge(x);
+        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${grantLabel(x)} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}${protectedPurge ? ' · Protegida contra exclusão' : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges"${protectedPurge ? ' disabled title="Insígnia automática, reservada ou protegida por regra"' : ''}>Excluir</button></div>`;
         return { term: term.toLocaleLowerCase('pt-BR'), html };
       });
       catalogVisible = CATALOG_PAGE;
@@ -773,11 +825,13 @@
       const access = asset.accessMode || 'public';
       const term = `${frame.id} ${frame.name || ''} ${frame.description || ''} ${access}${asset.requiredRoleId ? ` ${asset.requiredRoleId}` : ''}`;
       const role = access === 'role' && asset.requiredRoleId ? ` · Cargo: ${escapeHtml(asset.requiredRoleId)}` : '';
-      return `<div class="audit-item searchable frame-catalog-row" data-frame-id="${escapeHtml(frame.id)}" data-search="${escapeHtml(term)}" role="button" tabindex="0" title="Clique para editar"><span class="audit-time">MOLDURA</span><div><div class="audit-action"><span class="catalog-emoji">🖼️</span> ${escapeHtml(frame.name)}</div><div class="audit-detail">${escapeHtml(frame.description || '')} · Acesso: ${escapeHtml(access)}${role}</div></div><span class="audit-target">${escapeHtml(frame.rarityLabel || frame.rarity || '—')}${Number(frame.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-frame="${escapeHtml(frame.id)}">Editar</button>${Number(frame.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-frame="${escapeHtml(frame.id)}">Desativar</button>` : ''}</div>`;
+      const protectedPurge = isProtectedFramePurge(frame);
+      return `<div class="audit-item searchable frame-catalog-row" data-frame-id="${escapeHtml(frame.id)}" data-search="${escapeHtml(term)}" role="button" tabindex="0" title="Clique para editar"><span class="audit-time">MOLDURA</span><div><div class="audit-action"><span class="catalog-emoji">🖼️</span> ${escapeHtml(frame.name)}</div><div class="audit-detail">${escapeHtml(frame.description || '')} · Acesso: ${escapeHtml(access)}${role} · ${grantLabel(frame)}${protectedPurge ? ' · Protegida contra exclusão' : ''}</div></div><span class="audit-target">${escapeHtml(frame.rarityLabel || frame.rarity || '—')}${Number(frame.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-frame="${escapeHtml(frame.id)}">Editar</button>${Number(frame.enabled) !== 0 ? `<button type="button" class="quiet-button danger-action" data-delete-frame="${escapeHtml(frame.id)}">Desativar</button>` : ''}<button type="button" class="quiet-button danger-action" data-purge-frame="${escapeHtml(frame.id)}"${protectedPurge ? ' disabled title="Moldura reservada"' : ''}>Excluir</button></div>`;
     }).join('') : `<p class="empty">${query ? 'Nenhuma moldura encontrada.' : 'Nenhuma moldura cadastrada. Envie um PNG para começar.'}</p>`;
     const openFrame = (id) => editFrame(ecosystemFrames.find(frame => frame.id === id));
     root.querySelectorAll('[data-edit-frame]').forEach(button => button.addEventListener('click', () => openFrame(button.dataset.editFrame)));
     root.querySelectorAll('[data-delete-frame]').forEach(button => button.addEventListener('click', () => removeCatalogItem('frames', button.dataset.deleteFrame)));
+    root.querySelectorAll('[data-purge-frame]').forEach(button => button.addEventListener('click', () => removeCatalogItem('frames', button.dataset.purgeFrame, true)));
     root.querySelectorAll('.frame-catalog-row').forEach(row => {
       const activate = (event) => { if (!event.target.closest('button')) openFrame(row.dataset.frameId); };
       row.addEventListener('click', activate);
@@ -795,27 +849,33 @@
     setCount('frameActiveCount', active.length);
     setCount('framePublicCount', active.filter((frame) => accessOf(frame) === 'public').length);
     setCount('frameRestrictedCount', active.filter((frame) => ['vip', 'role'].includes(accessOf(frame))).length);
-    setCount('frameGrantedCount', Number(dashboardCache?.ecosystem?.frames?.grants || 0));
+    setCount('frameGrantedCount', ecosystemFrames.reduce((sum, frame) => sum + grantCount(frame), 0));
   }
 
-  async function ensureCollections() {
-    ecosystemCollections = [];
+  async function ensureCollections(force = false) {
+    if (collectionsLoaded && !force) return;
+    try {
+      const data = await api('/api/admin/collections');
+      ecosystemCollections = data.collections || [];
+    } catch { ecosystemCollections = []; }
+    collectionsLoaded = true;
     renderCollectionList();
     updateBadgeSummary();
     filterList('collectionList', $('collectionSearch')?.value, 'collectionSearchHint');
   }
 
-  async function loadRolesView() {
-    await Promise.all([ensureRoles(), ensureBenefits(), loadRoleAssignments(), loadStudioAccess()]);
+  async function loadRolesView(force = false) {
+    if (force) { rolesLoaded = false; benefitsLoaded = false; }
+    await Promise.all([ensureRoles(), ensureBenefits(force), loadRoleAssignments(), loadStudioAccess()]);
   }
 
-  async function loadBadgesView() {
-    await Promise.all([ensureCatalog(), ensureRoles(), ensureCollections()]);
+  async function loadBadgesView(force = false) {
+    if (force) collectionsLoaded = false;
+    await Promise.all([ensureCatalog(), ensureRoles(), ensureCollections(force)]);
   }
 
   async function loadFramesView() {
     await Promise.all([ensureCatalog(), ensureRoles()]);
-    await getDashboard(true);
     updateFrameSummary();
     syncFrameAccessFields();
   }
@@ -922,12 +982,12 @@
       await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
       notify('Coleção salva.');
       resetCollectionForm();
-      await ensureCollections();
+      await ensureCollections(true);
     } catch (error) { notify(error.message); }
   }
   async function removeCollection(id) {
     if (!id || !window.confirm(`Desativar a coleção "${id}"? As conquistas já concedidas serão preservadas.`)) return;
-    try { await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Coleção desativada. Conquistas preservadas.'); await ensureCollections(); }
+    try { await api(`/api/admin/collections/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Coleção desativada. Conquistas preservadas.'); await ensureCollections(true); }
     catch (error) { notify(error.message); }
   }
 
@@ -978,12 +1038,12 @@
       await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
       notify('Benefício salvo.');
       resetBenefitForm();
-      await ensureBenefits();
+      await ensureBenefits(true);
     } catch (error) { notify(error.message); }
   }
   async function removeBenefit(id) {
     if (!id || !window.confirm(`Desativar o benefício "${id}"? Concessões existentes serão preservadas.`)) return;
-    try { await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Benefício desativado. Concessões preservadas.'); await ensureBenefits(); }
+    try { await api(`/api/admin/benefits/${encodeURIComponent(id)}`, { method: 'DELETE' }); notify('Benefício desativado. Concessões preservadas.'); await ensureBenefits(true); }
     catch (error) { notify(error.message); }
   }
   function renderRoleBenefitOptions() {
@@ -994,6 +1054,7 @@
   async function mutateProfileBenefit(action) {
     const code = entitlementCode();
     if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code)) { notify('Informe um código de perfil válido.'); return; }
+    if (blockOfficialMutation(code, 'benefícios')) return;
     const benefitId = $('grantBenefitId').value;
     if (!benefitId) { notify('Cadastre ou selecione um benefício primeiro.'); return; }
     try {
@@ -1312,7 +1373,6 @@
       await api(`/api/admin/catalog/frames/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
       notify('Moldura salva no catálogo.');
       await ensureCatalog();
-      await getDashboard(true);
       updateFrameSummary();
       resetFrameForm();
     } catch (error) { notify(error.message); }
@@ -1338,19 +1398,49 @@
       await Promise.all([ensureRoles(), loadRoleAssignments()]);
     } catch (error) { notify(error.message); }
   }
-  async function removeCatalogItem(kind, id) {
-    const permanent = kind === 'badges';
+  async function removeCatalogItem(kind, id, forcePermanent = false) {
+    const label = kind === 'badges' ? 'insígnia' : 'moldura';
+    const item = (kind === 'badges' ? ecosystemBadges : ecosystemFrames).find(entry => entry.id === id);
+    const protectedPurge = kind === 'badges' ? isProtectedBadgePurge(item) : isProtectedFramePurge(item);
+    if (forcePermanent && protectedPurge) {
+      notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" é automática, reservada ou protegida por regra e não pode ser excluída.`);
+      return;
+    }
+    const permanent = forcePermanent || kind === 'badges';
     const question = permanent
-      ? `Excluir a insígnia "${id}" permanentemente? Todas as concessões serão removidas e esta ação não pode ser desfeita.`
-      : `Desativar "${id}"? As concessões históricas serão preservadas e voltarão a aparecer se o item for reativado.`;
+      ? `Excluir a ${label} "${id}" permanentemente? Todas as ${kind === 'badges' ? 'concessões' : 'concessões e molduras equipadas'} serão removidas e esta ação não pode ser desfeita.`
+      : `Desativar "${id}"? As concessões históricas serão preservadas e voltarão a aparecer se o item for reativado. Para apagar de vez, use “Excluir”.`;
     if (!id || !window.confirm(question)) return;
     const path = permanent
       ? `/api/admin/catalog/${kind}/${encodeURIComponent(id)}/permanent`
       : `/api/admin/catalog/${kind}/${encodeURIComponent(id)}`;
     try {
       const result = await api(path, { method: 'DELETE' });
-      notify(permanent ? `Insígnia "${id}" excluída. ${Number(result.grantsRemoved || 0)} concessão(ões) removida(s).` : 'Item desativado. As concessões foram preservadas.');
+      if (permanent) {
+        const details = [`${Number(result.grantsRemoved || 0)} concessão(ões) removida(s)`];
+        if (Number(result.profilesUpdated || 0)) details.push(`${result.profilesUpdated} perfil(is) voltou/voltam à moldura padrão`);
+        notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" excluída. ${details.join(' · ')}.`);
+      } else notify('Item desativado. As concessões foram preservadas.');
       await ensureCatalog();
+      const refreshCode = entitlementCode();
+      const refreshProfiles = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(refreshCode)
+        ? Promise.all([loadProfileBadges(refreshCode), loadFrameProfile(refreshCode)])
+        : Promise.resolve();
+      await Promise.all([loadOverview(true), refreshProfiles]);
+      updateFrameSummary();
+    } catch (error) { notify(error.message); }
+  }
+  async function purgeRoleDefinition(id) {
+    const role = ecosystemRoles.find(entry => entry.id === id);
+    if (!id) return;
+    if (isProtectedRolePurge(role)) { notify(`O cargo "${id}" é reservado e não pode ser excluído.`); return; }
+    if (!window.confirm(`Excluir o cargo "${id}" permanentemente? Atribuições, referências em molduras e permissões do Studio serão removidas. Esta ação não pode ser desfeita.`)) return;
+    try {
+      const result = await api(`/api/admin/roles/${encodeURIComponent(id)}/permanent`, { method: 'DELETE' });
+      notify(`Cargo "${id}" excluído. ${Number(result.grantsRemoved || 0)} atribuição(ões) e ${Number(result.framesUpdated || 0)} moldura(s) atualizada(s).`);
+      rolesLoaded = false;
+      const refreshProfile = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(entitlementCode()) ? loadProfileRoles() : Promise.resolve();
+      await Promise.all([ensureRoles(), loadRoleAssignments(), ensureCatalog(), loadOverview(true), loadStudioAccess(), refreshProfile]);
     } catch (error) { notify(error.message); }
   }
   function codeFrom(fieldId) {
@@ -1366,6 +1456,7 @@
   function frameProfileCode() { return codeFrom('frameProfileCode') || codeFrom('badgeProfileCode') || codeFrom('entitlementCode'); }
   async function saveVip() {
     const code=entitlementCode(); if(!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code)){notify('Informe um código de perfil válido.');return;}
+    if (blockOfficialMutation(code, 'VIP e benefícios')) return;
     const enabled=$('vipEnabled').value==='true';
     const expiry=$('vipExpiry').value;
     const expiryMs=expiry ? new Date(expiry).getTime() : null;
@@ -1387,7 +1478,7 @@
       if (isBadge) await Promise.all([loadProfileBadges(), loadRoleAssignments()]);
       else {
         await loadFrameProfile();
-        await getDashboard(true);
+        await ensureCatalog();
         updateFrameSummary();
       }
     } catch (error) { notify(error.message); }
@@ -1396,6 +1487,7 @@
   async function mutateProfileRole(action) {
     const code = entitlementCode();
     if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(code)) { notify('Informe um código de perfil válido.'); return; }
+    if (blockOfficialMutation(code, 'cargos')) return;
     const roleId = $('grantRoleId').value;
     if (!roleId) { notify('Selecione um cargo.'); return; }
     const expiry = $('roleExpiry').value;
@@ -1430,7 +1522,12 @@
       const items = [
         ...(badgeData.badges || []).map(item => ({ kind: 'Insígnia', ...item })),
         ...(frameData.frames || []).map(item => ({ kind: 'Moldura', ...item })),
-        ...(benefitData.benefits || []).map(item => ({ kind: 'Benefício', name: item.name, id: item.id, detail: effectValueLabel(item.effect) }))
+        ...(Array.isArray(benefitData.benefits)
+          ? benefitData.benefits.map(item => ({ kind: 'Benefício', name: item.name || item.id, id: item.id, detail: effectValueLabel(item.effect) }))
+          : Object.entries(benefitData.benefits || {}).map(([id, effect]) => {
+            const benefit = ecosystemBenefits.find(item => item.id === id);
+            return { kind: 'Benefício', name: benefit?.name || id, id, detail: effectValueLabel(effect) };
+          }))
       ];
       $('profileBadgeList').innerHTML = items.length
         ? items.map(item => `<div class="role-row"><strong>${escapeHtml(item.kind)} · ${escapeHtml(item.name)}</strong><span>${escapeHtml(item.detail || item.id)}</span></div>`).join('')
@@ -1560,17 +1657,17 @@
   $("nextPage").addEventListener("click", () => { page = Math.min(totalPages, page + 1); loadProfiles(); });
   $("reloadStorage").addEventListener("click", loadStorage);
   $("reloadEcosystem").addEventListener("click", () => loadEcosystem(true));
-  $("reloadRoles").addEventListener("click", loadRolesView);
-  $("reloadBadges").addEventListener("click", loadBadgesView);
+  $("reloadRoles").addEventListener("click", () => loadRolesView(true));
+  $("reloadBadges").addEventListener("click", () => loadBadgesView(true));
   $("reloadFrames").addEventListener("click", loadFramesView);
   [["roleDefinitionSearch", "roleDefinitionList", "roleSearchHint"],
    ["roleAssignmentSearch", "roleAssignmentsList", "assignmentSearchHint"],
    ["collectionSearch", "collectionList", "collectionSearchHint"]].forEach(([inputId, listId, hintId]) => {
-    $(inputId).addEventListener("input", () => filterList(listId, $(inputId).value, hintId));
+    $(inputId).addEventListener("input", debounce(() => filterList(listId, $(inputId).value, hintId), 140));
   });
-  $("catalogSearch").addEventListener("input", () => { catalogVisible = CATALOG_PAGE; renderCatalog(); });
+  $("catalogSearch").addEventListener("input", debounce(() => { catalogVisible = CATALOG_PAGE; renderCatalog(); }, 160));
   $("catalogMore").addEventListener("click", () => { catalogVisible += CATALOG_PAGE; renderCatalog(); });
-  $("badgePurgeSearch").addEventListener("input", renderBadgePurgeList);
+  $("badgePurgeSearch").addEventListener("input", debounce(renderBadgePurgeList, 160));
   document.querySelectorAll("[data-badge-tab]").forEach(button => button.addEventListener("click", () => {
     const tab = button.dataset.badgeTab;
     $('badgeCatalogPane').hidden = tab !== 'catalog';
@@ -1585,15 +1682,17 @@
   }));
   $("reloadBadgeRules").addEventListener("click", loadBadgeRules);
   $("saveBadgeRules").addEventListener("click", saveBadgeRules);
-  $('badgeRulesDenyList').addEventListener('input', updateBadgeRulesImpact);
+  $('badgeRulesDenyList').addEventListener('input', debounce(updateBadgeRulesImpact, 160));
   $("previewRoles").addEventListener("click", () => openPreview('entitlementCode'));
   $("previewBadges").addEventListener("click", () => openPreview('badgeProfileCode'));
   $("previewClose").addEventListener("click", closePreview);
   $("previewOpenTab").addEventListener("click", () => { if (previewUrl) window.open(previewUrl, '_blank', 'noopener,noreferrer'); });
   $("previewModal").addEventListener("click", (event) => { if (event.target === $('previewModal')) closePreview(); });
   document.addEventListener("keydown", (event) => { if (event.key === 'Escape' && !$('previewModal').hidden) closePreview(); });
-  ["roleDefinitionId", "roleDefinitionLabel", "roleDefinitionColor"].forEach(id => $(id).addEventListener("input", applyRolePreview));
-  ["catalogId", "catalogName", "catalogDescription", "catalogIcon", "catalogColor", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", applyBadgePreview));
+  const refreshRolePreview = debounce(applyRolePreview, 120);
+  const refreshBadgePreview = debounce(applyBadgePreview, 120);
+  ["roleDefinitionId", "roleDefinitionLabel", "roleDefinitionColor"].forEach(id => $(id).addEventListener("input", refreshRolePreview));
+  ["catalogId", "catalogName", "catalogDescription", "catalogIcon", "catalogColor", "catalogCategory", "catalogRarity"].forEach(id => $(id).addEventListener("input", refreshBadgePreview));
   $("catalogIconFile").addEventListener("change", () => { if ($("catalogIconFile").files?.length) { $("badgeEmojiPreview").textContent = "🖼️"; $("badgePreviewMeta").textContent = "PNG personalizado"; } else applyBadgePreview(); });
   $("saveCatalogItem").addEventListener("click", saveCatalogItem);
   $("frameAccess").addEventListener("change", syncFrameAccessFields);
@@ -1610,11 +1709,12 @@
       notify(error.message);
     }
   });
-  ["frameScale", "frameX", "frameY"].forEach((id) => $(id).addEventListener("input", updateFrameAdjustPreview));
+  const refreshFrameAdjust = debounce(updateFrameAdjustPreview, 80);
+  ["frameScale", "frameX", "frameY"].forEach((id) => $(id).addEventListener("input", refreshFrameAdjust));
   $("centerFrameNow").addEventListener("click", () => centerFrameAdjust());
   $("saveFrame").addEventListener("click", saveFrame);
   $("newFrame").addEventListener("click", resetFrameForm);
-  $("frameCatalogSearch").addEventListener("input", renderFrameCatalog);
+  $("frameCatalogSearch").addEventListener("input", debounce(renderFrameCatalog, 160));
   document.querySelectorAll("[data-badge-preset]").forEach(button => button.addEventListener("click", () => applyBadgePreset(button.dataset.badgePreset)));
   document.querySelectorAll("[data-role-preset]").forEach(button => button.addEventListener("click", () => applyRolePreset(button.dataset.rolePreset)));
   $("saveCollection").addEventListener("click", saveCollection);
@@ -1642,6 +1742,7 @@
   $("saveRoleDefinition").addEventListener("click", saveRoleDefinition);
   $("newRoleDefinition").addEventListener("click", resetRoleDefinition);
   $("saveVip").addEventListener("click", saveVip);
+  $("entitlementCode").addEventListener("input", syncOfficialGuards);
   $("grantRole").addEventListener("click", () => mutateProfileRole("grant"));
   $("revokeRole").addEventListener("click", () => mutateProfileRole("revoke"));
   $("loadProfileRoles").addEventListener("click", loadProfileRoles);
@@ -1684,6 +1785,7 @@
 
   setupStatus();
   setupLoginHint();
+  syncOfficialGuards();
   syncFrameAccessFields();
   if (token) showApp(true); else showApp(false);
 })();

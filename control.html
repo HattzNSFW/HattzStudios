@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa20">
-  <link rel="stylesheet" href="control.css?v=e7c4aa20">
-  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa20">
+  <link rel="stylesheet" href="core/design-tokens.css?v=e7c4aa21">
+  <link rel="stylesheet" href="control.css?v=e7c4aa21">
+  <link rel="stylesheet" href="core/hattz-polish.css?v=e7c4aa21">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
@@ -131,7 +131,7 @@
             </div>
             <div class="panel-grid">
               <article class="panel glass"><div class="panel-heading"><div><p class="eyebrow">PROFILE BENEFITS</p><h2>VIP, benefícios e cargos do perfil</h2></div></div>
-                <div class="field"><label for="entitlementCode">Código do perfil</label><input id="entitlementCode" placeholder="HTZ-ABCDE-FGHIJ"></div>
+                <div class="field"><label for="entitlementCode">Código do perfil</label><input id="entitlementCode" placeholder="HTZ-ABCDE-FGHIJ"><p id="officialCodeWarning" class="official-warning" hidden>Perfil oficial detectado: VIP, cargos e benefícios são protegidos. As ações abaixo ficam desabilitadas.</p></div>
                 <div class="field"><label for="vipEnabled">Acesso VIP</label><select id="vipEnabled"><option value="true">Conceder / manter ativo</option><option value="false">Revogar</option></select></div>
                 <div class="field"><label for="vipExpiry">Validade (opcional)</label><input id="vipExpiry" type="datetime-local"></div>
                 <button id="saveVip" class="secondary">Atualizar VIP</button><p class="muted">Benefício aplicado no backend: limite individual de mídia de 500 MiB enquanto o VIP estiver ativo (250 MiB no plano padrão). O teto global do Hättz não muda.</p>
@@ -180,7 +180,7 @@
               <div class="inline-actions"><button id="saveRoleDefinition" class="primary" type="button">Salvar cargo especial</button><button id="newRoleDefinition" class="quiet-button" type="button">Novo cargo</button></div>
               <div class="catalog-toolbar"><input id="roleDefinitionSearch" class="search-input" type="search" placeholder="Buscar cargo por nome ou ID" aria-label="Buscar cargo"><span id="roleSearchHint" class="search-hint" hidden>Nenhum cargo encontrado.</span></div>
               <div id="roleDefinitionList" class="role-definition-list"><p class="empty">Carregando cargos...</p></div>
-              <p class="muted">Os temas são aplicados somente ao perfil que recebeu o cargo ativo. Cargos administrativos e VIP não podem ser criados por este editor.</p>
+              <p class="muted">Os temas são aplicados somente ao perfil que recebeu o cargo ativo. Cargos administrativos e VIP não podem ser criados ou excluídos por este editor: “Desativar” preserva as atribuições, enquanto “Excluir” remove atribuições, referências em molduras e permissões do Studio.</p>
             </article>
             </div>
             <div class="panel-grid">
@@ -260,7 +260,7 @@
             </div>
             <div id="badgePurgePane" hidden>
               <article class="panel glass">
-                <div class="panel-heading"><div><p class="eyebrow">PERMANENT REMOVAL</p><h2>Excluir insígnias permanentemente</h2><p class="muted">Esta ação apaga a insígnia do catálogo e remove todas as concessões associadas. Não há desfazer.</p></div></div>
+                <div class="panel-heading"><div><p class="eyebrow">PERMANENT REMOVAL</p><h2>Excluir insígnias permanentemente</h2><p class="muted">A exclusão apaga a insígnia do catálogo e remove todas as concessões associadas; a quantidade aparece em cada linha. Insígnias automáticas, reservadas ou protegidas por regra ficam sem botão de exclusão. Para desativar sem apagar o histórico, use “Desativar” na aba Catálogo.</p></div></div>
                 <div class="catalog-toolbar"><input id="badgePurgeSearch" class="search-input" type="search" placeholder="Buscar insígnia" aria-label="Buscar insígnia para exclusão"><span id="badgePurgeCount" class="catalog-count">— itens</span><span id="badgePurgeHint" class="search-hint" hidden>Nenhuma insígnia encontrada.</span></div>
                 <div id="badgePurgeList" class="audit-list"><p class="empty">Carregando insígnias...</p></div>
               </article>
@@ -277,7 +277,7 @@
           </section>
 
           <section class="view" id="view-frames">
-            <div class="page-heading"><div><p class="eyebrow">PNG FRAMES</p><h1>Molduras</h1><p class="muted">Crie molduras PNG, defina o acesso e conceda aos perfis. Remover aqui desativa a moldura e preserva as concessões.</p></div><button id="reloadFrames" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
+            <div class="page-heading"><div><p class="eyebrow">PNG FRAMES</p><h1>Molduras</h1><p class="muted">Crie molduras PNG, defina o acesso e conceda aos perfis. “Desativar” preserva as concessões; “Excluir” apaga a moldura, suas concessões e volta os perfis que a usavam à moldura padrão.</p></div><button id="reloadFrames" class="quiet-button"><svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 4v7h-7"/></svg>Atualizar</button></div>
             <div class="workspace-summary" id="frameSummary">
               <div class="summary-chip"><span>ATIVAS</span><strong id="frameActiveCount">—</strong></div>
               <div class="summary-chip"><span>PÚBLICAS</span><strong id="framePublicCount">—</strong></div>
@@ -376,12 +376,12 @@
       <div class="preview-frame-wrap"><iframe id="previewFrame" title="Prévia do perfil publicado"></iframe></div>
     </div>
   </div>
-  <script defer src="core/hattz-dialog.js?v=e7c4aa20"></script>
-  <script defer src="share-config.js?v=e7c4aa20"></script>
-  <script defer src="core/hattz-core.js?v=e7c4aa20"></script>
-  <script defer src="core/local-history.js?v=e7c4aa20"></script>
-  <script defer src="core/profile-contract.js?v=e7c4aa20"></script>
-  <script defer src="control.js?v=e7c4aa20"></script>
-  <script defer src="core/liquid-glass.js?v=e7c4aa20"></script>
+  <script defer src="core/hattz-dialog.js?v=e7c4aa21"></script>
+  <script defer src="share-config.js?v=e7c4aa21"></script>
+  <script defer src="core/hattz-core.js?v=e7c4aa21"></script>
+  <script defer src="core/local-history.js?v=e7c4aa21"></script>
+  <script defer src="core/profile-contract.js?v=e7c4aa21"></script>
+  <script defer src="control.js?v=e7c4aa21"></script>
+  <script defer src="core/liquid-glass.js?v=e7c4aa21"></script>
 </body>
 </html>

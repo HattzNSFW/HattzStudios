@@ -316,3 +316,4 @@ tbody td{border-bottom-color:rgba(255,255,255,.05)}
 .activity-heatmap[hidden]{display:none!important}
 @media(max-width:700px){.metric-spark{width:48px;height:20px}.metric small{padding-right:54px}.heatmap-grid{gap:3px}.heatmap-day small{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.chart-switch-button{transition:none}}
+.official-warning{margin:8px 0 0;padding:9px 11px;border:1px solid rgba(243,169,184,.38);border-radius:10px;background:rgba(243,169,184,.08);color:#f3a9b8;font-size:12px;line-height:1.5}

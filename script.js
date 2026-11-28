@@ -2,6 +2,16 @@
 
 const $ = (id) => document.getElementById(id);
 
+/* Agrupa trabalho disparado por input/slider: a interface responde na hora,
+   enquanto persistência, histórico e re-render são feitos uma vez por rajada. */
+function debounce(fn, wait = 160) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
 const STORAGE_KEY = "meuPerfil";
 const DB_NAME = "MeuPainelDB";
 const DB_VERSION = 1;
@@ -315,6 +325,8 @@ let applyingHistory = false;
 let applyingDraft = false;
 let visitorPreviewMode = false;
 let profileBeforePreview = null;
+
+const saveProfileSoon = debounce(() => { saveProfile(); }, 220);
 
 function saveProfile() {
   if (IS_PUBLIC_VIEW) return false;
@@ -1687,10 +1699,10 @@ function applyMediaOpacitySettings() {
   });
 }
 
-function updateMediaOpacity(key, value) {
+function updateMediaOpacity(key, value, deferSave = false) {
   profile[key] = clampPercent(value, DEFAULT_PROFILE[key]);
   applyMediaOpacitySettings();
-  saveProfile();
+  if (deferSave) saveProfileSoon(); else saveProfile();
 }
 
 function applyMusicPlayerSize() {
@@ -2009,13 +2021,17 @@ function applyCropPreviewStyle(key) {
   if (media && (media.naturalWidth || media.videoWidth)) updateCropPreviewGeometry(key, media);
 }
 
+const refreshCropVisuals = debounce((key) => {
+  applyCropSettings();
+  applyCropPreviewStyle(key);
+}, 60);
+
 function setCropValue(key, axis, value) {
   const cropKey = `${key}Crop`;
   profile[cropKey] ||= { x: 50, y: 50, zoom: 100 };
   profile[cropKey][axis] = Number(value);
   updateCropLabels(key);
-  applyCropSettings();
-  applyCropPreviewStyle(key);
+  refreshCropVisuals(key);
 }
 
 function resetCrop(key) {
@@ -2504,6 +2520,9 @@ function addStat() {
   renderStats();
 }
 
+const refreshStats = debounce(renderStats, 120);
+const refreshDetails = debounce(renderDetails, 120);
+
 function handleStatsEditor(event) {
   const row = event.target.closest(".dynamic-row");
 
@@ -2518,12 +2537,12 @@ function handleStatsEditor(event) {
   if (event.target.classList.contains("row-label")) {
     item.label = event.target.value;
     item.icon = getStatIcon(item.label);
-    renderStats();
+    refreshStats();
   }
 
   if (event.target.classList.contains("row-value")) {
     item.value = event.target.value;
-    renderStats();
+    refreshStats();
   }
 
   if (event.target.classList.contains("remove-row")) {
@@ -2589,12 +2608,12 @@ function handleDetailsEditor(event) {
   if (event.target.classList.contains("row-label")) {
     item.label = event.target.value;
     item.icon = getDetailIcon(item.label);
-    renderDetails();
+    refreshDetails();
   }
 
   if (event.target.classList.contains("row-value")) {
     item.value = event.target.value;
-    renderDetails();
+    refreshDetails();
   }
 
   if (event.target.classList.contains("remove-row")) {
@@ -4077,11 +4096,12 @@ function setupEvents() {
     }
   });
 
+  const saveEditorDraftSoon = debounce(() => {
+    if (applyingDraft || IS_PUBLIC_VIEW) return;
+    window.HATTZ_HISTORY?.saveDraft(EDITOR_DRAFT_KEY, collectEditorDraft());
+  }, 180);
   for (const type of ["input", "change"]) {
-    $("editorModal").addEventListener(type, () => {
-      if (applyingDraft || IS_PUBLIC_VIEW) return;
-      window.HATTZ_HISTORY?.saveDraft(EDITOR_DRAFT_KEY, collectEditorDraft());
-    });
+    $("editorModal").addEventListener(type, saveEditorDraftSoon);
   }
 
   window.HATTZ_HISTORY?.bindShortcut({
@@ -4124,13 +4144,13 @@ function setupEvents() {
     profile.musicPlayerWidth = Number(event.target.value);
     $("musicPlayerWidthValue").textContent = `${profile.musicPlayerWidth} px`;
     applyMusicPlayerSize();
-    saveProfile();
+    saveProfileSoon();
   });
   $("musicPlayerHeight").addEventListener("input", (event) => {
     profile.musicPlayerHeight = Number(event.target.value);
     $("musicPlayerHeightValue").textContent = `${profile.musicPlayerHeight} px`;
     applyMusicPlayerSize();
-    saveProfile();
+    saveProfileSoon();
   });
   document.querySelectorAll("[data-reset-setting]").forEach((button) => {
     button.addEventListener("click", () => resetProfileSetting(button.dataset.resetSetting));
@@ -4218,13 +4238,14 @@ function setupEvents() {
     applyMediaPlayback();
   });
 
+  const refreshBannerSettings = debounce(applyBannerSettings, 60);
   $("bannerHeight").addEventListener("input", (event) => {
     profile.bannerHeight = Number(event.target.value);
     updateBannerRangeLabels();
-    applyBannerSettings();
+    refreshBannerSettings();
   });
 
-  window.addEventListener("resize", applyBannerSettings, { passive: true });
+  window.addEventListener("resize", refreshBannerSettings, { passive: true });
 
   $("pauseBanner").addEventListener("change", (event) => {
     profile.bannerPausado = event.target.checked;
@@ -4242,7 +4263,7 @@ function setupEvents() {
   });
 
   ["bannerOpacity", "cardBackgroundOpacity", "backgroundOpacity", "musicBarBackgroundOpacity"].forEach((key) => {
-    $(key).addEventListener("input", (event) => updateMediaOpacity(key, event.target.value));
+    $(key).addEventListener("input", (event) => updateMediaOpacity(key, event.target.value, true));
   });
 
   ["avatar", "banner", "cardBackground", "background", "musicBarBackground"].forEach((key) => {
@@ -4304,7 +4325,7 @@ function setupEvents() {
     profile.volume = value;
     $("profileAudio").volume = value / 100;
     $("profileVideo").volume = value / 100;
-    saveProfile();
+    saveProfileSoon();
   });
 
   $("saveTheme").addEventListener("click", saveCurrentTheme);
@@ -4312,7 +4333,7 @@ function setupEvents() {
   $("deleteSavedTheme").addEventListener("click", deleteSavedTheme);
 
   $("badgeLibrary").addEventListener("click", toggleBadgePreset);
-  $("editBadges").addEventListener("input", renderBadgeLibrary);
+  $("editBadges").addEventListener("input", debounce(renderBadgeLibrary, 120));
 
   $("gradientIntensity").addEventListener("input", (event) => {
     profile.gradientIntensity = Number(event.target.value);

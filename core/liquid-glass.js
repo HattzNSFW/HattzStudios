@@ -694,17 +694,31 @@
     }, { passive: true });
 
     if (window.MutationObserver) {
+      /* Control atualiza listas inteiras de uma vez; agrupar os nós novos em um
+         único frame evita percorrer o DOM várias vezes por mutação. */
+      var pendingNodes = new Set();
+      var scanScheduled = false;
       new MutationObserver(function (mutations) {
-        var added = false;
         mutations.forEach(function (mutation) {
           if (!mutation.addedNodes) return;
           Array.prototype.forEach.call(mutation.addedNodes, function (node) {
-            if (node.nodeType !== 1) return;
+            if (node.nodeType === 1) pendingNodes.add(node);
+          });
+        });
+        if (!pendingNodes.size || scanScheduled) return;
+        scanScheduled = true;
+        frame(function () {
+          scanScheduled = false;
+          var batch = Array.from(pendingNodes);
+          pendingNodes.clear();
+          var added = false;
+          batch.forEach(function (node) {
+            if (!node.isConnected) return;
             scan(node);
             added = true;
           });
+          if (added && document.body.classList.contains("capture-mode")) revealAll();
         });
-        if (added && document.body.classList.contains("capture-mode")) revealAll();
       }).observe(document.body, { childList: true, subtree: true });
 
       new MutationObserver(function () {

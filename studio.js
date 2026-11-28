@@ -5,6 +5,15 @@
   const storageKey = window.HATTZ_CORE?.profileStorageKey?.(profileId) || `meuPerfil:${profileId}`;
   const API = String(window.HATTZ_CORE?.apiBase?.() || window.HATTZ_SHARE_CONFIG?.apiBase || "").replace(/\/+$/, "");
   const $ = (id) => document.getElementById(id);
+  function debounce(fn, wait = 160) {
+    let timer;
+    const run = (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), wait);
+    };
+    run.cancel = () => clearTimeout(timer);
+    return run;
+  }
   const defaults = { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0, frameAutoFit: true } };
   const frameAssets = {};
   let profile;
@@ -137,6 +146,10 @@
     }
     writeProfile(show);
   }
+  const saveSoon = debounce(() => save(false), 180);
+  const previewThemeSoon = debounce((theme) => {
+    try { $("profilePreview").contentWindow?.postMessage({ type: "HATTZ_STUDIO_THEME_PREVIEW", theme }, location.origin); } catch {}
+  }, 80);
 
   function applyStudioSnapshot(snapshot, message) {
     applyingStudioHistory = true;
@@ -184,15 +197,15 @@
   });
   document.querySelectorAll("[data-glass]").forEach(input => input.addEventListener("input", () => {
     profile.studio.glass[input.dataset.glass] = Number(input.value);
-    renderGlass(); save(false);
+    renderGlass(); saveSoon();
   }));
   document.querySelectorAll("[data-avatar]").forEach(input => input.addEventListener("input", () => {
     profile.studio.avatar[input.dataset.avatar] = Number(input.value);
-    renderAvatar(); save(false);
+    renderAvatar(); saveSoon();
   }));
   $("avatarFrameAutoFit")?.addEventListener("change", (event) => {
     profile.studio.avatar.frameAutoFit = event.target.checked;
-    save(false);
+    saveSoon();
   });
   $("fitFrameNow")?.addEventListener("click", () => {
     const asset = frameAssets[profile.moldura] || {};
@@ -217,9 +230,9 @@
   [["cardOpacity", "opacity"], ["cardBlur", "blur"], ["cardGlow", "glow"]].forEach(([id, key]) => $(id).addEventListener("input", () => {
     const target = $("cardTarget").value;
     profile.studio.cards[target] = { ...(profile.studio.cards[target] || {}), [key]: Number($(id).value) };
-    renderCard(); save(false);
+    renderCard(); saveSoon();
   }));
-  $("resetCard").addEventListener("click", () => { delete profile.studio.cards[$("cardTarget").value]; renderCard(); save(false); });
+  $("resetCard").addEventListener("click", () => { delete profile.studio.cards[$("cardTarget").value]; renderCard(); saveSoon(); });
   document.addEventListener("click", (event) => {
     const btn = event.target.closest("button[data-frame]");
     if (!btn) return;
@@ -229,12 +242,12 @@
     }
     profile.moldura = btn.dataset.frame;
     syncFrameSelection();
-    save(false);
+    saveSoon();
   });
   $("profilePreview").addEventListener("load", () => {
     try { $("profilePreview").contentWindow.postMessage({ type: "HATTZ_STUDIO_PREVIEW_REFRESH", frames: frameAssets }, location.origin); } catch {}
   });
-  $("saveStudio")?.addEventListener("click", () => save(true));
+  $("saveStudio")?.addEventListener("click", () => { saveSoon.cancel(); save(true); });
 
   let themeAllowed = false;
   let profileCode = "";
@@ -295,7 +308,7 @@
   $("saveProfileTheme").addEventListener("click", saveProfileTheme);
   document.querySelectorAll("[data-theme]").forEach(input => input.addEventListener("input", () => {
     const theme = Object.fromEntries([...document.querySelectorAll("[data-theme]")].map(x => [x.dataset.theme, x.value]));
-    try { $("profilePreview").contentWindow?.postMessage({ type: "HATTZ_STUDIO_THEME_PREVIEW", theme }, location.origin); } catch {}
+    previewThemeSoon(theme);
   }));
 
   function effectLabel(key, value) {
