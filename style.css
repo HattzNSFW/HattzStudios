@@ -3573,3 +3573,22 @@ img,video{max-width:100%}
 .publish-state[data-state="pending"] { color: #e6bd7b; }
 .publish-state[data-state="publishing"] { color: var(--accent); }
 .publish-state[data-state="error"] { color: #ff9aab; }
+
+/* A moldura segue o tamanho escolhido no Studio e encolhe com o avatar.
+   Antes o JS escrevia width/height inline e ignorava estes media queries. */
+.avatar-frame {
+  width: var(--studio-frame-size, 150px);
+  height: var(--studio-frame-size, 150px);
+}
+@media (max-width: 650px) {
+  .avatar-frame {
+    width: calc(var(--studio-frame-size, 150px) * .947);
+    height: calc(var(--studio-frame-size, 150px) * .947);
+  }
+}
+@media (max-width: 420px) {
+  .avatar-frame {
+    width: calc(var(--studio-frame-size, 150px) * .72);
+    height: calc(var(--studio-frame-size, 150px) * .72);
+  }
+}

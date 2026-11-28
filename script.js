@@ -1001,8 +1001,9 @@ function applyStudioSettings() {
   const avatar = config.avatar || DEFAULT_PROFILE.studio.avatar;
   const frame = $("avatarFrame");
   if (frame) {
-    frame.style.width = `${avatar.size || 150}px`;
-    frame.style.height = `${avatar.size || 150}px`;
+    // O tamanho vem do Avatar Lab, mas a moldura encolhe junto com o avatar
+    // nos media queries — nunca fixa 150px inline em telas pequenas.
+    root.style.setProperty("--studio-frame-size", `${avatar.size || 150}px`);
     frame.style.setProperty("--studio-frame-thickness", `${avatar.thickness || 2}px`);
     frame.style.setProperty("--studio-frame-lighting", `${Number(avatar.lighting || 0) / 100}`);
     frame.style.translate = `${Number(avatar.offsetX || 0)}px ${Number(avatar.offsetY || 0)}px`;
