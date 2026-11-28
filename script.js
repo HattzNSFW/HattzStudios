@@ -132,7 +132,7 @@ const DEFAULT_PROFILE = {
   volume: 12,
   gradientIntensity: 55,
   cardRadius: 18,
-  studio: { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0, frameAutoFit: true } },
+  studio: { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0 } },
 
   tema: "dark",
 
@@ -723,29 +723,6 @@ function getDetailIcon(label = "") {
   return match ? match.icon : "✦";
 }
 
-const frameFitCache = new Map();
-function frameFitInfo(img) {
-  const key = img?.currentSrc || img?.src || "";
-  if (!key || !img.naturalWidth || !window.HATTZ_FRAME_FIT) return null;
-  if (frameFitCache.has(key)) return frameFitCache.get(key);
-  const info = window.HATTZ_FRAME_FIT.measureFrameImage(img)
-    || { baseScale: 100, centerX: .5, centerY: .5 };
-  frameFitCache.set(key, info);
-  return info;
-}
-function centerFrameThumb(img) {
-  if (!img || !window.HATTZ_FRAME_FIT) return;
-  const apply = () => {
-    const info = frameFitInfo(img);
-    if (!info) return;
-    const size = img.clientWidth || img.parentElement?.clientWidth || 46;
-    const round = (value) => Math.round(value * 10) / 10;
-    img.style.transform = `translate(${round((.5 - info.centerX) * size)}px,${round((.5 - info.centerY) * size)}px)`;
-    img.dataset.frameCentered = "true";
-  };
-  if (img.complete && img.naturalWidth) apply();
-  else img.addEventListener("load", apply, { once: true });
-}
 function applyFrameTransform() {
   const frame = $("avatarFrame");
   const img = frame?.querySelector("img");
@@ -753,11 +730,7 @@ function applyFrameTransform() {
   if (!frame || !img || !fit) return null;
   const avatar = profile.studio?.avatar || DEFAULT_PROFILE.studio.avatar;
   const asset = window.HATTZ_REMOTE_FRAMES?.[profile.moldura] || {};
-  const size = Number.parseFloat(frame.style.width)
-    || fit.FRAME_REFERENCE_SIZE;
-  const adjust = avatar.frameAutoFit !== false
-    ? fit.autoFrameAdjust(frameFitInfo(img), size, avatar)
-    : fit.manualFrameAdjust(asset, avatar);
+  const adjust = fit.manualFrameAdjust(asset, avatar);
   img.style.transform = `translate(${adjust.x}px,${adjust.y}px) scale(${adjust.scale / 100})`;
   return adjust;
 }
@@ -3715,7 +3688,6 @@ function createInventoryFrameCard(frame) {
     art.className = "inventory-frame-image";
     art.src = source;
     art.alt = "";
-    centerFrameThumb(art);
   } else {
     art = document.createElement("span");
     art.className = "inventory-frame-placeholder";

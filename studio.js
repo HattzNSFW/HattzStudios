@@ -14,7 +14,7 @@
     run.cancel = () => clearTimeout(timer);
     return run;
   }
-  const defaults = { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0, frameAutoFit: true } };
+  const defaults = { glass: { opacity: 72, blur: 18, reflection: 42, glow: 28, border: 45, depth: 42 }, cards: {}, avatar: { size: 150, thickness: 2, offsetX: 0, offsetY: 0, lighting: 65, frameScale: 100, frameX: 0, frameY: 0 } };
   const frameAssets = {};
   let profile;
   let toastTimer = 0;
@@ -103,8 +103,6 @@
       const out = $(`avatar${key[0].toUpperCase() + key.slice(1)}Out`);
       if (out) out.textContent = ["size", "thickness", "offsetX", "offsetY", "frameX", "frameY"].includes(key) ? `${value} px` : `${value}%`;
     }
-    const autoFit = $("avatarFrameAutoFit");
-    if (autoFit) autoFit.checked = profile.studio.avatar.frameAutoFit !== false;
   }
   function renderCard() {
     const key = $("cardTarget").value, item = profile.studio.cards[key] || {};
@@ -203,29 +201,6 @@
     profile.studio.avatar[input.dataset.avatar] = Number(input.value);
     renderAvatar(); saveSoon();
   }));
-  $("avatarFrameAutoFit")?.addEventListener("change", (event) => {
-    profile.studio.avatar.frameAutoFit = event.target.checked;
-    saveSoon();
-  });
-  $("fitFrameNow")?.addEventListener("click", () => {
-    const asset = frameAssets[profile.moldura] || {};
-    if (!asset.imageData) { toast("Escolha uma moldura PNG para ajustar."); return; }
-    const finish = (info) => {
-      const fit = window.HATTZ_FRAME_FIT;
-      const adjust = fit?.autoFrameAdjust(info, Number(profile.studio.avatar.size) || 150, profile.studio.avatar);
-      if (!adjust) { toast("Não foi possível medir esta moldura."); return; }
-      Object.assign(profile.studio.avatar, {
-        frameScale: adjust.scale, frameX: adjust.x, frameY: adjust.y, frameAutoFit: true
-      });
-      renderAvatar();
-      save(false);
-      toast(`Moldura ajustada: ${adjust.scale}% · ${adjust.x}px / ${adjust.y}px.`);
-    };
-    const image = new Image();
-    image.onload = () => finish(window.HATTZ_FRAME_FIT?.measureFrameImage(image));
-    image.onerror = () => finish(null);
-    image.src = asset.imageData;
-  });
   $("cardTarget").addEventListener("change", renderCard);
   [["cardOpacity", "opacity"], ["cardBlur", "blur"], ["cardGlow", "glow"]].forEach(([id, key]) => $(id).addEventListener("input", () => {
     const target = $("cardTarget").value;
@@ -371,20 +346,6 @@
       hint: role ? `Cargo ${roleName} · liberada para este perfil.` : `Bloqueada · exige o cargo ${roleName}.`
     };
   }
-  function centerFrameThumb(img) {
-    if (!img || !window.HATTZ_FRAME_FIT) return;
-    const apply = () => {
-      if (!img.naturalWidth) return;
-      const measured = window.HATTZ_FRAME_FIT.measureFrameImage(img);
-      if (!measured) return;
-      const size = img.clientWidth || img.parentElement?.clientWidth || 46;
-      const round = (value) => Math.round(value * 10) / 10;
-      img.style.transform = `translate(${round((.5 - measured.centerX) * size)}px,${round((.5 - measured.centerY) * size)}px)`;
-      img.dataset.frameCentered = "true";
-    };
-    if (img.complete && img.naturalWidth) apply();
-    else img.addEventListener("load", apply, { once: true });
-  }
   function renderFrameCatalog(catalogFrames = [], info = {}) {
     const selected = catalogFrames.find(frame => frame.id === profile.moldura);
     if (selected && !frameAvailability(selected, info).available) {
@@ -424,14 +385,13 @@
         ? (frame.description ? `${frame.description} · ${state.hint}` : state.hint)
         : state.hint;
       const preview = asset.imageData
-        ? `<span class="frame-catalog-preview"><img src="${escapeText(asset.imageData)}" alt=""><span class="frame-fit-badge" aria-hidden="true">AUTO FIT</span></span>`
+        ? `<span class="frame-catalog-preview"><img src="${escapeText(asset.imageData)}" alt=""></span>`
         : '<span class="frame-catalog-preview plain">○</span>';
       const action = state.available
         ? `<button class="frame-option frame-catalog-button" type="button" data-frame="${escapeText(frame.id)}" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>${escapeText(frame.rarityLabel || frame.rarity || "Especial")}</small></button>`
         : `<div class="frame-option frame-catalog-button locked" title="${escapeText(hint)}">${preview}<b>${escapeText(frame.name || frame.id)}</b><small>🔒 ${escapeText(kindLabels[state.kind])}</small></div>`;
       return `<article class="frame-catalog-item ${state.available ? "" : "locked"}"><span class="frame-catalog-status ${state.available ? "available" : "locked"}">${label}</span>${action}<small class="frame-catalog-kind">${escapeText(kindLabels[state.kind])}</small><small class="frame-catalog-hint">${escapeText(hint)}</small></article>`;
     }).join("");
-    root.querySelectorAll(".frame-catalog-preview img").forEach(centerFrameThumb);
     syncFrameSelection();
   }
 

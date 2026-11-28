@@ -21,6 +21,8 @@
   let catalogItems = [];
   let catalogVisible = 12;
   let badgeRulesProtectedIds = [];
+  let badgeRulesDenyIds = new Set();
+  const pendingMutations = new Set();
   const OFFICIAL_CODES = new Set(["MT7QTEVMZY", "YGZNK6TMG8"]);
   const PURGE_PROTECTED_BADGE_IDS = new Set(["owner", "vip", "apoiador", "event-pass", "creative-flare", "community-anchor", "chronicle"]);
   const PURGE_PROTECTED_FRAME_IDS = new Set(["none", "default", "padrao", "padrão"]);
@@ -630,11 +632,14 @@
   function isProtectedBadgePurge(badge) {
     const id = String(badge?.id || '').toLowerCase();
     return badge?.award_mode === 'automatic' || PURGE_PROTECTED_BADGE_IDS.has(id)
+      || badgeRulesDenyIds.has(id) || badgeRulesProtectedIds.includes(id)
       || RESERVED_BADGE.test(id) || RESERVED_BADGE.test(badge?.name || '');
   }
   function isProtectedFramePurge(frame) {
     const id = String(frame?.id || '').toLowerCase();
-    return PURGE_PROTECTED_FRAME_IDS.has(id) || RESERVED_BADGE.test(frame?.name || '');
+    return PURGE_PROTECTED_FRAME_IDS.has(id)
+      || RESERVED_LABEL.test(id) || RESERVED_LABEL.test(frame?.name || '')
+      || RESERVED_BADGE.test(id) || RESERVED_BADGE.test(frame?.name || '');
   }
   function isProtectedRolePurge(role) {
     return RESERVED_LABEL.test(String(role?.id || '')) || RESERVED_LABEL.test(String(role?.label || role?.name || ''));
@@ -650,7 +655,8 @@
     const shown = matches.slice(0, catalogVisible);
     root.innerHTML = shown.map(item => item.html).join('')
       || `<p class="empty">${query ? 'Nenhuma insígnia encontrada.' : 'Nenhuma insígnia cadastrada. Crie cada item manualmente.'}</p>`;
-    root.querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', () => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog)));
+    root.querySelectorAll('[data-delete-catalog]').forEach(button => button.addEventListener('click', (event) => removeCatalogItem(button.dataset.catalogKind, button.dataset.deleteCatalog, button.dataset.catalogKind === 'badges', event.currentTarget)));
+    root.querySelectorAll('[data-toggle-catalog]').forEach(button => button.addEventListener('click', (event) => toggleCatalogItem('badges', button.dataset.toggleCatalog, button.dataset.catalogEnabled !== '1', event.currentTarget)));
     const count = $('catalogCount');
     if (count) count.textContent = query ? `${matches.length} encontrado(s)` : `${shown.length} de ${matches.length} itens`;
     const more = $('catalogMore');
@@ -673,7 +679,7 @@
       return `<div class="audit-item" data-search="${escapeHtml(`${badge.id} ${badge.name || ''} ${badge.description || ''}`)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(badge)}</span> ${escapeHtml(badge.name)}</div><div class="audit-detail">${escapeHtml(badge.id)} · ${grantLabel(badge)}${Number(badge.enabled) === 0 ? ' · Desativada' : ''}${reason ? ` · Não excluível: ${reason}` : ''}</div></div><button type="button" class="quiet-button danger-action" data-purge-badge="${escapeHtml(badge.id)}"${protectedPurge ? ' disabled' : ''}>Excluir</button></div>`;
     }).join('')
       : `<p class="empty">${query ? 'Nenhuma insígnia encontrada.' : 'Nenhuma insígnia cadastrada.'}</p>`;
-    root.querySelectorAll('[data-purge-badge]').forEach(button => button.addEventListener('click', () => removeCatalogItem('badges', button.dataset.purgeBadge)));
+    root.querySelectorAll('[data-purge-badge]').forEach(button => button.addEventListener('click', (event) => removeCatalogItem('badges', button.dataset.purgeBadge, true, event.currentTarget)));
     const count = $('badgePurgeCount');
     if (count) count.textContent = `${badges.length} insígnia(s)`;
     const hint = $('badgePurgeHint');
@@ -724,6 +730,7 @@
       if (!ecosystemBadges.length) await ensureCatalog();
       const data = await api('/api/admin/badge-rules');
       badgeRulesProtectedIds = Array.isArray(data.protectedIds) ? data.protectedIds.map(id => String(id).toLowerCase()) : [];
+      badgeRulesDenyIds = new Set((data.denyList || []).map(id => String(id).toLowerCase()));
       const field = $('badgeRulesDenyList');
       if (field) field.value = (data.denyList || []).join('\n');
       const protect = $('badgeRulesProtected');
@@ -743,6 +750,8 @@
       const data = await api('/api/admin/badge-rules', { method: 'PUT', body: JSON.stringify({ denyList }) });
       if ($('badgeRulesDenyList')) $('badgeRulesDenyList').value = (data.denyList || denyList).join('\n');
       badgeRulesProtectedIds = Array.isArray(data.protectedIds) ? data.protectedIds.map(id => String(id).toLowerCase()) : badgeRulesProtectedIds;
+      badgeRulesDenyIds = new Set((data.denyList || denyList).map(id => String(id).toLowerCase()));
+      await ensureCatalog();
       updateBadgeRulesImpact();
       if (status) status.textContent = 'Regras salvas.';
       notify('Regras de escolha salvas.');
@@ -770,7 +779,7 @@
       }).join('') || '<p class="empty">Nenhum cargo cadastrado. Crie o primeiro acima.</p>';
       $('roleDefinitionList').querySelectorAll('[data-edit-role]').forEach(button => button.addEventListener('click', () => editRoleDefinition(roles.find(role => role.id === button.dataset.editRole))));
       $('roleDefinitionList').querySelectorAll('[data-delete-role]').forEach(button => button.addEventListener('click', () => removeRoleDefinition(button.dataset.deleteRole)));
-      $('roleDefinitionList').querySelectorAll('[data-purge-role]').forEach(button => button.addEventListener('click', () => purgeRoleDefinition(button.dataset.purgeRole)));
+      $('roleDefinitionList').querySelectorAll('[data-purge-role]').forEach(button => button.addEventListener('click', (event) => purgeRoleDefinition(button.dataset.purgeRole, event.currentTarget)));
       updateRoleSummary();
       applyRolePreview();
       filterList('roleDefinitionList', $('roleDefinitionSearch')?.value, 'roleSearchHint');
@@ -792,7 +801,14 @@
 
   async function ensureCatalog() {
     try {
-      const data = await api('/api/admin/catalog');
+      // As regras de escolha também bloqueiam a exclusão no servidor; sem
+      // carregá-las aqui a UI mostra “Excluir” ativo para um item que será
+      // rejeitado com 403.
+      const [data, rules] = await Promise.all([
+        api('/api/admin/catalog'), api('/api/admin/badge-rules')
+      ]);
+      badgeRulesDenyIds = new Set((rules.denyList || []).map(id => String(id).toLowerCase()));
+      badgeRulesProtectedIds = Array.isArray(rules.protectedIds) ? rules.protectedIds.map(id => String(id).toLowerCase()) : [];
       const frames = data.frames || [], badges = data.badges || [];
       ecosystemBadges = badges;
       ecosystemFrames = frames;
@@ -802,7 +818,7 @@
       catalogItems = badges.map(x => {
         const term = `${x.id} ${x.name || ''} ${x.category || ''} Insígnia`;
         const protectedPurge = isProtectedBadgePurge(x);
-        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${grantLabel(x)} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}${protectedPurge ? ' · Protegida contra exclusão' : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges"${protectedPurge ? ' disabled title="Insígnia automática, reservada ou protegida por regra"' : ''}>Excluir</button></div>`;
+        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${grantLabel(x)} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}${protectedPurge ? ' · Protegida contra exclusão' : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-toggle-catalog="${escapeHtml(x.id)}" data-catalog-enabled="${Number(x.enabled) === 0 ? '0' : '1'}"${protectedPurge ? ' disabled title="Insígnia automática, reservada ou protegida por regra"' : ''}>${Number(x.enabled) === 0 ? 'Reativar' : 'Desativar'}</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges"${protectedPurge ? ' disabled title="Insígnia automática, reservada ou protegida por regra"' : ''}>Excluir</button></div>`;
         return { term: term.toLocaleLowerCase('pt-BR'), html };
       });
       catalogVisible = CATALOG_PAGE;
@@ -830,8 +846,8 @@
     }).join('') : `<p class="empty">${query ? 'Nenhuma moldura encontrada.' : 'Nenhuma moldura cadastrada. Envie um PNG para começar.'}</p>`;
     const openFrame = (id) => editFrame(ecosystemFrames.find(frame => frame.id === id));
     root.querySelectorAll('[data-edit-frame]').forEach(button => button.addEventListener('click', () => openFrame(button.dataset.editFrame)));
-    root.querySelectorAll('[data-delete-frame]').forEach(button => button.addEventListener('click', () => removeCatalogItem('frames', button.dataset.deleteFrame)));
-    root.querySelectorAll('[data-purge-frame]').forEach(button => button.addEventListener('click', () => removeCatalogItem('frames', button.dataset.purgeFrame, true)));
+    root.querySelectorAll('[data-delete-frame]').forEach(button => button.addEventListener('click', (event) => removeCatalogItem('frames', button.dataset.deleteFrame, false, event.currentTarget)));
+    root.querySelectorAll('[data-purge-frame]').forEach(button => button.addEventListener('click', (event) => removeCatalogItem('frames', button.dataset.purgeFrame, true, event.currentTarget)));
     root.querySelectorAll('.frame-catalog-row').forEach(row => {
       const activate = (event) => { if (!event.target.closest('button')) openFrame(row.dataset.frameId); };
       row.addEventListener('click', activate);
@@ -1272,36 +1288,6 @@
     }
   }
 
-  function centerFrameAdjust(silent = false) {
-    const img = $('frameAdjustImage');
-    const fit = window.HATTZ_FRAME_FIT;
-    if (!img || !frameAdjustImageData || !fit) {
-      if (!silent) notify('Envie um PNG para centralizar a moldura.');
-      return;
-    }
-    const finish = () => {
-      const info = fit.measureFrameImage(img);
-      const adjust = info && fit.autoFrameAdjust(info, fit.FRAME_REFERENCE_SIZE, {
-        frameScale: 100, frameX: 0, frameY: 0
-      });
-      if (!adjust) {
-        if (!silent) notify('Não foi possível medir esta moldura.');
-        return;
-      }
-      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-      $('frameScale').value = String(clamp(adjust.scale, 25, 200));
-      $('frameX').value = String(clamp(adjust.x, -100, 100));
-      $('frameY').value = String(clamp(adjust.y, -100, 100));
-      updateFrameAdjustPreview();
-      if (!silent) notify(`Moldura centralizada: ${$('frameScale').value}% · ${$('frameX').value}px / ${$('frameY').value}px.`);
-    };
-    if (img.complete && img.naturalWidth) finish();
-    else {
-      img.addEventListener('load', finish, { once: true });
-      img.addEventListener('error', () => { if (!silent) notify('Não foi possível medir esta moldura.'); }, { once: true });
-    }
-  }
-
   function resetFrameForm() {
     ['frameId', 'frameName', 'frameDescription'].forEach((id) => { $(id).value = ''; });
     $('frameId').readOnly = false;
@@ -1333,7 +1319,6 @@
     $('frameY').value = String(asset.y || 0);
     frameAdjustImageData = asset.imageData || '';
     updateFrameAdjustPreview();
-    centerFrameAdjust(true);
     syncFrameAccessFields();
     $('frameName').focus();
     $('frameName').scrollIntoView({ block: 'center' });
@@ -1398,50 +1383,110 @@
       await Promise.all([ensureRoles(), loadRoleAssignments()]);
     } catch (error) { notify(error.message); }
   }
-  async function removeCatalogItem(kind, id, forcePermanent = false) {
+  async function runMutation(key, button, action) {
+    if (pendingMutations.has(key)) return false;
+    pendingMutations.add(key);
+    if (button) button.disabled = true;
+    try { return await action(); }
+    finally {
+      pendingMutations.delete(key);
+      if (button?.isConnected) button.disabled = false;
+    }
+  }
+  async function refreshAfterCatalogMutation(permanent) {
+    collectionsLoaded = false;
+    const refreshCode = entitlementCode();
+    const refreshProfiles = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(refreshCode)
+      ? Promise.all([loadProfileBadges(refreshCode), loadFrameProfile(refreshCode)])
+      : Promise.resolve();
+    const related = permanent
+      ? Promise.allSettled([
+        ensureCollections(true), ensureBenefits(true), ensureRoles(), loadRoleAssignments(), loadStudioAccess(),
+        api('/api/admin/badge-rules').then((rules) => {
+          badgeRulesDenyIds = new Set((rules.denyList || []).map(id => String(id).toLowerCase()));
+          badgeRulesProtectedIds = Array.isArray(rules.protectedIds) ? rules.protectedIds.map(id => String(id).toLowerCase()) : [];
+        })
+      ])
+      : Promise.resolve();
+    await Promise.all([ensureCatalog(), loadOverview(true), refreshProfiles, related]);
+    updateFrameSummary();
+  }
+  async function removeCatalogItem(kind, id, permanent = false, button = null) {
+    if (!id) return;
     const label = kind === 'badges' ? 'insígnia' : 'moldura';
     const item = (kind === 'badges' ? ecosystemBadges : ecosystemFrames).find(entry => entry.id === id);
     const protectedPurge = kind === 'badges' ? isProtectedBadgePurge(item) : isProtectedFramePurge(item);
-    if (forcePermanent && protectedPurge) {
-      notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" é automática, reservada ou protegida por regra e não pode ser excluída.`);
+    if (protectedPurge) {
+      notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" é automática, reservada ou protegida por regra e não pode ser alterada.`);
       return;
     }
-    const permanent = forcePermanent || kind === 'badges';
     const question = permanent
       ? `Excluir a ${label} "${id}" permanentemente? Todas as ${kind === 'badges' ? 'concessões' : 'concessões e molduras equipadas'} serão removidas e esta ação não pode ser desfeita.`
       : `Desativar "${id}"? As concessões históricas serão preservadas e voltarão a aparecer se o item for reativado. Para apagar de vez, use “Excluir”.`;
-    if (!id || !window.confirm(question)) return;
-    const path = permanent
-      ? `/api/admin/catalog/${kind}/${encodeURIComponent(id)}/permanent`
-      : `/api/admin/catalog/${kind}/${encodeURIComponent(id)}`;
-    try {
-      const result = await api(path, { method: 'DELETE' });
-      if (permanent) {
-        const details = [`${Number(result.grantsRemoved || 0)} concessão(ões) removida(s)`];
-        if (Number(result.profilesUpdated || 0)) details.push(`${result.profilesUpdated} perfil(is) voltou/voltam à moldura padrão`);
-        notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" excluída. ${details.join(' · ')}.`);
-      } else notify('Item desativado. As concessões foram preservadas.');
-      await ensureCatalog();
-      const refreshCode = entitlementCode();
-      const refreshProfiles = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(refreshCode)
-        ? Promise.all([loadProfileBadges(refreshCode), loadFrameProfile(refreshCode)])
-        : Promise.resolve();
-      await Promise.all([loadOverview(true), refreshProfiles]);
-      updateFrameSummary();
-    } catch (error) { notify(error.message); }
+    if (!window.confirm(question)) return;
+    await runMutation(`${kind}:${id}`, button, async () => {
+      const path = permanent
+        ? `/api/admin/catalog/${kind}/${encodeURIComponent(id)}/permanent`
+        : `/api/admin/catalog/${kind}/${encodeURIComponent(id)}`;
+      try {
+        const result = await api(path, { method: 'DELETE' });
+        if (permanent) {
+          const details = [`${Number(result.grantsRemoved || 0)} concessão(ões) removida(s)`];
+          if (Number(result.profilesUpdated || 0)) details.push(`${result.profilesUpdated} perfil(is) voltou/voltam à moldura padrão`);
+          notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" excluída. ${details.join(' · ')}.`);
+        } else notify('Item desativado. As concessões foram preservadas.');
+        await refreshAfterCatalogMutation(permanent);
+      } catch (error) { notify(error.message); }
+    });
   }
-  async function purgeRoleDefinition(id) {
+  async function toggleCatalogItem(kind, id, enable, button = null) {
+    if (kind !== 'badges' || !id) return;
+    const badge = ecosystemBadges.find(entry => entry.id === id);
+    if (isProtectedBadgePurge(badge)) {
+      notify(`A insígnia "${id}" é automática, reservada ou protegida por regra e não pode ser alterada.`);
+      return;
+    }
+    if (!window.confirm(enable
+      ? `Reativar a insígnia "${id}"? Ela voltará a aparecer no catálogo e para quem já a recebeu.`
+      : `Desativar a insígnia "${id}"? As concessões serão preservadas e poderão voltar se ela for reativada.`)) return;
+    await runMutation(`toggle:${kind}:${id}`, button, async () => {
+      try {
+        if (enable) {
+          const body = {
+            name: badge.name || id,
+            description: badge.description || '',
+            rarityLevel: Number(badge.rarity_level || 1),
+            color: badge.color || '#B8BCC8',
+            category: badge.category || 'server',
+            icon: badge.icon || '✦',
+            isPublic: Number(badge.is_public) !== 0,
+            isFree: Number(badge.is_free) === 1,
+            awardMode: 'manual'
+          };
+          await api(`/api/admin/catalog/badges/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
+          notify('Insígnia reativada.');
+        } else {
+          await api(`/api/admin/catalog/badges/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          notify('Insígnia desativada. As concessões foram preservadas.');
+        }
+        await refreshAfterCatalogMutation(false);
+      } catch (error) { notify(error.message); }
+    });
+  }
+  async function purgeRoleDefinition(id, button = null) {
     const role = ecosystemRoles.find(entry => entry.id === id);
     if (!id) return;
     if (isProtectedRolePurge(role)) { notify(`O cargo "${id}" é reservado e não pode ser excluído.`); return; }
     if (!window.confirm(`Excluir o cargo "${id}" permanentemente? Atribuições, referências em molduras e permissões do Studio serão removidas. Esta ação não pode ser desfeita.`)) return;
-    try {
-      const result = await api(`/api/admin/roles/${encodeURIComponent(id)}/permanent`, { method: 'DELETE' });
-      notify(`Cargo "${id}" excluído. ${Number(result.grantsRemoved || 0)} atribuição(ões) e ${Number(result.framesUpdated || 0)} moldura(s) atualizada(s).`);
-      rolesLoaded = false;
-      const refreshProfile = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(entitlementCode()) ? loadProfileRoles() : Promise.resolve();
-      await Promise.all([ensureRoles(), loadRoleAssignments(), ensureCatalog(), loadOverview(true), loadStudioAccess(), refreshProfile]);
-    } catch (error) { notify(error.message); }
+    await runMutation(`roles:${id}`, button, async () => {
+      try {
+        const result = await api(`/api/admin/roles/${encodeURIComponent(id)}/permanent`, { method: 'DELETE' });
+        notify(`Cargo "${id}" excluído. ${Number(result.grantsRemoved || 0)} atribuição(ões) e ${Number(result.framesUpdated || 0)} moldura(s) atualizada(s).`);
+        rolesLoaded = false;
+        const refreshProfile = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/.test(entitlementCode()) ? loadProfileRoles() : Promise.resolve();
+        await Promise.all([ensureRoles(), loadRoleAssignments(), ensureCatalog(), loadOverview(true), loadStudioAccess(), refreshProfile]);
+      } catch (error) { notify(error.message); }
+    });
   }
   function codeFrom(fieldId) {
     const field = $(fieldId);
@@ -1702,7 +1747,6 @@
     try {
       frameAdjustImageData = await readPngFile(file, FRAME_PNG_LIMIT);
       updateFrameAdjustPreview();
-      centerFrameAdjust();
     } catch (error) {
       frameAdjustImageData = '';
       updateFrameAdjustPreview();
@@ -1711,7 +1755,6 @@
   });
   const refreshFrameAdjust = debounce(updateFrameAdjustPreview, 80);
   ["frameScale", "frameX", "frameY"].forEach((id) => $(id).addEventListener("input", refreshFrameAdjust));
-  $("centerFrameNow").addEventListener("click", () => centerFrameAdjust());
   $("saveFrame").addEventListener("click", saveFrame);
   $("newFrame").addEventListener("click", resetFrameForm);
   $("frameCatalogSearch").addEventListener("input", debounce(renderFrameCatalog, 160));
