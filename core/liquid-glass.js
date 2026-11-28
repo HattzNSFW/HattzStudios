@@ -16,6 +16,7 @@
     [/supporter|apoiador|apoiante|partner|parceiro/i, "🤝"],
     [/contributor|contribuidor|collab|colaborador/i, "🛠️"],
     [/member|membro/i, "👤"],
+    [/dev|devs|developer|desenvolvedor/i, "💻"],
     [/founder|owner|dono|creator|criador|nucleo|núcleo|crown/i, "👑"],
     [/vip|premium|elite|legend|lend|diamond|diamante/i, "💎"],
     [/admin|staff|moder|dev|official|oficial|shield|seguro/i, "🛡️"],

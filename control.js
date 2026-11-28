@@ -21,10 +21,13 @@
   let catalogItems = [];
   let catalogVisible = 12;
   let badgeRulesProtectedIds = [];
+  let badgeRulesPurgeProtectedIds = [];
   let badgeRulesDenyIds = new Set();
   const pendingMutations = new Set();
   const OFFICIAL_CODES = new Set(["MT7QTEVMZY", "YGZNK6TMG8"]);
-  const PURGE_PROTECTED_BADGE_IDS = new Set(["owner", "vip", "apoiador", "event-pass", "creative-flare", "community-anchor", "chronicle"]);
+  // Apenas Owner é protegido contra exclusão permanente; as demais insígnias
+  // podem ser apagadas mesmo se forem automáticas ou bloqueadas na escolha livre.
+  const PURGE_PROTECTED_BADGE_IDS = new Set(["owner"]);
   const PURGE_PROTECTED_FRAME_IDS = new Set(["none", "default", "padrao", "padrão"]);
   const RESERVED_LABEL = /\b(admin|administrator|dev|developer|staff|moderator|owner|dono|founder|official|oficial|vip|premium)\b/i;
   const RESERVED_BADGE = /\b(owner|dono|founder|official|oficial)\b/i;
@@ -631,9 +634,8 @@
   }
   function isProtectedBadgePurge(badge) {
     const id = String(badge?.id || '').toLowerCase();
-    return badge?.award_mode === 'automatic' || PURGE_PROTECTED_BADGE_IDS.has(id)
-      || badgeRulesDenyIds.has(id) || badgeRulesProtectedIds.includes(id)
-      || RESERVED_BADGE.test(id) || RESERVED_BADGE.test(badge?.name || '');
+    return PURGE_PROTECTED_BADGE_IDS.has(id) || badgeRulesPurgeProtectedIds.includes(id)
+      || String(badge?.name || '').trim().toLowerCase() === 'owner';
   }
   function isProtectedFramePurge(frame) {
     const id = String(frame?.id || '').toLowerCase();
@@ -675,7 +677,7 @@
     const badges = ecosystemBadges.filter(badge => !query || `${badge.id} ${badge.name || ''} ${badge.description || ''}`.toLocaleLowerCase('pt-BR').includes(query));
     root.innerHTML = badges.length ? badges.map(badge => {
       const protectedPurge = isProtectedBadgePurge(badge);
-      const reason = badge.award_mode === 'automatic' ? 'automática' : protectedPurge ? 'reservada ou protegida por regra' : '';
+      const reason = protectedPurge ? 'Owner · protegida contra exclusão' : '';
       return `<div class="audit-item" data-search="${escapeHtml(`${badge.id} ${badge.name || ''} ${badge.description || ''}`)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(badge)}</span> ${escapeHtml(badge.name)}</div><div class="audit-detail">${escapeHtml(badge.id)} · ${grantLabel(badge)}${Number(badge.enabled) === 0 ? ' · Desativada' : ''}${reason ? ` · Não excluível: ${reason}` : ''}</div></div><button type="button" class="quiet-button danger-action" data-purge-badge="${escapeHtml(badge.id)}"${protectedPurge ? ' disabled' : ''}>Excluir</button></div>`;
     }).join('')
       : `<p class="empty">${query ? 'Nenhuma insígnia encontrada.' : 'Nenhuma insígnia cadastrada.'}</p>`;
@@ -730,6 +732,7 @@
       if (!ecosystemBadges.length) await ensureCatalog();
       const data = await api('/api/admin/badge-rules');
       badgeRulesProtectedIds = Array.isArray(data.protectedIds) ? data.protectedIds.map(id => String(id).toLowerCase()) : [];
+      badgeRulesPurgeProtectedIds = Array.isArray(data.purgeProtectedIds) ? data.purgeProtectedIds.map(id => String(id).toLowerCase()) : ['owner'];
       badgeRulesDenyIds = new Set((data.denyList || []).map(id => String(id).toLowerCase()));
       const field = $('badgeRulesDenyList');
       if (field) field.value = (data.denyList || []).join('\n');
@@ -750,6 +753,7 @@
       const data = await api('/api/admin/badge-rules', { method: 'PUT', body: JSON.stringify({ denyList }) });
       if ($('badgeRulesDenyList')) $('badgeRulesDenyList').value = (data.denyList || denyList).join('\n');
       badgeRulesProtectedIds = Array.isArray(data.protectedIds) ? data.protectedIds.map(id => String(id).toLowerCase()) : badgeRulesProtectedIds;
+      badgeRulesPurgeProtectedIds = Array.isArray(data.purgeProtectedIds) ? data.purgeProtectedIds.map(id => String(id).toLowerCase()) : badgeRulesPurgeProtectedIds;
       badgeRulesDenyIds = new Set((data.denyList || denyList).map(id => String(id).toLowerCase()));
       await ensureCatalog();
       updateBadgeRulesImpact();
@@ -801,14 +805,14 @@
 
   async function ensureCatalog() {
     try {
-      // As regras de escolha também bloqueiam a exclusão no servidor; sem
-      // carregá-las aqui a UI mostra “Excluir” ativo para um item que será
-      // rejeitado com 403.
+      // As regras trazem também a proteção de exclusão (apenas Owner), para a
+      // UI não mostrar “Excluir” ativo em um item que será rejeitado com 403.
       const [data, rules] = await Promise.all([
         api('/api/admin/catalog'), api('/api/admin/badge-rules')
       ]);
       badgeRulesDenyIds = new Set((rules.denyList || []).map(id => String(id).toLowerCase()));
       badgeRulesProtectedIds = Array.isArray(rules.protectedIds) ? rules.protectedIds.map(id => String(id).toLowerCase()) : [];
+      badgeRulesPurgeProtectedIds = Array.isArray(rules.purgeProtectedIds) ? rules.purgeProtectedIds.map(id => String(id).toLowerCase()) : ['owner'];
       const frames = data.frames || [], badges = data.badges || [];
       ecosystemBadges = badges;
       ecosystemFrames = frames;
@@ -818,7 +822,7 @@
       catalogItems = badges.map(x => {
         const term = `${x.id} ${x.name || ''} ${x.category || ''} Insígnia`;
         const protectedPurge = isProtectedBadgePurge(x);
-        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${grantLabel(x)} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}${protectedPurge ? ' · Protegida contra exclusão' : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-toggle-catalog="${escapeHtml(x.id)}" data-catalog-enabled="${Number(x.enabled) === 0 ? '0' : '1'}"${protectedPurge ? ' disabled title="Insígnia automática, reservada ou protegida por regra"' : ''}>${Number(x.enabled) === 0 ? 'Reativar' : 'Desativar'}</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges"${protectedPurge ? ' disabled title="Insígnia automática, reservada ou protegida por regra"' : ''}>Excluir</button></div>`;
+        const html = `<div class="audit-item searchable" data-search="${escapeHtml(term)}"><span class="audit-time">INSÍGNIA</span><div><div class="audit-action"><span class="catalog-emoji">${emojiFor(x)}</span> ${escapeHtml(x.name)}</div><div class="audit-detail">${escapeHtml(x.description || '')} · ${x.award_mode === 'automatic' ? 'Concessão automática' : 'Concessão manual'} · ${grantLabel(x)} · ${escapeHtml(x.color || '#B8BCC8')} · ${x.is_public === 0 ? 'Oculta' : 'Pública'}${protectedPurge ? ' · Protegida contra exclusão' : ''}</div></div><span class="audit-target">${escapeHtml(x.rarityLabel || x.rarity)}${Number(x.enabled) === 0 ? ' · Desativada' : ''}</span><button type="button" class="quiet-button" data-edit-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges" data-catalog-name="${escapeHtml(x.name)}" data-catalog-description="${escapeHtml(x.description || '')}" data-catalog-rarity="${Number(x.rarity_level || 1)}" data-catalog-category="${escapeHtml(x.category || '')}" data-catalog-public="${x.is_public === 0 ? '0' : '1'}" data-catalog-icon="${escapeHtml(x.icon || '')}" data-catalog-color="${escapeHtml(x.color || '#B8BCC8')}">Editar</button><button type="button" class="quiet-button danger-action" data-toggle-catalog="${escapeHtml(x.id)}" data-catalog-enabled="${Number(x.enabled) === 0 ? '0' : '1'}"${protectedPurge ? ' disabled title="Owner é a única insígnia protegida contra exclusão"' : ''}>${Number(x.enabled) === 0 ? 'Reativar' : 'Desativar'}</button><button type="button" class="quiet-button danger-action" data-delete-catalog="${escapeHtml(x.id)}" data-catalog-kind="badges"${protectedPurge ? ' disabled title="Owner é a única insígnia protegida contra exclusão"' : ''}>Excluir</button></div>`;
         return { term: term.toLocaleLowerCase('pt-BR'), html };
       });
       catalogVisible = CATALOG_PAGE;
@@ -1139,18 +1143,8 @@
   const SERVER_BADGE_PRESETS = {
     owner: { name: 'Owner', description: 'Insígnia reservada aos perfis oficiais do Hättz.', category: 'server', rarity: '5', icon: '👑', color: '#F0B232' },
     vip: { name: 'VIP', description: 'Apoio premium ao ecossistema Hättz.', category: 'server', rarity: '4', icon: '💎', color: '#43B581' },
-    apoiador: { name: 'Apoiador', description: 'Quem apoia ativamente a comunidade Hättz.', category: 'server', rarity: '2', icon: '🤝', color: '#5865F2' },
-    genesis: { name: 'Gênese', description: 'Concedida automaticamente ao criar um perfil no Hättz.', category: 'milestone', rarity: '1', icon: '✧', color: '#B8BCC8' },
-    'event-pass': { name: 'Participante de Evento', description: 'Participou de um evento oficial da comunidade.', category: 'event', rarity: '2', icon: '🎟️', color: '#43B581' },
-    'creative-flare': { name: 'Faísca Criativa', description: 'Destaque em criações visuais da comunidade.', category: 'achievement', rarity: '3', icon: '✨', color: '#C18BE8' },
     dev: { name: 'Dev', description: 'Quem constrói, testa e melhora o Hättz.', category: 'community', rarity: '2', icon: '💻', color: '#57F287' },
-    support: { name: 'Suporte', description: 'Acolhe e ajuda outros perfis da comunidade.', category: 'community', rarity: '2', icon: '🎧', color: '#5865F2' },
-    gamer: { name: 'Gamer', description: 'Vive jogos, desafios e boas partidas por aqui.', category: 'hobby', rarity: '1', icon: '🎮', color: '#E67E22' },
-    member: { name: 'Membro', description: 'Parte da comunidade Hättz.', category: 'community', rarity: '1', icon: '👤', color: '#99AAB5' },
-    music: { name: 'Música', description: 'Compartilha trilhas e descobertas sonoras.', category: 'hobby', rarity: '1', icon: '🎵', color: '#1DB954' },
-    art: { name: 'Arte', description: 'Cria e aprecia artes visuais.', category: 'hobby', rarity: '1', icon: '🎨', color: '#E91E63' },
-    reader: { name: 'Leitura', description: 'Sempre com uma boa história por perto.', category: 'hobby', rarity: '1', icon: '📚', color: '#F0B232' },
-    'night-owl': { name: 'Madrugador', description: 'Aparece quando a cidade dorme.', category: 'hobby', rarity: '1', icon: '🦉', color: '#9B59B6' }
+    member: { name: 'Membro', description: 'Parte da comunidade Hättz.', category: 'community', rarity: '1', icon: '👤', color: '#99AAB5' }
   };
   function applyRolePreset(id) {
     const preset = SERVER_ROLE_PRESETS[id];
@@ -1405,6 +1399,7 @@
         api('/api/admin/badge-rules').then((rules) => {
           badgeRulesDenyIds = new Set((rules.denyList || []).map(id => String(id).toLowerCase()));
           badgeRulesProtectedIds = Array.isArray(rules.protectedIds) ? rules.protectedIds.map(id => String(id).toLowerCase()) : [];
+          badgeRulesPurgeProtectedIds = Array.isArray(rules.purgeProtectedIds) ? rules.purgeProtectedIds.map(id => String(id).toLowerCase()) : ['owner'];
         })
       ])
       : Promise.resolve();
@@ -1417,7 +1412,9 @@
     const item = (kind === 'badges' ? ecosystemBadges : ecosystemFrames).find(entry => entry.id === id);
     const protectedPurge = kind === 'badges' ? isProtectedBadgePurge(item) : isProtectedFramePurge(item);
     if (protectedPurge) {
-      notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" é automática, reservada ou protegida por regra e não pode ser alterada.`);
+      notify(kind === 'badges'
+        ? `A insígnia "${id}" é Owner, a única protegida contra exclusão.`
+        : `A moldura "${id}" é reservada e não pode ser alterada.`);
       return;
     }
     const question = permanent
@@ -1432,7 +1429,10 @@
         const result = await api(path, { method: 'DELETE' });
         if (permanent) {
           const details = [`${Number(result.grantsRemoved || 0)} concessão(ões) removida(s)`];
-          if (Number(result.profilesUpdated || 0)) details.push(`${result.profilesUpdated} perfil(is) voltou/voltam à moldura padrão`);
+          if (kind === 'badges') {
+            if (Number(result.displaysUpdated || 0)) details.push(`${result.displaysUpdated} exibição(ões) limpa(s)`);
+            if (Number(result.profilesUpdated || 0)) details.push(`${result.profilesUpdated} perfil(is) limpo(s)`);
+          } else if (Number(result.profilesUpdated || 0)) details.push(`${result.profilesUpdated} perfil(is) voltou/voltam à moldura padrão`);
           notify(`${label[0].toUpperCase() + label.slice(1)} "${id}" excluída. ${details.join(' · ')}.`);
         } else notify('Item desativado. As concessões foram preservadas.');
         await refreshAfterCatalogMutation(permanent);
@@ -1443,7 +1443,7 @@
     if (kind !== 'badges' || !id) return;
     const badge = ecosystemBadges.find(entry => entry.id === id);
     if (isProtectedBadgePurge(badge)) {
-      notify(`A insígnia "${id}" é automática, reservada ou protegida por regra e não pode ser alterada.`);
+      notify(`A insígnia "${id}" é Owner, a única protegida contra exclusão.`);
       return;
     }
     if (!window.confirm(enable
